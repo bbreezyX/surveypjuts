@@ -183,6 +183,25 @@
 
     var activeItemId = null;
 
+    // SVG pin marker for selected feature
+    var pinSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48">' +
+        '<filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.3"/></filter>' +
+        '<path filter="url(%23s)" d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23003049"/>' +
+        '<circle cx="18" cy="18" r="8" fill="%23fff"/>' +
+      '</svg>';
+    var pinSrc = "data:image/svg+xml," + pinSvg;
+
+    var pinStyle = new ol.style.Style({
+      image: new ol.style.Icon({
+        src: pinSrc,
+        anchor: [0.5, 1],
+        anchorXUnits: "fraction",
+        anchorYUnits: "fraction",
+        scale: 1
+      })
+    });
+
     var items = allFeatures
       .map(function (feature, index) {
         var nomor = String(feature.get("Nomor") || "-").trim();
@@ -284,6 +303,10 @@
         window.collection.clear();
       }
 
+      if (window.featureOverlay) {
+        window.featureOverlay.setStyle(null);
+      }
+
       hidePopup();
     }
 
@@ -299,6 +322,10 @@
       if (window.collection && typeof window.collection.clear === "function") {
         window.collection.clear();
         window.collection.push(item.feature);
+      }
+
+      if (window.featureOverlay) {
+        window.featureOverlay.setStyle(pinStyle);
       }
 
       // Always use the feature's actual center for everything to avoid shifting

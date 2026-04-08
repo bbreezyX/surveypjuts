@@ -452,11 +452,18 @@ body {
     box-shadow: 0 14px 30px var(--shadow);
 }
 
-.ol-control:not(.layer-switcher) > *:focus,
-.ol-control:not(.layer-switcher) > *:hover {
+.ol-control:not(.layer-switcher) > *:hover,
+.ol-control:not(.layer-switcher) > *:focus-visible {
     background-color: var(--accent) !important;
     color: #ffffff !important;
     border-color: var(--accent) !important;
+}
+
+.ol-control:not(.layer-switcher) > *:active {
+    background-color: var(--accent-hover) !important;
+    color: #ffffff !important;
+    border-color: var(--accent) !important;
+    transform: scale(0.94);
 }
 
 .ol-zoom {
@@ -771,7 +778,7 @@ body {
 
 .ol-popup {
     position: absolute !important;
-    bottom: 35px !important;
+    bottom: 56px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
     padding: 0;
