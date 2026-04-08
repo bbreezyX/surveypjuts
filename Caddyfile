@@ -1,0 +1,19 @@
+:{$PORT:80} {
+    root * /srv
+    encode zstd gzip
+
+    header /favicon.svg Cache-Control "public, max-age=86400"
+    header /images/* Cache-Control "public, max-age=604800"
+    header /layers/* Cache-Control "public, max-age=604800"
+    header /resources/* Cache-Control "public, max-age=604800"
+    header /styles/* Cache-Control "public, max-age=604800"
+    header /webfonts/* Cache-Control "public, max-age=604800"
+
+    header {
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        X-Frame-Options "SAMEORIGIN"
+    }
+
+    file_server
+}

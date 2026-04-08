@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width"
+    />
+    <meta
+      name="description"
+      content="Peta sebaran Penerangan Jalan Umum Tenaga Surya Provinsi Jambi Tahun 2026 hasil survey lapangan."
+    />
+    <meta name="theme-color" content="#1f2a2b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,600;6..72,700&family=Source+Sans+3:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./resources/ol.css" />
+    <link rel="stylesheet" href="resources/fontawesome-all.min.css" />
+    <link rel="stylesheet" type="text/css" href="resources/horsey.min.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="resources/ol-search-layer.min.css"
+    />
+    <link
+      href="resources/photon-geocoder-autocomplete.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./resources/ol-layerswitcher.css" />
+    <link rel="stylesheet" href="./resources/qgis2web.css" />
+    <link rel="stylesheet" href="./custom.css" />
+    <title>Penerangan Jalan Umum Tenaga Surya Provinsi Jambi Tahun 2026</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside id="sidebar" aria-label="Daftar titik PJUTS">
+        <button
+          id="sidebar-close"
+          type="button"
+          aria-label="Tutup panel data"
+        >
+          &times;
+        </button>
+
+        <div class="sidebar-header">
+          <p class="sidebar-kicker">Provinsi Jambi &middot; 2026</p>
+
+          <div>
+            <h1 class="sidebar-title">Peta Sebaran PJUTS</h1>
+            <p class="sidebar-subtitle">
+              Titik penerangan jalan umum tenaga surya hasil survey lapangan.
+              Cari berdasarkan nomor, pengusul, atau alamat untuk fokus ke lokasi.
+            </p>
+          </div>
+
+          <div class="sidebar-stats" aria-label="Ringkasan data">
+            <div class="stat-card">
+              <strong id="count-points">0</strong>
+              <span>Titik</span>
+            </div>
+            <div class="stat-card">
+              <strong id="count-groups">0</strong>
+              <span>Pengusul</span>
+            </div>
+            <div class="stat-card">
+              <strong id="count-visible">0</strong>
+              <span>Tampil</span>
+            </div>
+          </div>
+
+          <div class="sidebar-actions">
+            <label class="search-field" for="list-search">
+              <span class="visually-hidden">Cari titik PJUTS</span>
+              <input
+                id="list-search"
+                type="search"
+                placeholder="Cari nomor, pengusul, alamat..."
+                autocomplete="off"
+              />
+            </label>
+
+            <button id="fit-map" class="secondary-action" type="button">
+              Lihat seluruh titik
+            </button>
+          </div>
+
+          <p class="sidebar-hint">
+            Daftar dikelompokkan berdasarkan nama pengusul untuk
+            memudahkan penelusuran data.
+          </p>
+        </div>
+
+        <div id="list-data" class="sidebar-content" aria-live="polite"></div>
+
+        <div class="sidebar-footer">
+          Gunakan tombol layer di kanan atas untuk menyalakan atau mematikan
+          lapisan peta.
+        </div>
+      </aside>
+
+      <button
+        id="panel-backdrop"
+        type="button"
+        aria-label="Tutup panel data"
+        tabindex="-1"
+      ></button>
+
+      <main class="map-frame">
+        <button
+          id="panel-toggle"
+          class="panel-toggle"
+          type="button"
+          aria-controls="sidebar"
+          aria-expanded="false"
+        >
+          Data PJUTS
+        </button>
+
+        <div id="map" aria-label="Peta sebaran PJUTS">
+          <div id="popup" class="ol-popup">
+            <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+            <div id="popup-content"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="resources/qgis2web_expressions.js"></script>
+    <script src="./resources/functions.js"></script>
+    <script src="./resources/ol.js"></script>
+    <script src="resources/horsey.min.js"></script>
+    <script src="resources/ol-search-layer.js"></script>
+    <script src="./resources/ol-layerswitcher.js"></script>
+    <script src="resources/photon-geocoder-autocomplete.min.js"></script>
+    <script src="layers/BatasKabupaten2011_1.js"></script>
+    <script src="layers/Dissolved_2.js"></script>
+    <script src="layers/Lines_3.js"></script>
+    <script src="layers/260331_4.js"></script>
+    <script src="styles/BatasKabupaten2011_1_style.js"></script>
+    <script src="styles/Dissolved_2_style.js"></script>
+    <script src="styles/Lines_3_style.js"></script>
+    <script src="styles/260331_4_style.js"></script>
+    <script src="./layers/layers.js" type="text/javascript"></script>
+    <script src="./resources/Autolinker.min.js"></script>
+    <script src="./resources/qgis2web.js"></script>
+    <script src="./custom.js"></script>
+  </body>
+</html>
