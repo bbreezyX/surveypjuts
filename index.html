@@ -50,14 +50,9 @@
         </button>
 
         <div class="sidebar-header">
-          <p class="sidebar-kicker">Provinsi Jambi &middot; 2026</p>
-
-          <div>
+          <div class="sidebar-brand">
+            <p class="sidebar-kicker">Provinsi Jambi &middot; 2026</p>
             <h1 class="sidebar-title">Peta Sebaran PJUTS</h1>
-            <p class="sidebar-subtitle">
-              Titik penerangan jalan umum tenaga surya hasil survey lapangan.
-              Cari berdasarkan nomor, pengusul, atau alamat untuk fokus ke lokasi.
-            </p>
           </div>
 
           <div class="sidebar-stats" aria-label="Ringkasan data">
@@ -85,23 +80,23 @@
                 autocomplete="off"
               />
             </label>
-
             <button id="fit-map" class="secondary-action" type="button">
-              Lihat seluruh titik
+              Lihat semua
             </button>
           </div>
-
-          <p class="sidebar-hint">
-            Daftar dikelompokkan berdasarkan nama pengusul untuk
-            memudahkan penelusuran data.
-          </p>
         </div>
 
-        <div id="list-data" class="sidebar-content" aria-live="polite"></div>
-
-        <div class="sidebar-footer">
-          Gunakan tombol layer di kanan atas untuk menyalakan atau mematikan
-          lapisan peta.
+        <div class="sidebar-scroll">
+          <p class="sidebar-hint">
+            Titik penerangan jalan umum tenaga surya hasil survey lapangan.
+            Dikelompokkan berdasarkan nama pengusul untuk memudahkan
+            penelusuran data.
+          </p>
+          <div id="list-data" aria-live="polite"></div>
+          <p class="sidebar-footer">
+            Gunakan tombol layer di kanan atas untuk menyalakan atau mematikan
+            lapisan peta.
+          </p>
         </div>
       </aside>
 

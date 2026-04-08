@@ -135,6 +135,7 @@
     if (popup) {
       popup.style.display = "none";
     }
+    document.body.classList.remove("is-popup-open");
     if (popupContent) {
       popupContent.innerHTML = "";
     }
@@ -268,6 +269,7 @@
 
       popupContent.innerHTML = buildPopupHtml(item);
       popup.style.display = "block";
+      document.body.classList.add("is-popup-open");
 
       if (window.overlayPopup && typeof window.overlayPopup.setPosition === "function") {
         window.overlayPopup.setPosition(coord);
@@ -510,6 +512,19 @@
     }
 
     window.map.on("singleclick", handleMapSingleClick);
+
+    // Sync body.is-popup-open with popup visibility so mobile CSS can react
+    var popupObserver = new MutationObserver(function (mutations) {
+      mutations.forEach(function (m) {
+        if (m.attributeName === "style") {
+          var isVisible = popup.style.display !== "none" && popup.style.display !== "";
+          document.body.classList.toggle("is-popup-open", isVisible);
+        }
+      });
+    });
+    if (popup) {
+      popupObserver.observe(popup, { attributes: true, attributeFilter: ["style"] });
+    }
 
     // Keep popup in view after user zooms/pans — re-trigger autoPan
     var panGuard = false;
