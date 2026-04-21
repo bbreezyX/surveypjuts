@@ -7,8 +7,9 @@ var wms_layers = [];
             
             
             source: new ol.source.XYZ({
-            attributions: 'Tiles &copy; Esri',
-                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+            attributions: 'Tiles &copy; Google',
+                url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+                maxZoom: 21
             })
         });
 var format_BatasKabupaten2011_1 = new ol.format.GeoJSON();
