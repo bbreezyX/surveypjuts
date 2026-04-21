@@ -69,7 +69,7 @@ var lyr_260331_4 = new ol.layer.Vector({
                 style: style_260331_4,
                 popuplayertitle: 'Titik PJUTS',
                 interactive: true,
-                title: '<img src="styles/legend/260331_4.png" /> Titik PJUTS'
+                title: '<img src=\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="18" viewBox="0 0 36 48"><path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23e63946" stroke="%23b21f2d" stroke-width="1.5"/><circle cx="18" cy="18" r="6.5" fill="%23ffffff"/></svg>\' /> Titik PJUTS'
             });
 var group_RAW = new ol.layer.Group({
                                 layers: [lyr_260331_4,],

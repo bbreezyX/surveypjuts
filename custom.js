@@ -111,19 +111,19 @@
       '<div class="feature-popup">' +
       '<p class="feature-popup__eyebrow">Informasi Titik PJUTS</p>' +
       '<div class="feature-popup__head">' +
-      '<div>' +
+      '<div class="feature-popup__head-copy">' +
       '<h3 class="feature-popup__title">' + escapeHtml(item.display.primary) + "</h3>" +
       '<p class="feature-popup__subtitle">' + escapeHtml(item.display.secondary) + "</p>" +
       "</div>" +
-      '<span class="feature-popup__badge">' + escapeHtml(item.display.code) + "</span>" +
+      '<span class="feature-popup__badge" aria-label="Nomor titik">' + escapeHtml(item.display.code) + "</span>" +
       "</div>" +
       (photoPath
         ? '<div class="feature-popup__media">' +
           '<img src="images/' + encodeURI(photoPath) + '" alt="Foto lokasi ' + escapeHtml(item.nomor) + '" loading="lazy" />' +
-          '<div class="media-overlay"></div>' +
+          '<div class="media-overlay" aria-hidden="true"></div>' +
           "</div>"
         : "") +
-      '<dl class="feature-popup__meta">' + rows.join("") + "</dl>" +
+      (rows.length ? '<dl class="feature-popup__meta">' + rows.join("") + "</dl>" : "") +
       "</div>"
     );
   }
@@ -183,24 +183,8 @@
 
     var activeItemId = null;
 
-    // SVG pin marker for selected feature
-    var pinSvg =
-      '<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48">' +
-        '<filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.3"/></filter>' +
-        '<path filter="url(%23s)" d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23003049"/>' +
-        '<circle cx="18" cy="18" r="8" fill="%23fff"/>' +
-      '</svg>';
-    var pinSrc = "data:image/svg+xml," + pinSvg;
-
-    var pinStyle = new ol.style.Style({
-      image: new ol.style.Icon({
-        src: pinSrc,
-        anchor: [0.5, 1],
-        anchorXUnits: "fraction",
-        anchorYUnits: "fraction",
-        scale: 1
-      })
-    });
+    // Selection overlay disabled — the layer's red pin is the only marker
+    var pinStyle = null;
 
     var items = allFeatures
       .map(function (feature, index) {
@@ -256,6 +240,8 @@
 
     countPoints.textContent = items.length.toLocaleString("id-ID");
     countGroups.textContent = groupedItems.length.toLocaleString("id-ID");
+
+    var expandedGroups = new Set();
 
     function updateHighlight(itemId) {
       var previous = listContainer.querySelector(".item.is-active");
@@ -338,8 +324,33 @@
         view.cancelAnimations();
       }
 
+      // On mobile the popup sits at the top of the map. Measure its real
+      // rendered height so the pin lands just below it (small gap), rather
+      // than arbitrarily far down the viewport.
+      var animateCenter = featureCenter;
+      if (window.innerWidth < 960) {
+        var size = window.map.getSize();
+        var mapEl = document.getElementById("map");
+        if (size && size[1] && popup && mapEl) {
+          var targetResolution = view.getResolutionForZoom(targetZoom);
+          // Force layout so bounding rect reflects the new content
+          void popup.offsetHeight;
+          var popupRect = popup.getBoundingClientRect();
+          var mapRect = mapEl.getBoundingClientRect();
+          var popupBottomInMap = popupRect.bottom - mapRect.top;
+          // Desired pin position: 64px below popup, clamped to keep it
+          // inside the visible map area.
+          var pinTargetY = Math.min(popupBottomInMap + 64, size[1] - 48);
+          var offsetPxDown = pinTargetY - size[1] / 2;
+          animateCenter = [
+            featureCenter[0],
+            featureCenter[1] + offsetPxDown * targetResolution
+          ];
+        }
+      }
+
       view.animate({
-        center: featureCenter,
+        center: animateCenter,
         zoom: targetZoom,
         duration: 800
       });
@@ -356,7 +367,7 @@
 
       listContainer.innerHTML = "";
 
-      groupedItems.forEach(function (group) {
+      groupedItems.forEach(function (group, groupIndex) {
         var matchedItems = group.items.filter(function (item) {
           return !normalizedQuery || item.searchText.indexOf(normalizedQuery) !== -1;
         });
@@ -367,11 +378,23 @@
 
         visibleCount += matchedItems.length;
 
+        var isExpanded = normalizedQuery
+          ? true
+          : expandedGroups.has(group.name);
+        var itemsId = "group-items-" + groupIndex;
+
         var groupNode = document.createElement("section");
         groupNode.className = "group";
 
-        var titleRow = document.createElement("div");
-        titleRow.className = "group-title-row";
+        var toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "group-toggle";
+        toggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
+        toggle.setAttribute("aria-controls", itemsId);
+
+        var chevron = document.createElement("span");
+        chevron.className = "group-chevron";
+        chevron.setAttribute("aria-hidden", "true");
 
         var title = document.createElement("h2");
         title.className = "group-title";
@@ -381,11 +404,25 @@
         meta.className = "group-meta";
         meta.textContent = matchedItems.length + " titik";
 
-        titleRow.appendChild(title);
-        titleRow.appendChild(meta);
+        toggle.appendChild(chevron);
+        toggle.appendChild(title);
+        toggle.appendChild(meta);
+
+        toggle.addEventListener("click", function () {
+          if (expandedGroups.has(group.name)) {
+            expandedGroups.delete(group.name);
+          } else {
+            expandedGroups.add(group.name);
+          }
+          renderList(searchInput.value);
+        });
 
         var itemsWrap = document.createElement("div");
         itemsWrap.className = "group-items";
+        itemsWrap.id = itemsId;
+        if (!isExpanded) {
+          itemsWrap.hidden = true;
+        }
 
         matchedItems.forEach(function (item) {
           var button = document.createElement("button");
@@ -432,7 +469,7 @@
           itemsWrap.appendChild(button);
         });
 
-        groupNode.appendChild(titleRow);
+        groupNode.appendChild(toggle);
         groupNode.appendChild(itemsWrap);
         fragment.appendChild(groupNode);
       });
@@ -554,10 +591,15 @@
     }
 
     // Keep popup in view after user zooms/pans — re-trigger autoPan
+    // (skip on mobile: popup is position:fixed and no longer anchored to
+    // the feature, so panIntoView would fight our intentional offset)
     var panGuard = false;
     window.map.on("moveend", function () {
       if (panGuard) {
         panGuard = false;
+        return;
+      }
+      if (window.innerWidth < 960) {
         return;
       }
       if (window.overlayPopup && window.overlayPopup.getPosition()) {
