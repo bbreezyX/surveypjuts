@@ -2,7 +2,11 @@
     root * /srv
     encode zstd gzip
 
+    header / Cache-Control "no-cache, must-revalidate"
+    header /index.html Cache-Control "no-cache, must-revalidate"
     header /favicon.svg Cache-Control "public, max-age=86400"
+    header /custom.js Cache-Control "public, max-age=604800"
+    header /custom.css Cache-Control "public, max-age=604800"
     header /images/* Cache-Control "public, max-age=604800"
     header /layers/* Cache-Control "public, max-age=604800"
     header /resources/* Cache-Control "public, max-age=604800"
