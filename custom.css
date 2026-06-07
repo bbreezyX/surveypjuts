@@ -1539,7 +1539,8 @@ body {
     }
 
     body.is-popup-open .layer-switcher,
-    body.is-popup-open .panel-toggle {
+    body.is-popup-open .panel-toggle,
+    body.is-popup-open .ol-zoom {
         display: none !important;
     }
 
