@@ -227,6 +227,44 @@ body {
     font-size: 14px;
 }
 
+/* Grouping toggle — Pengusul / Kabupaten */
+.group-mode {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+}
+
+.group-mode__btn {
+    min-height: 38px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.group-mode__btn:hover {
+    color: var(--text);
+}
+
+.group-mode__btn.is-active {
+    background: var(--accent);
+    color: var(--on-accent);
+}
+
+.group-mode__btn:focus-visible {
+    outline: 2px solid var(--accent-text);
+    outline-offset: 2px;
+}
+
 .sidebar-scroll {
     flex: 1;
     min-height: 0;

@@ -180,6 +180,7 @@
     var panelBackdrop = document.getElementById("panel-backdrop");
     var countPoints = document.getElementById("count-points");
     var countGroups = document.getElementById("count-groups");
+    var countGroupsLabel = document.getElementById("count-groups-label");
     var countVisible = document.getElementById("count-visible");
     var popup = document.getElementById("popup");
     var popupContent = document.getElementById("popup-content");
@@ -189,6 +190,51 @@
     // Selection overlay disabled — the layer's red pin is the only marker
     var pinStyle = null;
 
+    // Resolve each point's kabupaten/kota by which boundary polygon contains it
+    // (authoritative — avoids the messy Nomor prefix). Falls back to the Nomor
+    // prefix, then "Lainnya".
+    var kabupatenPolygons = window.lyr_BatasKabupaten2011_1
+      ? window.lyr_BatasKabupaten2011_1.getSource().getFeatures()
+      : [];
+
+    function resolveKabupaten(feature) {
+      var geom = feature.getGeometry();
+      if (!geom) {
+        return "Lainnya";
+      }
+      var ext = geom.getExtent();
+      var coord = [(ext[0] + ext[2]) / 2, (ext[1] + ext[3]) / 2];
+      for (var i = 0; i < kabupatenPolygons.length; i++) {
+        var pg = kabupatenPolygons[i].getGeometry();
+        if (pg && pg.intersectsCoordinate(coord)) {
+          return toDisplayCase(String(kabupatenPolygons[i].get("KABUPATEN_") || ""));
+        }
+      }
+      // Outside every polygon (a point sitting just off the boundary): snap to
+      // the nearest kabupaten so it never forms a stray single-point group.
+      var nearest = null;
+      var nearestDist = Infinity;
+      for (var j = 0; j < kabupatenPolygons.length; j++) {
+        var pg2 = kabupatenPolygons[j].getGeometry();
+        if (!pg2) {
+          continue;
+        }
+        var cp = pg2.getClosestPoint(coord);
+        var dx = cp[0] - coord[0];
+        var dy = cp[1] - coord[1];
+        var d = dx * dx + dy * dy;
+        if (d < nearestDist) {
+          nearestDist = d;
+          nearest = kabupatenPolygons[j];
+        }
+      }
+      if (nearest) {
+        return toDisplayCase(String(nearest.get("KABUPATEN_") || ""));
+      }
+      var prefix = String(feature.get("Nomor") || "").split("-")[0].trim();
+      return prefix ? toDisplayCase(prefix) : "Lainnya";
+    }
+
     var items = allFeatures
       .map(function (feature, index) {
         var nomor = String(feature.get("Nomor") || "-").trim();
@@ -197,6 +243,8 @@
         var keterangan = String(feature.get("Keterangan") || "").trim();
         var tanggal = String(feature.get("Tanggal Dokumentasi") || "").trim();
         var photo = String(feature.get("Foto Survey Awal") || "").trim();
+        var kabupaten = resolveKabupaten(feature);
+        feature.set("kabupaten", kabupaten);
 
         return {
           id: String(index),
@@ -207,6 +255,7 @@
           keterangan: keterangan,
           tanggal: tanggal,
           photo: photo,
+          kabupaten: kabupaten,
           display: buildDisplayParts(nomor),
           searchText: getNormalizedText(
             [nomor, nama, alamat, keterangan, tanggal].join(" ")
@@ -222,27 +271,41 @@
       featureLookup.set(item.feature, item);
     });
 
-    var groups = items.reduce(function (result, item) {
-      if (!result[item.nama]) {
-        result[item.nama] = [];
-      }
-      result[item.nama].push(item);
-      return result;
-    }, {});
+    function buildGroupedItems(mode) {
+      var keyFn =
+        mode === "kabupaten"
+          ? function (item) { return item.kabupaten; }
+          : function (item) { return item.nama; };
+      var groups = items.reduce(function (result, item) {
+        var key = keyFn(item) || "Lainnya";
+        if (!result[key]) {
+          result[key] = [];
+        }
+        result[key].push(item);
+        return result;
+      }, {});
+      return Object.keys(groups)
+        .sort(function (left, right) {
+          return collator.compare(left, right);
+        })
+        .map(function (name) {
+          return { name: name, items: groups[name] };
+        });
+    }
 
-    var groupedItems = Object.keys(groups)
-      .sort(function (left, right) {
-        return collator.compare(left, right);
-      })
-      .map(function (name) {
-        return {
-          name: name,
-          items: groups[name],
-        };
-      });
+    var groupMode = "nama";
+    var groupedItems = buildGroupedItems(groupMode);
+
+    function updateGroupStats() {
+      countGroups.textContent = groupedItems.length.toLocaleString("id-ID");
+      if (countGroupsLabel) {
+        countGroupsLabel.textContent =
+          groupMode === "kabupaten" ? "Wilayah" : "Pengusul";
+      }
+    }
 
     countPoints.textContent = items.length.toLocaleString("id-ID");
-    countGroups.textContent = groupedItems.length.toLocaleString("id-ID");
+    updateGroupStats();
 
     var expandedGroups = new Set();
 
@@ -412,7 +475,19 @@
         toggle.appendChild(meta);
 
         toggle.addEventListener("click", function () {
-          if (expandedGroups.has(group.name)) {
+          var wasExpanded = expandedGroups.has(group.name);
+          if (groupMode === "kabupaten") {
+            // Single-open: selecting a kabupaten focuses the map on it.
+            expandedGroups.clear();
+            if (wasExpanded) {
+              setMapKabupaten(null);
+              fitToAllPoints();
+            } else {
+              expandedGroups.add(group.name);
+              setMapKabupaten(group.name);
+              fitToKabupaten(group.name);
+            }
+          } else if (wasExpanded) {
             expandedGroups.delete(group.name);
           } else {
             expandedGroups.add(group.name);
@@ -502,6 +577,46 @@
       });
     }
 
+    // Map filter: show only the selected kabupaten's pins (null = show all).
+    var selectedKabupaten = null;
+    window.lyr_260331_4.setStyle(function (feature, resolution) {
+      if (selectedKabupaten && feature.get("kabupaten") !== selectedKabupaten) {
+        return null;
+      }
+      return style_260331_4(feature, resolution);
+    });
+
+    function setMapKabupaten(kab) {
+      selectedKabupaten = kab || null;
+      window.lyr_260331_4.changed();
+    }
+
+    function fitToKabupaten(kab) {
+      var feats = window.lyr_260331_4
+        .getSource()
+        .getFeatures()
+        .filter(function (f) {
+          return f.get("kabupaten") === kab;
+        });
+      if (!feats.length) {
+        return;
+      }
+      var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      feats.forEach(function (f) {
+        var e = f.getGeometry().getExtent();
+        if (e[0] < minX) minX = e[0];
+        if (e[1] < minY) minY = e[1];
+        if (e[2] > maxX) maxX = e[2];
+        if (e[3] > maxY) maxY = e[3];
+      });
+      var leftPadding = window.innerWidth >= 960 ? 56 : 24;
+      window.map.getView().fit([minX, minY, maxX, maxY], {
+        padding: [48, 40, 48, leftPadding],
+        maxZoom: 14,
+        duration: 700,
+      });
+    }
+
     function handleMapSingleClick(event) {
       var clickedFeature = window.map.forEachFeatureAtPixel(
         event.pixel,
@@ -536,10 +651,43 @@
     });
 
     fitButton.addEventListener("click", function () {
+      if (groupMode === "kabupaten") {
+        expandedGroups.clear();
+        setMapKabupaten(null);
+        renderList(searchInput.value);
+      }
       fitToAllPoints();
       if (window.innerWidth < 960) {
         setPanelOpen(false);
       }
+    });
+
+    // Grouping toggle: Pengusul (default) <-> Kabupaten/Kota
+    var groupModeButtons = Array.prototype.slice.call(
+      document.querySelectorAll(".group-mode__btn")
+    );
+
+    function applyGroupMode(mode) {
+      if (mode === groupMode) {
+        return;
+      }
+      groupMode = mode;
+      groupedItems = buildGroupedItems(groupMode);
+      expandedGroups.clear();
+      setMapKabupaten(null);
+      updateGroupStats();
+      groupModeButtons.forEach(function (btn) {
+        var on = btn.getAttribute("data-mode") === mode;
+        btn.classList.toggle("is-active", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      renderList(searchInput.value);
+    }
+
+    groupModeButtons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        applyGroupMode(btn.getAttribute("data-mode"));
+      });
     });
 
     // Keep the OpenLayers canvas filling its container while the sidebar
