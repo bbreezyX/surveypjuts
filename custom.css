@@ -1538,47 +1538,20 @@ body {
         margin-top: 74px;
     }
 
-    body.is-popup-open .layer-switcher {
+    body.is-popup-open .layer-switcher,
+    body.is-popup-open .panel-toggle {
         display: none !important;
     }
 
-    /* Neutralise OpenLayers' inline transform on the overlay wrapper so our
-       position:fixed popup escapes it and anchors to the viewport edge */
-    .ol-overlaycontainer,
-    .ol-overlaycontainer-stopevent,
-    .ol-overlay-container {
-        transform: none !important;
-    }
-
+    /* Popup stays anchored above the tapped pin (like desktop); only the
+       width/radius are tuned for small screens. The JS centres the pin low
+       enough that the card sits above it. */
     .ol-popup {
-        position: fixed !important;
-        left: 50% !important;
-        right: auto !important;
-        top: calc(74px + env(safe-area-inset-top, 0px)) !important;
-        bottom: auto !important;
         width: min(92vw, 380px) !important;
         max-width: min(92vw, 380px) !important;
         min-width: 0 !important;
         border-radius: 20px !important;
-        padding: 0 !important;
-        transform: translateX(-50%) !important;
         z-index: 2100 !important;
-        animation: popup-top-rise 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    }
-
-    @keyframes popup-top-rise {
-        from { opacity: 0; transform: translate(-50%, -16px); }
-        to   { opacity: 1; transform: translate(-50%, 0); }
-    }
-
-    /* Hide desktop pointer tail on mobile */
-    .ol-popup::after {
-        display: none !important;
-    }
-
-    /* No drag handle for top-anchored card */
-    .ol-popup::before {
-        display: none !important;
     }
 
     .ol-popup-closer {
@@ -1710,7 +1683,6 @@ body {
     }
 
     .ol-popup {
-        top: calc(64px + env(safe-area-inset-top, 0px)) !important;
         width: min(94vw, 360px) !important;
         max-width: min(94vw, 360px) !important;
     }
@@ -1826,12 +1798,10 @@ body {
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
-    .ol-popup {
-        top: calc(56px + env(safe-area-inset-top, 0px)) !important;
-    }
-
+    /* Keep the card short enough to sit fully above the pin (card + 56px gap
+       + pin must fit the short viewport). */
     #popup-content {
-        max-height: calc(100dvh - 80px);
+        max-height: calc(100dvh - 130px);
     }
 
     .feature-popup__media {

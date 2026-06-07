@@ -396,17 +396,15 @@
       var animateCenter = featureCenter;
       if (window.innerWidth < 960) {
         var size = window.map.getSize();
-        var mapEl = document.getElementById("map");
-        if (size && size[1] && popup && mapEl) {
+        if (size && size[1] && popup) {
           var targetResolution = view.getResolutionForZoom(targetZoom);
-          // Force layout so bounding rect reflects the new content
+          // Force layout so the height reflects the new content.
           void popup.offsetHeight;
-          var popupRect = popup.getBoundingClientRect();
-          var mapRect = mapEl.getBoundingClientRect();
-          var popupBottomInMap = popupRect.bottom - mapRect.top;
-          // Desired pin position: 64px below popup, clamped to keep it
-          // inside the visible map area.
-          var pinTargetY = Math.min(popupBottomInMap + 64, size[1] - 48);
+          var popupHeight = popup.offsetHeight;
+          // The popup is anchored above the pin; drop the pin low enough that
+          // the whole card clears the top, leaving the pin just below it.
+          // 18 = top margin, 56 = gap matching the popup's bottom offset.
+          var pinTargetY = Math.min(18 + popupHeight + 56, size[1] - 40);
           var offsetPxDown = pinTargetY - size[1] / 2;
           animateCenter = [
             featureCenter[0],
