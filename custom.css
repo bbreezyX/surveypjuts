@@ -1,17 +1,20 @@
 
 
 :root {
-    --bg: #f2f5f8;
+    --bg: #f5f7fa;
     --surface: #ffffff;
-    --surface-hover: #f0f4f9;
-    --border: rgba(0, 48, 73, 0.08);
-    --border-strong: rgba(0, 48, 73, 0.16);
-    --text: #003049;
-    --text-muted: rgba(0, 48, 73, 0.6);
-    --accent: #003049;
-    --accent-hover: rgba(0, 48, 73, 0.85);
-    --shadow-sm: 0 4px 12px rgba(0, 48, 73, 0.04);
-    --shadow-lg: 0 24px 64px rgba(0, 48, 73, 0.08);
+    --surface-hover: #eef2f7;
+    --border: rgba(11, 41, 66, 0.12);
+    --border-strong: rgba(11, 41, 66, 0.22);
+    --text: #0b2942;
+    --text-muted: #51677a;            /* solid, 5.9:1 on white (AA) */
+    --accent: #f59e0b;                /* amber emas — fill: badge, item aktif, hover */
+    --accent-hover: #d97706;          /* amber-600 — pressed/active fill */
+    --accent-text: #b45309;           /* amber-700 — amber sebagai TEKS (5.0:1, AA) */
+    --on-accent: #0b2942;             /* teks/ikon DI ATAS fill amber */
+    --shadow: 0 14px 30px rgba(11, 41, 66, 0.1);
+    --shadow-sm: 0 4px 12px rgba(11, 41, 66, 0.06);
+    --shadow-lg: 0 24px 64px rgba(11, 41, 66, 0.12);
     --radius-lg: 28px;
     --radius-md: 20px;
     --radius-sm: 14px;
@@ -121,7 +124,7 @@ body {
 
 .sidebar-kicker {
     margin: 0;
-    color: var(--accent);
+    color: var(--accent-text);
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.18em;
@@ -212,7 +215,7 @@ body {
 }
 
 .search-field input:focus-visible {
-    outline: 2px solid var(--surface-muted);
+    outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
 
@@ -358,7 +361,7 @@ body {
 
 .item.is-active {
     background: var(--accent);
-    color: #ffffff;
+    color: var(--on-accent);
     border-color: var(--accent);
     box-shadow: var(--shadow-sm);
     transform: translateY(-2px);
@@ -371,15 +374,15 @@ body {
     justify-content: center;
     border-radius: 999px;
     background: var(--surface-hover);
-    color: var(--accent);
+    color: var(--accent-text);
     font-size: 18px;
     font-weight: 700;
     letter-spacing: 0.04em;
 }
 
 .item.is-active .item-code {
-    background: rgba(255, 255, 255, 0.15);
-    color: #ffffff;
+    background: rgba(11, 41, 66, 0.12);
+    color: var(--on-accent);
 }
 
 .item-copy {
@@ -404,7 +407,7 @@ body {
 }
 
 .item.is-active .item-subline {
-    color: var(--bg);
+    color: rgba(11, 41, 66, 0.72);
 }
 
 .empty-state {
@@ -453,6 +456,97 @@ body {
     border-radius: 999px;
 }
 
+/* ============================================================
+   Desktop — collapsible sidebar (full-map mode)
+   The handle lives OUTSIDE the map (child of .app-shell) so the
+   map's overflow:hidden never clips it. It rides the panel/map
+   divider, vertically centred — clear of the +/- zoom buttons.
+   The chevron flips: ‹ = hide, › = show.
+   ============================================================ */
+@media (min-width: 960px) {
+    .app-shell {
+        transition:
+            grid-template-columns 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+            gap 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+            padding 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .map-frame {
+        transition: border-radius 0.32s ease;
+    }
+
+    .panel-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        top: 50%;
+        /* flush past the panel's right edge; the labelled pill sits on the
+           divider and extends over the map, clear of the zoom buttons */
+        left: calc(40px + var(--sidebar-width) + 8px);
+        min-height: 44px;
+        padding: 0 16px;
+        font-size: 14px;
+        border-radius: 999px;
+        transform: translateY(-50%);
+        box-shadow: var(--shadow);
+        transition:
+            left 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+            background-color 0.18s ease,
+            color 0.18s ease,
+            border-color 0.18s ease;
+    }
+
+    /* Keep it vertically centred on hover/focus (override the shared -1px lift). */
+    .panel-toggle:hover,
+    .panel-toggle:focus-visible {
+        transform: translateY(-50%);
+    }
+
+    .panel-toggle::before {
+        content: "";
+        flex-shrink: 0;
+        width: 7px;
+        height: 7px;
+        border: solid currentColor;
+        border-width: 0 2px 2px 0;
+        transform: rotate(135deg);          /* ‹ — click to hide */
+        transition: transform 0.28s ease;
+    }
+
+    body.is-sidebar-collapsed .panel-toggle {
+        left: 16px;                         /* slide to the left edge */
+    }
+
+    body.is-sidebar-collapsed .panel-toggle::before {
+        transform: rotate(-45deg);          /* › — click to show */
+    }
+
+    body.is-sidebar-collapsed .app-shell {
+        grid-template-columns: 0px 1fr;
+        gap: 0;
+        padding: 0;
+    }
+
+    body.is-sidebar-collapsed #sidebar {
+        opacity: 0;
+        transform: translateX(-24px);
+        pointer-events: none;
+        transition: opacity 0.18s ease, transform 0.28s ease;
+    }
+
+    body.is-sidebar-collapsed .map-frame {
+        border-radius: 0;
+        border: 0;
+    }
+}
+
+/* Tighter layout (960–1150px): smaller padding/gap + 360px panel track */
+@media (min-width: 960px) and (max-width: 1150px) {
+    .panel-toggle {
+        left: calc(14px + 360px + 8px);
+    }
+}
+
 .visually-hidden {
     position: absolute;
     width: 1px;
@@ -488,13 +582,13 @@ body {
 .ol-control:not(.layer-switcher) > *:hover,
 .ol-control:not(.layer-switcher) > *:focus-visible {
     background-color: var(--accent) !important;
-    color: #ffffff !important;
+    color: var(--on-accent) !important;
     border-color: var(--accent) !important;
 }
 
 .ol-control:not(.layer-switcher) > *:active {
     background-color: var(--accent-hover) !important;
-    color: #ffffff !important;
+    color: var(--on-accent) !important;
     border-color: var(--accent) !important;
     transform: scale(0.94);
 }
@@ -533,7 +627,7 @@ body {
     background-color: var(--surface) !important;
     border-radius: 14px !important;
     border: 1px solid var(--border) !important;
-    box-shadow: 0 14px 30px rgba(0, 48, 73, 0.08) !important;
+    box-shadow: var(--shadow) !important;
     width: 46px !important;
     height: 46px !important;
     display: block !important;
@@ -544,7 +638,7 @@ body {
 
 .layer-switcher > button:hover {
     background-color: var(--accent) !important;
-    color: #ffffff !important;
+    color: var(--on-accent) !important;
     border-color: var(--accent) !important;
     transform: translateY(-1px);
 }
@@ -664,7 +758,7 @@ body {
 
 .layer-switcher li input[type="checkbox"]:checked {
     background-color: var(--accent);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M1 5l3.2 3.2L11 1.4'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 10'%3E%3Cpath fill='none' stroke='%230b2942' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' d='M1 5l3.2 3.2L11 1.4'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: center;
     background-size: 11px 9px;
@@ -673,7 +767,7 @@ body {
 
 .layer-switcher li input[type="checkbox"]:indeterminate {
     background-color: var(--accent);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 2'%3E%3Crect width='10' height='2' rx='1' fill='white'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 2'%3E%3Crect width='10' height='2' rx='1' fill='%230b2942'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: center;
     background-size: 10px 2px;
@@ -785,7 +879,7 @@ body {
 
 .layer-switcher li.group > button:hover {
     background: var(--surface-hover) !important;
-    color: var(--accent);
+    color: var(--accent-text);
 }
 
 .layer-switcher li.group > button::after {
@@ -928,7 +1022,7 @@ body {
 }
 
 .bottom-attribution a {
-    color: var(--accent);
+    color: var(--accent-text);
     text-decoration: none;
 }
 
@@ -952,8 +1046,8 @@ body {
     border-radius: 22px;
     border: 1px solid var(--border);
     box-shadow:
-        0 24px 64px rgba(0, 48, 73, 0.14),
-        0 6px 18px rgba(0, 48, 73, 0.06);
+        0 24px 64px rgba(11, 41, 66, 0.18),
+        0 6px 18px rgba(11, 41, 66, 0.08);
     width: min(92vw, 400px);
     max-width: 400px;
     min-width: min(280px, 92vw);
@@ -976,7 +1070,7 @@ body {
     height: 0;
     border: 9px solid transparent;
     border-top-color: var(--surface);
-    filter: drop-shadow(0 2px 3px rgba(0, 48, 73, 0.08));
+    filter: drop-shadow(0 2px 3px rgba(11, 41, 66, 0.1));
     pointer-events: none;
 }
 
@@ -1073,12 +1167,11 @@ body {
 .feature-popup__eyebrow {
     margin: 0;
     padding-right: 44px; /* reserve space for close button */
-    color: var(--accent);
+    color: var(--accent-text);
     font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    opacity: 0.8;
 }
 
 .feature-popup__head {
@@ -1123,7 +1216,7 @@ body {
     align-items: center;
     justify-content: center;
     background: var(--accent);
-    color: #ffffff;
+    color: var(--on-accent);
     border-radius: 999px;
     font-size: 12px;
     font-weight: 700;
@@ -1162,7 +1255,7 @@ body {
     pointer-events: none;
     background: linear-gradient(
         to top,
-        rgba(0, 48, 73, 0.14) 0%,
+        rgba(11, 41, 66, 0.22) 0%,
         transparent 35%
     );
 }
@@ -1212,7 +1305,7 @@ body {
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 9px;
-    color: var(--accent);
+    color: var(--accent-text);
     font-size: 13px;
     flex-shrink: 0;
 }
@@ -1299,7 +1392,7 @@ body {
         inset: 0;
         display: block;
         border: 0;
-        background: rgba(0, 48, 73, 0.25);
+        background: rgba(11, 41, 66, 0.3);
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
         opacity: 0;
@@ -1718,17 +1811,20 @@ body {
         transition-duration: 0.01ms !important;
     }
 }
-.item.is-active .item-subline { color: rgba(255, 255, 255, 0.8) !important; }
-.item.is-active .item-label { color: #ffffff !important; }
+/* Library-specificity overrides — these keep !important to win against
+   ol-layerswitcher.css / qgis2web.css. Recolored for Solar Amber:
+   navy text/icon sits on the amber fill. */
+.item.is-active .item-subline { color: rgba(11, 41, 66, 0.72) !important; }
+.item.is-active .item-label { color: var(--on-accent) !important; }
 
 .layer-switcher > button:hover {
     background-color: var(--accent) !important;
-    color: #ffffff !important;
+    color: var(--on-accent) !important;
     border-color: var(--accent) !important;
 }
 
 .secondary-action:hover, .panel-toggle:hover {
     background-color: var(--accent) !important;
-    color: #ffffff !important;
+    color: var(--on-accent) !important;
     border-color: var(--accent) !important;
 }

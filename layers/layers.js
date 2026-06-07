@@ -57,13 +57,11 @@ var lyr_Lines_3 = new ol.layer.Vector({
                 interactive: false,
                 title: '<img src="styles/legend/Lines_3.png" /> Ruas Jalan'
             });
-var format_260331_4 = new ol.format.GeoJSON();
-var features_260331_4 = format_260331_4.readFeatures(json_260331_4, 
-            {dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'});
 var jsonSource_260331_4 = new ol.source.Vector({
     attributions: [],
+    url: './data/points.geojson',
+    format: new ol.format.GeoJSON()
 });
-jsonSource_260331_4.addFeatures(features_260331_4);
 var lyr_260331_4 = new ol.layer.Vector({
                 declutter: false,
                 source:jsonSource_260331_4, 

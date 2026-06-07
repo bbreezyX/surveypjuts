@@ -167,8 +167,11 @@
       window.map.un("singleclick", window.onSingleClickWMS);
     }
 
+    var pointSource = window.lyr_260331_4.getSource();
+
+    function init() {
     var collator = getCollator();
-    var allFeatures = window.lyr_260331_4.getSource().getFeatures().slice();
+    var allFeatures = pointSource.getFeatures().slice();
     var listContainer = document.getElementById("list-data");
     var searchInput = document.getElementById("list-search");
     var fitButton = document.getElementById("fit-map");
@@ -523,8 +526,13 @@
       focusItem(item, { closePanel: true, zoom: 17, coordinate: event.coordinate });
     }
 
+    var searchDebounce;
     searchInput.addEventListener("input", function (event) {
-      renderList(event.target.value);
+      var value = event.target.value;
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(function () {
+        renderList(value);
+      }, 150);
     });
 
     fitButton.addEventListener("click", function () {
@@ -534,10 +542,48 @@
       }
     });
 
+    // Keep the OpenLayers canvas filling its container while the sidebar
+    // slides in/out (the map needs updateSize() after the box resizes).
+    function refreshMapSizeDuring(duration) {
+      var start = null;
+      function step(timestamp) {
+        if (window.map && typeof window.map.updateSize === "function") {
+          window.map.updateSize();
+        }
+        if (start === null) {
+          start = timestamp;
+        }
+        if (timestamp - start < duration) {
+          requestAnimationFrame(step);
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    // Desktop: collapse the sidebar to a full-width map (mobile keeps its modal).
+    function setSidebarCollapsed(collapsed) {
+      document.body.classList.toggle("is-sidebar-collapsed", collapsed);
+      if (panelToggle) {
+        panelToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      }
+      refreshMapSizeDuring(380);
+    }
+
     if (panelToggle) {
       panelToggle.addEventListener("click", function () {
-        setPanelOpen(!document.body.classList.contains("is-panel-open"));
+        if (window.innerWidth >= 960) {
+          setSidebarCollapsed(
+            !document.body.classList.contains("is-sidebar-collapsed")
+          );
+        } else {
+          setPanelOpen(!document.body.classList.contains("is-panel-open"));
+        }
       });
+
+      // On desktop the sidebar starts open, so reflect that on the toggle.
+      if (window.innerWidth >= 960) {
+        panelToggle.setAttribute("aria-expanded", "true");
+      }
     }
 
     if (panelClose) {
@@ -561,6 +607,8 @@
     window.addEventListener("resize", function () {
       if (window.innerWidth >= 960) {
         setPanelOpen(false);
+      } else {
+        document.body.classList.remove("is-sidebar-collapsed");
       }
     });
 
@@ -612,5 +660,14 @@
     });
 
     renderList("");
+    }
+
+    // Data titik dimuat async dari data/points.geojson — jalankan init
+    // begitu fitur selesai dimuat (atau langsung kalau sudah ada).
+    if (pointSource.getFeatures().length) {
+      init();
+    } else {
+      pointSource.once("featuresloadend", init);
+    }
   });
 })();

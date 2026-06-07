@@ -1,3 +1,19 @@
+# Tooling / local state — never needed in the image
+.git
+.gitignore
+.dockerignore
+.vscode
+.claude
+.remember
 .playwright-mcp
 __pycache__
 node_modules
+
+# Build-time only (runs on host before deploy)
+scripts
+Dockerfile
+README.md
+
+# Stray scripts / debug artifacts that shouldn't be web-served
+*.py
+render-check-*.png
