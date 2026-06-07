@@ -21,11 +21,11 @@ var jsonSource_BatasKabupaten2011_1 = new ol.source.Vector({
 jsonSource_BatasKabupaten2011_1.addFeatures(features_BatasKabupaten2011_1);
 var lyr_BatasKabupaten2011_1 = new ol.layer.Vector({
                 declutter: false,
-                source:jsonSource_BatasKabupaten2011_1, 
+                source:jsonSource_BatasKabupaten2011_1,
                 style: style_BatasKabupaten2011_1,
-                popuplayertitle: 'Batas Kabupaten',
+                popuplayertitle: 'Batas Kabupaten/Kota',
                 interactive: false,
-                title: 'Batas Kabupaten'
+                title: 'Batas Kabupaten/Kota'
             });
 var format_Dissolved_2 = new ol.format.GeoJSON();
 var features_Dissolved_2 = format_Dissolved_2.readFeatures(json_Dissolved_2, 
@@ -59,7 +59,7 @@ var lyr_Lines_3 = new ol.layer.Vector({
             });
 var jsonSource_260331_4 = new ol.source.Vector({
     attributions: [],
-    url: './data/points.geojson',
+    url: './data/points.geojson?v=20260607',
     format: new ol.format.GeoJSON()
 });
 var lyr_260331_4 = new ol.layer.Vector({
@@ -75,8 +75,11 @@ var group_RAW = new ol.layer.Group({
                                 fold: 'open',
                                 title: 'Data Lapangan'});
 
-lyr_GoogleSatellite_0.setVisible(true);lyr_BatasKabupaten2011_1.setVisible(true);lyr_Dissolved_2.setVisible(true);lyr_Lines_3.setVisible(true);lyr_260331_4.setVisible(true);
-var layersList = [lyr_GoogleSatellite_0,lyr_BatasKabupaten2011_1,lyr_Dissolved_2,lyr_Lines_3,group_RAW];
+lyr_GoogleSatellite_0.setVisible(true);lyr_BatasKabupaten2011_1.setVisible(true);lyr_Dissolved_2.setVisible(false);lyr_260331_4.setVisible(true);
+// "Ruas Jalan" (lyr_Lines_3) dropped from the map — it duplicated the kabupaten
+// boundary, which is now drawn (outline + label) by lyr_BatasKabupaten2011_1.
+// Area Cakupan (Dissolved) sits below the boundary so its fill never hides the line.
+var layersList = [lyr_GoogleSatellite_0,lyr_Dissolved_2,lyr_BatasKabupaten2011_1,group_RAW];
 lyr_BatasKabupaten2011_1.set('fieldAliases', {'FIRST_NEG_': 'FIRST_NEG_', 'FIRST_PRO_': 'FIRST_PRO_', 'KABUPATEN_': 'KABUPATEN_', 'SHAPE_LENG': 'SHAPE_LENG', 'SHAPE_AREA': 'SHAPE_AREA', 'AREA': 'AREA', 'PERIMETER': 'PERIMETER', 'ACRES': 'ACRES', 'HECTARES': 'HECTARES', });
 lyr_Dissolved_2.set('fieldAliases', {'FIRST_NEG_': 'FIRST_NEG_', 'FIRST_PRO_': 'FIRST_PRO_', 'KABUPATEN_': 'KABUPATEN_', 'SHAPE_LENG': 'SHAPE_LENG', 'SHAPE_AREA': 'SHAPE_AREA', 'AREA': 'AREA', 'PERIMETER': 'PERIMETER', 'ACRES': 'ACRES', 'HECTARES': 'HECTARES', });
 lyr_Lines_3.set('fieldAliases', {'FIRST_NEG_': 'FIRST_NEG_', 'FIRST_PRO_': 'FIRST_PRO_', 'KABUPATEN_': 'KABUPATEN_', 'SHAPE_LENG': 'SHAPE_LENG', 'SHAPE_AREA': 'SHAPE_AREA', 'AREA': 'AREA', 'PERIMETER': 'PERIMETER', 'ACRES': 'ACRES', 'HECTARES': 'HECTARES', });

@@ -7,11 +7,11 @@ var style_BatasKabupaten2011_1 = function(feature, resolution){
         variables: {}
     };
     
-    var labelText = ""; 
+    var labelText = "";
     var value = feature.get("''");
-    var labelFont = "20.8px \'Open Sans\', sans-serif";
-    var labelFill = "#323232";
-    var bufferColor = "#fafafa";
+    var labelFont = "700 13px \'Source Sans 3\', sans-serif";
+    var labelFill = "#ffffff";
+    var bufferColor = "rgba(11, 41, 66, 0.9)";
     var bufferWidth = 3.0;
     var textAlign = "left";
     var offsetX = 0;
@@ -20,8 +20,9 @@ var style_BatasKabupaten2011_1 = function(feature, resolution){
     if (feature.get("KABUPATEN_") !== null) {
         labelText = String(feature.get("KABUPATEN_"));
     }
-    
+
     var style = [ new ol.style.Style({
+        stroke: new ol.style.Stroke({color: 'rgba(255, 255, 255, 0.85)', width: 1.6}),
         text: createTextStyle(feature, resolution, labelText, labelFont,
                               labelFill, placement, bufferColor, bufferWidth)
     })];;
