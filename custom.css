@@ -228,6 +228,20 @@ body {
 }
 
 /* Grouping toggle — Pengusul / Kabupaten */
+.group-mode-field {
+    display: grid;
+    gap: 6px;
+    justify-items: center;
+}
+
+.group-mode-label {
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
 .group-mode {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -236,6 +250,7 @@ body {
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 12px;
+    width: 100%;
 }
 
 .group-mode__btn {
