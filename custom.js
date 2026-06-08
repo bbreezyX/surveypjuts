@@ -24,6 +24,26 @@
     return String(value || "").replace(/[\\/:]/g, "_").trim();
   }
 
+  function formatCoordinate(value) {
+    var num = typeof value === "number" ? value : parseFloat(value);
+    if (!isFinite(num)) {
+      return "";
+    }
+    return String(num);
+  }
+
+  // Inline Lucide icons (https://lucide.dev, ISC) — no icon-font dependency.
+  // Sized/coloured via CSS (.meta-icon svg uses em + currentColor).
+  function lucideIcon(paths) {
+    return (
+      '<svg class="lucide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" ' +
+      'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+      'stroke-linejoin="round" aria-hidden="true" focusable="false">' +
+      paths +
+      "</svg>"
+    );
+  }
+
   function getCollator() {
     return new Intl.Collator("id", {
       numeric: true,
@@ -65,11 +85,38 @@
     var photoPath = item.photo ? sanitizeMediaPath(item.photo) : "";
 
     var fieldIcons = {
-      nama: '<i class="fas fa-user-check"></i>',
-      alamat: '<i class="fas fa-map-marker-alt"></i>',
-      tanggal: '<i class="fas fa-calendar-alt"></i>',
-      keterangan: '<i class="fas fa-info-circle"></i>'
+      nama: lucideIcon(
+        '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>' +
+          '<circle cx="9" cy="7" r="4"/>' +
+          '<polyline points="16 11 18 13 22 9"/>'
+      ),
+      alamat: lucideIcon(
+        '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>' +
+          '<circle cx="12" cy="10" r="3"/>'
+      ),
+      koordinat: lucideIcon(
+        '<line x1="2" x2="5" y1="12" y2="12"/>' +
+          '<line x1="19" x2="22" y1="12" y2="12"/>' +
+          '<line x1="12" x2="12" y1="2" y2="5"/>' +
+          '<line x1="12" x2="12" y1="19" y2="22"/>' +
+          '<circle cx="12" cy="12" r="7"/>' +
+          '<circle cx="12" cy="12" r="3"/>'
+      ),
+      tanggal: lucideIcon(
+        '<path d="M8 2v4"/>' +
+          '<path d="M16 2v4"/>' +
+          '<rect width="18" height="18" x="3" y="4" rx="2"/>' +
+          '<path d="M3 10h18"/>'
+      ),
+      keterangan: lucideIcon(
+        '<circle cx="12" cy="12" r="10"/>' +
+          '<path d="M12 16v-4"/>' +
+          '<path d="M12 8h.01"/>'
+      )
     };
+
+    var latitude = formatCoordinate(item.latitude);
+    var longitude = formatCoordinate(item.longitude);
 
     if (item.nama) {
       rows.push(
@@ -85,6 +132,15 @@
         '<div class="feature-popup__meta-row">' +
           '<div class="meta-icon">' + fieldIcons.alamat + '</div>' +
           '<div><dt>Alamat</dt><dd>' + escapeHtml(item.alamat) + "</dd></div>" +
+        "</div>"
+      );
+    }
+
+    if (latitude && longitude) {
+      rows.push(
+        '<div class="feature-popup__meta-row">' +
+          '<div class="meta-icon">' + fieldIcons.koordinat + '</div>' +
+          '<div><dt>Koordinat</dt><dd>' + escapeHtml(latitude + ", " + longitude) + "</dd></div>" +
         "</div>"
       );
     }
@@ -243,6 +299,8 @@
         var keterangan = String(feature.get("Keterangan") || "").trim();
         var tanggal = String(feature.get("Tanggal Dokumentasi") || "").trim();
         var photo = String(feature.get("Foto Survey Awal") || "").trim();
+        var longitude = feature.get("Longitude");
+        var latitude = feature.get("Latitude");
         var kabupaten = resolveKabupaten(feature);
         feature.set("kabupaten", kabupaten);
 
@@ -252,6 +310,8 @@
           nomor: nomor,
           nama: nama,
           alamat: alamat,
+          longitude: longitude,
+          latitude: latitude,
           keterangan: keterangan,
           tanggal: tanggal,
           photo: photo,

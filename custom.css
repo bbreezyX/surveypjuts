@@ -1132,41 +1132,62 @@ body {
     to   { opacity: 1; transform: translate(-50%, 0); }
 }
 
-/* Close button — soft ghost */
+/* Close button — tidy circular ghost with a crisp, centered ✕ */
 .ol-popup-closer {
     position: absolute;
     top: 12px;
     right: 12px;
     width: 32px;
     height: 32px;
-    border-radius: 10px;
-    background: transparent;
-    border: 1px solid transparent;
+    border-radius: 50%;
+    background: var(--surface-hover);
+    border: 1px solid var(--border);
     color: var(--text-muted);
-    font-family: inherit;
-    font-weight: 700;
     display: flex;
-    align-items: center;
-    justify-content: center;
     text-decoration: none;
     z-index: 3;
     cursor: pointer;
-    transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.18s ease, color 0.18s ease,
+        border-color 0.18s ease, box-shadow 0.18s ease, transform 0.12s ease;
 }
 
 .ol-popup-closer:hover,
 .ol-popup-closer:focus-visible {
-    background: var(--surface-hover);
-    border-color: var(--border);
+    background: color-mix(in srgb, var(--text) 12%, var(--surface));
+    border-color: var(--border-strong);
     color: var(--text);
     outline: none;
     transform: none;
 }
 
+.ol-popup-closer:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 38%, transparent);
+}
+
+.ol-popup-closer:active {
+    transform: scale(0.92);
+}
+
+/* The ✕ — two crisp bars, optically centered (no font-glyph drift) */
+.ol-popup-closer::before,
 .ol-popup-closer::after {
-    content: "\00d7";
-    font-size: 20px;
-    line-height: 1;
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 13px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+}
+
+.ol-popup-closer::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.ol-popup-closer::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 /* ============================================================
@@ -1361,6 +1382,15 @@ body {
     color: var(--accent-text);
     font-size: 13px;
     flex-shrink: 0;
+}
+
+/* Inline Lucide SVG icons — scale with the tile's font-size (em) so the
+   responsive .meta-icon breakpoints shrink them automatically; colour
+   follows currentColor (--accent-text). */
+.meta-icon svg {
+    width: 1.35em;
+    height: 1.35em;
+    display: block;
 }
 
 .feature-popup__meta dt {
