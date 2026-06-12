@@ -35,7 +35,7 @@
     />
     <link rel="stylesheet" href="./resources/ol-layerswitcher.css?v=20260421" />
     <link rel="stylesheet" href="./resources/qgis2web.css?v=20260421" />
-    <link rel="stylesheet" href="./custom.css?v=20260612i" />
+    <link rel="stylesheet" href="./custom.css?v=20260612j" />
     <title>Peta Sebaran PJUTS 2026 · Penerangan Jalan Umum Tenaga Surya Provinsi Jambi</title>
   </head>
   <body>
@@ -98,23 +98,26 @@
             </button>
           </div>
 
-          <div class="group-mode" role="group" aria-label="Kelompokkan titik">
-            <button
-              type="button"
-              class="group-mode__btn is-active"
-              data-mode="nama"
-              aria-pressed="true"
-            >
-              Pengusul
-            </button>
-            <button
-              type="button"
-              class="group-mode__btn"
-              data-mode="kabupaten"
-              aria-pressed="false"
-            >
-              Kabupaten
-            </button>
+          <div class="group-mode-field">
+            <span class="group-mode-label" id="group-mode-label">Kelompokkan berdasarkan:</span>
+            <div class="group-mode" role="group" aria-labelledby="group-mode-label">
+              <button
+                type="button"
+                class="group-mode__btn is-active"
+                data-mode="nama"
+                aria-pressed="true"
+              >
+                Pengusul
+              </button>
+              <button
+                type="button"
+                class="group-mode__btn"
+                data-mode="kabupaten"
+                aria-pressed="false"
+              >
+                Kabupaten
+              </button>
+            </div>
           </div>
         </div>
 

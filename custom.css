@@ -263,6 +263,18 @@ body.is-sidebar-collapsed #sidebar {
     box-shadow: none;
 }
 
+.group-mode-field {
+    display: grid;
+    gap: 7px;
+}
+
+.group-mode-label {
+    font: 600 11px var(--font-display);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+}
+
 .group-mode {
     display: flex;
     gap: 18px;
