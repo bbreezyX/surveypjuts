@@ -716,6 +716,11 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     display: none;
 }
 
+/* qgis2web's feature-search control — superseded by the panel search */
+.search-layer {
+    display: none;
+}
+
 /* ---------- Layer switcher ---------- */
 
 .layer-switcher {
@@ -842,7 +847,8 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         display: block;
         flex-shrink: 0;
         width: 100%;
-        padding: 10px 0 4px;
+        min-height: 40px;
+        padding: 14px 0 8px;
         background: none;
         border: none;
         cursor: pointer;
@@ -860,12 +866,12 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 
     #sidebar-close {
         position: absolute;
-        top: 10px;
+        top: 8px;
         right: 12px;
         z-index: 2;
         display: none;
-        width: 34px;
-        height: 34px;
+        width: 40px;
+        height: 40px;
         align-items: center;
         justify-content: center;
         border: 1px solid var(--hairline-strong);
@@ -970,6 +976,11 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 
     .ol-zoom {
         bottom: calc(var(--sheet-peek) + 16px);
+    }
+
+    .ol-zoom button {
+        width: 42px;
+        height: 40px;
     }
 
     .ol-scale-line {
