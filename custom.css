@@ -723,19 +723,22 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 
 /* ---------- Layer switcher ---------- */
 
-.layer-switcher {
+/* The container inherits .ol-control chrome (40% white film, radius,
+   padding) from ol.css plus a dark drop shadow from qgis2web.css — that
+   combination reads as a faint white halo around the panel. Kill it in
+   every state; the chip and the panel carry their own surfaces. */
+.layer-switcher,
+.layer-switcher:hover,
+.layer-switcher.shown,
+.layer-switcher.shown.ol-control,
+.layer-switcher.shown.ol-control:hover {
     position: absolute;
     top: 16px;
     right: 16px;
-    background: transparent;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0;
     padding: 0;
-}
-
-.layer-switcher.shown,
-.layer-switcher.shown.ol-control,
-.layer-switcher.shown.ol-control:hover,
-.layer-switcher:hover {
-    background: transparent;
 }
 
 /* The chip styling belongs to the main toggle ONLY — the group fold
@@ -754,7 +757,7 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 }
 
 .layer-switcher .panel {
-    margin-top: 6px;
+    margin: 0 !important;
     border: 1px solid var(--hairline-strong);
     border-radius: var(--radius-md);
     background: var(--surface);
