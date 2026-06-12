@@ -486,6 +486,7 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     left: 0;
     transform: translateX(-50%);
     width: 300px;
+    padding: 0;
     background: var(--surface);
     border: 1px solid var(--hairline-strong);
     border-radius: var(--radius-md);
@@ -536,6 +537,12 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 
 .ol-popup-closer::after {
     content: "\2715";
+}
+
+/* qgis2web caps #popup-content at 70vw — on phones that leaves a dead
+   strip inside the card. The card (.ol-popup) owns the width. */
+#popup-content {
+    max-width: none;
 }
 
 .feature-popup {
@@ -1094,6 +1101,12 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         max-height: 62dvh;
         overflow-y: auto;
         z-index: 22;
+    }
+
+    /* The card scrolls; the inner content must not nest its own scroller */
+    #popup-content {
+        max-height: none;
+        overflow: visible;
     }
 
     .ol-popup::after {
