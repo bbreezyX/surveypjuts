@@ -470,7 +470,8 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 
 .ol-popup {
     position: absolute;
-    bottom: 26px;
+    /* 48px clears the 40px-tall selected pin below the card */
+    bottom: 48px;
     left: 0;
     transform: translateX(-50%);
     width: 300px;

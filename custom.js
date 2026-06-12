@@ -178,8 +178,23 @@
 
     var activeItemId = null;
 
-    // Selection overlay disabled — the layer's red pin is the only marker
-    var pinStyle = null;
+    // Selected pin: enlarged with a white ring, drawn on the feature overlay
+    // above the layer's yellow pin.
+    var selectedPinSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 36 48">' +
+        '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23fee50f" stroke="%23ffffff" stroke-width="3"/>' +
+        '<circle cx="18" cy="18" r="6.5" fill="%23293d50"/>' +
+      '</svg>';
+    var pinStyle = new ol.style.Style({
+      image: new ol.style.Icon({
+        src: "data:image/svg+xml," + selectedPinSvg,
+        anchor: [0.5, 1],
+        anchorXUnits: "fraction",
+        anchorYUnits: "fraction",
+        scale: 1
+      }),
+      zIndex: 10
+    });
 
     // Resolve each point's kabupaten/kota by which boundary polygon contains it
     // (authoritative — avoids the messy Nomor prefix). Falls back to the Nomor
