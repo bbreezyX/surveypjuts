@@ -71,59 +71,46 @@
       keterangan: '<i class="fas fa-info-circle"></i>'
     };
 
+    function metaRow(icon, label, value) {
+      return (
+        '<div class="feature-popup__meta-row">' +
+          '<div class="meta-icon">' + icon + '</div>' +
+          '<div><dt>' + label + '</dt><dd>' + escapeHtml(value) + '</dd></div>' +
+        "</div>"
+      );
+    }
+
     if (item.nama) {
-      rows.push(
-        '<div class="feature-popup__meta-row">' +
-          '<div class="meta-icon">' + fieldIcons.nama + '</div>' +
-          '<div><dt>Nama Pengusul</dt><dd>' + escapeHtml(item.nama) + "</dd></div>" +
-        "</div>"
-      );
+      rows.push(metaRow(fieldIcons.nama, "Pengusul", item.nama));
     }
-
     if (item.alamat) {
-      rows.push(
-        '<div class="feature-popup__meta-row">' +
-          '<div class="meta-icon">' + fieldIcons.alamat + '</div>' +
-          '<div><dt>Alamat</dt><dd>' + escapeHtml(item.alamat) + "</dd></div>" +
-        "</div>"
-      );
+      rows.push(metaRow(fieldIcons.alamat, "Alamat", item.alamat));
     }
-
     if (item.tanggal) {
-      rows.push(
-        '<div class="feature-popup__meta-row">' +
-          '<div class="meta-icon">' + fieldIcons.tanggal + '</div>' +
-          '<div><dt>Dokumentasi</dt><dd>' + escapeHtml(item.tanggal) + "</dd></div>" +
-        "</div>"
-      );
+      rows.push(metaRow(fieldIcons.tanggal, "Dokumentasi", item.tanggal));
+    }
+    if (item.keterangan) {
+      rows.push(metaRow(fieldIcons.keterangan, "Keterangan", item.keterangan));
     }
 
-    if (item.keterangan) {
-      rows.push(
-        '<div class="feature-popup__meta-row">' +
-          '<div class="meta-icon">' + fieldIcons.keterangan + '</div>' +
-          '<div><dt>Keterangan</dt><dd>' + escapeHtml(item.keterangan) + "</dd></div>" +
-        "</div>"
-      );
-    }
+    var kicker =
+      "Titik " + escapeHtml(item.display.code) +
+      (item.kabupaten ? " · " + escapeHtml(item.kabupaten) : "");
 
     return (
       '<div class="feature-popup">' +
-      '<p class="feature-popup__eyebrow">Informasi Titik PJUTS</p>' +
-      '<div class="feature-popup__head">' +
-      '<div class="feature-popup__head-copy">' +
-      '<h3 class="feature-popup__title">' + escapeHtml(item.display.primary) + "</h3>" +
-      '<p class="feature-popup__subtitle">' + escapeHtml(item.display.secondary) + "</p>" +
-      "</div>" +
-      '<span class="feature-popup__badge" aria-label="Nomor titik">' + escapeHtml(item.display.code) + "</span>" +
-      "</div>" +
       (photoPath
         ? '<div class="feature-popup__media">' +
           '<img src="images/' + encodeURI(photoPath) + '" alt="Foto lokasi ' + escapeHtml(item.nomor) + '" loading="lazy" />' +
-          '<div class="media-overlay" aria-hidden="true"></div>' +
+          '<span class="feature-popup__media-badge">Foto survey awal</span>' +
           "</div>"
         : "") +
+      '<div class="feature-popup__body">' +
+      '<p class="feature-popup__eyebrow">' + kicker + "</p>" +
+      '<h3 class="feature-popup__title">' + escapeHtml(item.display.primary) + "</h3>" +
       (rows.length ? '<dl class="feature-popup__meta">' + rows.join("") + "</dl>" : "") +
+      '<div class="feature-popup__rule"></div>' +
+      "</div>" +
       "</div>"
     );
   }
@@ -152,6 +139,10 @@
     var toggle = document.getElementById("panel-toggle");
     if (toggle) {
       toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    }
+    var handle = document.getElementById("sheet-handle");
+    if (handle) {
+      handle.setAttribute("aria-expanded", isOpen ? "true" : "false");
     }
   }
 
@@ -300,7 +291,7 @@
       countGroups.textContent = groupedItems.length.toLocaleString("id-ID");
       if (countGroupsLabel) {
         countGroupsLabel.textContent =
-          groupMode === "kabupaten" ? "Wilayah" : "Pengusul";
+          groupMode === "kabupaten" ? "wilayah" : "pengusul";
       }
     }
 
@@ -390,21 +381,14 @@
         view.cancelAnimations();
       }
 
-      // On mobile the popup sits at the top of the map. Measure its real
-      // rendered height so the pin lands just below it (small gap), rather
-      // than arbitrarily far down the viewport.
+      // Mobile: the popup docks at the bottom of the screen, so pan the pin
+      // into the upper third where the card can never cover it.
       var animateCenter = featureCenter;
       if (window.innerWidth < 960) {
         var size = window.map.getSize();
-        if (size && size[1] && popup) {
+        if (size && size[1]) {
           var targetResolution = view.getResolutionForZoom(targetZoom);
-          // Force layout so the height reflects the new content.
-          void popup.offsetHeight;
-          var popupHeight = popup.offsetHeight;
-          // The popup is anchored above the pin; drop the pin low enough that
-          // the whole card clears the top, leaving the pin just below it.
-          // 18 = top margin, 56 = gap matching the popup's bottom offset.
-          var pinTargetY = Math.min(18 + popupHeight + 56, size[1] - 40);
+          var pinTargetY = size[1] * 0.32;
           var offsetPxDown = pinTargetY - size[1] / 2;
           animateCenter = [
             featureCenter[0],
@@ -743,6 +727,20 @@
         setPanelOpen(false);
       });
     }
+
+    var sheetHandle = document.getElementById("sheet-handle");
+    if (sheetHandle) {
+      sheetHandle.addEventListener("click", function () {
+        setPanelOpen(!document.body.classList.contains("is-panel-open"));
+      });
+    }
+
+    // Focusing search from the peek sheet expands it so results are visible.
+    searchInput.addEventListener("focus", function () {
+      if (window.innerWidth < 960) {
+        setPanelOpen(true);
+      }
+    });
 
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape") {
