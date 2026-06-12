@@ -248,12 +248,19 @@ body.is-sidebar-collapsed #sidebar {
     color: var(--blue-deep);
     font: 600 13px var(--font-display);
     cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .secondary-action:hover {
     background: var(--blue-tint);
     border-color: var(--blue);
+    box-shadow: 0 6px 16px rgba(0, 114, 188, 0.18);
+    transform: translateY(-1px);
+}
+
+.secondary-action:active {
+    transform: translateY(0);
+    box-shadow: none;
 }
 
 .group-mode {
@@ -440,7 +447,11 @@ body.is-sidebar-collapsed #sidebar {
 }
 
 .panel-toggle:hover {
-    background: var(--blue-tint);
+    background: var(--surface);
+}
+
+.panel-toggle:hover .panel-toggle__chevron {
+    border-color: var(--blue);
 }
 
 body.is-sidebar-collapsed .panel-toggle {
@@ -641,6 +652,23 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     box-shadow: var(--shadow-sm);
     overflow: hidden;
     padding: 0;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+/* Shared chip hover: blue border, 1px lift, soft blue glow */
+.ol-zoom:hover,
+.layer-switcher > button:hover,
+.panel-toggle:hover {
+    border-color: var(--blue);
+    box-shadow: 0 8px 22px rgba(0, 114, 188, 0.28);
+    transform: translateY(-1px);
+}
+
+.ol-zoom:active,
+.layer-switcher > button:active,
+.panel-toggle:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
 }
 
 .ol-zoom button {
@@ -654,13 +682,19 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     font-size: 18px;
     font-weight: 500;
     cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .ol-zoom button:hover,
 .ol-zoom button:focus {
     background: var(--blue-tint);
-    color: var(--ink);
+    color: var(--blue);
     outline: none;
+}
+
+.ol-zoom button:active {
+    background: var(--hairline);
+    color: var(--blue-deep);
 }
 
 .ol-zoom .ol-zoom-in {
@@ -771,6 +805,12 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     background-repeat: no-repeat;
     box-shadow: var(--shadow-sm);
     cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
+}
+
+.layer-switcher > button:hover {
+    background-color: var(--surface);
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%230072bc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 9l9 5 9-5-9-5z"/><path d="m3 14 9 5 9-5"/></svg>');
 }
 
 .layer-switcher .panel {
