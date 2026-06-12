@@ -40,39 +40,52 @@
   </head>
   <body>
     <div class="app-shell">
+      <header class="masthead">
+        <img
+          class="masthead-lambang"
+          src="./assets/lambang-jambi.svg"
+          alt="Lambang Provinsi Jambi"
+          width="34"
+          height="40"
+        />
+        <div class="masthead-copy">
+          <p class="masthead-kicker">Pemprov Jambi &middot; Dinas ESDM</p>
+          <h1 class="masthead-title">Atlas PJUTS 2026</h1>
+        </div>
+      </header>
+
       <aside id="sidebar" aria-label="Daftar titik PJUTS">
         <button
-          id="sidebar-close"
+          id="sheet-handle"
           type="button"
-          aria-label="Tutup panel data"
-        >
+          aria-controls="sidebar"
+          aria-expanded="false"
+          aria-label="Buka atau tutup daftar titik"
+        ></button>
+        <button id="sidebar-close" type="button" aria-label="Tutup panel data">
           &times;
         </button>
 
         <div class="sidebar-header">
-          <div class="sidebar-brand">
-            <p class="sidebar-kicker">Provinsi Jambi &middot; 2026</p>
-            <h1 class="sidebar-title">Peta Sebaran PJUTS</h1>
-          </div>
-
           <div class="sidebar-stats" aria-label="Ringkasan data">
-            <div class="stat-card">
+            <div class="stat stat--lead">
               <strong id="count-points">0</strong>
-              <span>Titik</span>
+              <span>titik</span>
             </div>
-            <div class="stat-card">
+            <div class="stat">
               <strong id="count-groups">0</strong>
-              <span id="count-groups-label">Pengusul</span>
+              <span id="count-groups-label">pengusul</span>
             </div>
-            <div class="stat-card">
+            <div class="stat">
               <strong id="count-visible">0</strong>
-              <span>Tampil</span>
+              <span>tampil</span>
             </div>
           </div>
 
           <div class="sidebar-actions">
             <label class="search-field" for="list-search">
               <span class="visually-hidden">Cari titik PJUTS</span>
+              <i class="fas fa-search search-icon" aria-hidden="true"></i>
               <input
                 id="list-search"
                 type="search"
@@ -106,17 +119,12 @@
         </div>
 
         <div class="sidebar-scroll">
-          <p class="sidebar-hint">
-            Titik penerangan jalan umum tenaga surya hasil survey lapangan.
-            Dikelompokkan berdasarkan nama pengusul untuk memudahkan
-            penelusuran data.
-          </p>
           <div id="list-data" aria-live="polite"></div>
-          <p class="sidebar-footer">
-            Gunakan tombol layer di kanan atas untuk menyalakan atau mematikan
-            lapisan peta.
-          </p>
         </div>
+
+        <p class="sidebar-footer">
+          Sumber: survey lapangan 2026 &middot; Dinas ESDM Provinsi Jambi
+        </p>
       </aside>
 
       <button
@@ -132,14 +140,15 @@
         type="button"
         aria-controls="sidebar"
         aria-expanded="false"
+        aria-label="Tampilkan atau sembunyikan panel data"
       >
-        Data PJUTS
+        <span class="panel-toggle__chevron" aria-hidden="true"></span>
       </button>
 
       <main class="map-frame">
         <div id="map" aria-label="Peta sebaran PJUTS">
           <div id="popup" class="ol-popup">
-            <a href="#" id="popup-closer" class="ol-popup-closer"></a>
+            <a href="#" id="popup-closer" class="ol-popup-closer" aria-label="Tutup info titik"></a>
             <div id="popup-content"></div>
           </div>
         </div>
