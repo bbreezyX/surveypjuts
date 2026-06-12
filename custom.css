@@ -482,17 +482,28 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     display: none;
 }
 
+/* qgis2web.css draws its own popup arrow with BOTH :before (gray) and
+   :after (white) triangles — hide :before and fully reset :after's
+   vendor props (top:100%, 10px borders, -10px margin) before redrawing
+   the caret as a bordered diamond. */
+.ol-popup::before {
+    display: none;
+}
+
 .ol-popup::after {
     content: "";
     position: absolute;
+    top: auto;
     bottom: -8px;
     left: 50%;
     width: 14px;
     height: 14px;
-    transform: translateX(-50%) rotate(45deg);
-    background: var(--surface);
+    margin-left: 0;
+    border: none;
     border-right: 1px solid var(--hairline-strong);
     border-bottom: 1px solid var(--hairline-strong);
+    transform: translateX(-50%) rotate(45deg);
+    background: var(--surface);
 }
 
 .ol-popup-closer {
