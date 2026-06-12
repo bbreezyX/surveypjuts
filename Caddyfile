@@ -9,6 +9,7 @@
     header /custom.css Cache-Control "public, max-age=604800"
     header /data/* Cache-Control "no-cache, must-revalidate"
     header /images/* Cache-Control "public, max-age=604800"
+    header /assets/* Cache-Control "public, max-age=604800"
     header /layers/* Cache-Control "public, max-age=604800"
     header /resources/* Cache-Control "public, max-age=604800"
     header /styles/* Cache-Control "public, max-age=604800"
