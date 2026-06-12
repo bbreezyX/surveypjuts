@@ -67,6 +67,7 @@
     var fieldIcons = {
       nama: '<i class="fas fa-user-check"></i>',
       alamat: '<i class="fas fa-map-marker-alt"></i>',
+      koordinat: '<i class="fas fa-crosshairs"></i>',
       tanggal: '<i class="fas fa-calendar-alt"></i>',
       keterangan: '<i class="fas fa-info-circle"></i>'
     };
@@ -85,6 +86,9 @@
     }
     if (item.alamat) {
       rows.push(metaRow(fieldIcons.alamat, "Alamat", item.alamat));
+    }
+    if (item.koordinat) {
+      rows.push(metaRow(fieldIcons.koordinat, "Koordinat", item.koordinat));
     }
     if (item.tanggal) {
       rows.push(metaRow(fieldIcons.tanggal, "Dokumentasi", item.tanggal));
@@ -252,6 +256,18 @@
         var kabupaten = resolveKabupaten(feature);
         feature.set("kabupaten", kabupaten);
 
+        // Koordinat: pakai field survey; kalau kosong, turunkan dari geometri
+        var lon = feature.get("Longitude");
+        var lat = feature.get("Latitude");
+        if (lat === null || lat === undefined || lat === "" ||
+            lon === null || lon === undefined || lon === "") {
+          var ge = feature.getGeometry().getExtent();
+          var ll = ol.proj.toLonLat([(ge[0] + ge[2]) / 2, (ge[1] + ge[3]) / 2]);
+          lon = ll[0].toFixed(5);
+          lat = ll[1].toFixed(5);
+        }
+        var koordinat = lat + ", " + lon;
+
         return {
           id: String(index),
           feature: feature,
@@ -262,6 +278,7 @@
           tanggal: tanggal,
           photo: photo,
           kabupaten: kabupaten,
+          koordinat: koordinat,
           display: buildDisplayParts(nomor),
           searchText: getNormalizedText(
             [nomor, nama, alamat, keterangan, tanggal].join(" ")
