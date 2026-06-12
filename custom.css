@@ -927,6 +927,12 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         height: 48px;
     }
 
+    /* The open panel starts below the masthead line so the header chip
+       never covers the first rows (chip is 48px tall + 8px gap). */
+    .layer-switcher .panel {
+        margin-top: 56px !important;
+    }
+
     .masthead-lambang {
         width: 26px;
     }
@@ -1075,14 +1081,16 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         transform: none !important;
     }
 
+    /* Card sits centered on screen; the JS pans the pin into the strip
+       above it. */
     .ol-popup {
         position: fixed !important;
-        top: auto !important;
+        top: 50% !important;
+        bottom: auto !important;
         left: 10px !important;
         right: 10px !important;
-        bottom: 10px !important;
         width: auto !important;
-        transform: none !important;
+        transform: translateY(-50%) !important;
         max-height: 62dvh;
         overflow-y: auto;
         z-index: 22;

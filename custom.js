@@ -413,14 +413,15 @@
         view.cancelAnimations();
       }
 
-      // Mobile: the popup docks at the bottom of the screen, so pan the pin
-      // into the upper third where the card can never cover it.
+      // Mobile: the popup card sits centered on screen (top edge ~24% on
+      // the tallest cards), so pan the pin into the strip between the
+      // masthead and the card.
       var animateCenter = featureCenter;
       if (window.innerWidth < 960) {
         var size = window.map.getSize();
         if (size && size[1]) {
           var targetResolution = view.getResolutionForZoom(targetZoom);
-          var pinTargetY = size[1] * 0.32;
+          var pinTargetY = size[1] * 0.16;
           var offsetPxDown = pinTargetY - size[1] / 2;
           animateCenter = [
             featureCenter[0],
