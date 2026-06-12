@@ -677,7 +677,7 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 /* qgis2web replaces the stock attribution with className 'bottom-attribution'
    (resources/qgis2web.js:563) — style that, not .ol-attribution */
 .bottom-attribution {
-    position: absolute;
+    position: fixed;
     right: 16px;
     bottom: 16px;
     left: auto;
@@ -779,4 +779,229 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--blue-deep);
+}
+
+/* ---------- Mobile (<960px): bottom sheet + docked popup ---------- */
+
+@media (max-width: 959px) {
+    :root {
+        --sheet-peek: 178px;
+    }
+
+    .masthead {
+        top: 12px;
+        left: 12px;
+        right: 66px;
+        padding: 7px 12px 7px 10px;
+        gap: 10px;
+    }
+
+    .masthead-lambang {
+        width: 26px;
+    }
+
+    .masthead-kicker {
+        font-size: 10px;
+        letter-spacing: 0.12em;
+    }
+
+    .masthead-title {
+        font-size: 16px;
+    }
+
+    .panel-toggle {
+        display: none;
+    }
+
+    #sidebar {
+        top: auto;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: auto;
+        max-height: 85dvh;
+        height: 85dvh;
+        border-radius: 18px 18px 0 0;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+        transform: translateY(calc(100% - var(--sheet-peek)));
+        transition: transform 0.3s ease;
+    }
+
+    body.is-panel-open #sidebar {
+        transform: translateY(0);
+    }
+
+    body.is-popup-open #sidebar {
+        transform: translateY(100%);
+    }
+
+    #sheet-handle {
+        display: block;
+        flex-shrink: 0;
+        width: 100%;
+        padding: 10px 0 4px;
+        background: none;
+        border: none;
+        cursor: pointer;
+    }
+
+    #sheet-handle::before {
+        content: "";
+        display: block;
+        width: 44px;
+        height: 5px;
+        margin: 0 auto;
+        border-radius: 3px;
+        background: var(--hairline-strong);
+    }
+
+    #sidebar-close {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        z-index: 2;
+        display: none;
+        width: 34px;
+        height: 34px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--hairline-strong);
+        border-radius: 50%;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    body.is-panel-open #sidebar-close {
+        display: flex;
+    }
+
+    .sidebar-header {
+        padding: 4px 16px 0;
+        gap: 10px;
+    }
+
+    .stat strong {
+        font-size: 19px;
+    }
+
+    .sidebar-scroll {
+        padding: 4px 16px 10px;
+        overflow-y: hidden;
+    }
+
+    body.is-panel-open .sidebar-scroll {
+        overflow-y: auto;
+    }
+
+    .sidebar-footer {
+        display: none;
+    }
+
+    body.is-panel-open .sidebar-footer {
+        display: block;
+    }
+
+    #panel-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 18;
+        border: none;
+        padding: 0;
+        background: var(--scrim);
+        cursor: pointer;
+    }
+
+    body:not(.is-panel-open) #panel-backdrop {
+        display: none;
+    }
+
+    body.is-panel-open #panel-backdrop {
+        display: block;
+    }
+
+    /* Bottom-docked point popup.
+       OpenLayers positions its overlay wrapper (.ol-overlay-container, the
+       parent of #popup) with inline left/top/transform. A transform on an
+       ancestor re-roots position:fixed, so neutralize the wrapper on mobile
+       and dock the card against the real viewport. (!important is required
+       to beat OL's inline styles.) */
+    .ol-overlay-container {
+        position: static !important;
+        transform: none !important;
+    }
+
+    .ol-popup {
+        position: fixed !important;
+        top: auto !important;
+        left: 10px !important;
+        right: 10px !important;
+        bottom: 10px !important;
+        width: auto !important;
+        transform: none !important;
+        max-height: 62dvh;
+        overflow-y: auto;
+        z-index: 22;
+    }
+
+    .ol-popup::after {
+        display: none;
+    }
+
+    .feature-popup__media {
+        height: 132px;
+    }
+
+    /* Map furniture yields while popup or sheet is open */
+    body.is-popup-open .ol-zoom,
+    body.is-popup-open .layer-switcher,
+    body.is-popup-open .ol-scale-line,
+    body.is-popup-open .bottom-attribution,
+    body.is-panel-open .ol-zoom,
+    body.is-panel-open .ol-scale-line {
+        display: none;
+    }
+
+    .ol-zoom {
+        bottom: calc(var(--sheet-peek) + 16px);
+    }
+
+    .ol-scale-line {
+        bottom: calc(var(--sheet-peek) + 16px);
+        right: 62px;
+    }
+
+    .bottom-attribution {
+        bottom: calc(var(--sheet-peek) + 16px);
+        right: auto;
+        left: 12px;
+    }
+}
+
+@media (max-width: 959px) and (max-height: 500px) {
+    :root {
+        --sheet-peek: 118px;
+    }
+
+    .sidebar-header {
+        gap: 6px;
+    }
+
+    .sidebar-stats {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition: none !important;
+        animation: none !important;
+    }
 }
