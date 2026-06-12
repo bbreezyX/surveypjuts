@@ -634,7 +634,7 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     top: auto;
     left: auto;
     right: 16px;
-    bottom: 92px;
+    bottom: 75px;
     background: var(--surface-glass);
     border: 1px solid var(--hairline-strong);
     border-radius: 10px;
@@ -669,16 +669,21 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 
 .ol-scale-line {
     position: fixed;
+    float: none;
     left: auto;
     right: 16px;
-    bottom: 48px;
-    background: var(--surface-glass);
+    bottom: 45px;
+    margin: 0;
+    /* qgis2web.css forces background:none !important here */
+    background: var(--surface-glass) !important;
     border: 1px solid var(--hairline-strong);
     border-radius: 6px;
     padding: 3px 8px;
+    box-shadow: var(--shadow-sm);
 }
 
 .ol-scale-line-inner {
+    background: none;
     border: 1px solid var(--ink-soft);
     border-top: none;
     color: var(--ink-soft);
@@ -699,6 +704,7 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     border-radius: 6px;
     padding: 1px 6px;
     max-width: none;
+    box-shadow: var(--shadow-sm);
 }
 
 .bottom-attribution ul {
