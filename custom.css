@@ -727,9 +727,20 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     position: absolute;
     top: 16px;
     right: 16px;
+    background: transparent;
+    padding: 0;
 }
 
-.layer-switcher button {
+.layer-switcher.shown,
+.layer-switcher.shown.ol-control,
+.layer-switcher.shown.ol-control:hover,
+.layer-switcher:hover {
+    background: transparent;
+}
+
+/* The chip styling belongs to the main toggle ONLY — the group fold
+   button inside the panel is also a <button> and must not get it. */
+.layer-switcher > button {
     width: 42px;
     height: 42px;
     border: 1px solid var(--hairline-strong);
@@ -742,45 +753,79 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     cursor: pointer;
 }
 
-.layer-switcher.shown button {
-    background-color: var(--blue-tint);
-}
-
 .layer-switcher .panel {
     margin-top: 6px;
     border: 1px solid var(--hairline-strong);
     border-radius: var(--radius-md);
     background: var(--surface);
     box-shadow: var(--shadow-lg);
-    padding: 12px 14px;
+    padding: 14px 16px;
     font: 13px var(--font-ui);
     color: var(--ink);
+    min-width: 200px;
 }
 
+/* Reset vendor list layout (absolute inputs, em margins) to flex rows */
 .layer-switcher .panel ul {
     margin: 0;
     padding: 0;
     list-style: none;
 }
 
+.layer-switcher .panel ul ul {
+    margin: 4px 0 0;
+    padding-left: 0;
+}
+
 .layer-switcher .panel li {
-    padding: 4px 0;
-}
-
-.layer-switcher .panel label {
-    display: inline-flex;
+    position: static;
+    display: flex;
     align-items: center;
-    gap: 8px;
-    color: var(--ink-soft);
+    gap: 9px;
+    margin: 0;
+    padding: 6px 0;
 }
 
-.layer-switcher .panel input[type="checkbox"] {
-    accent-color: var(--blue);
+.layer-switcher .panel li input {
+    position: static;
+    margin: 0;
+    flex-shrink: 0;
     width: 15px;
     height: 15px;
+    accent-color: var(--blue);
 }
 
-.layer-switcher .panel .group > label {
+.layer-switcher .panel li label {
+    padding: 0;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--ink-soft);
+    cursor: pointer;
+}
+
+.layer-switcher .panel li label img {
+    display: block;
+}
+
+/* "Data Lapangan" group: one child, so folding and a group checkbox are
+   noise — render it as a plain section with a heading and a divider. */
+.layer-switcher .panel li.group {
+    display: block;
+    padding: 0 0 10px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--divider);
+}
+
+.layer-switcher .panel li.group > button,
+.layer-switcher .panel li.group > input {
+    display: none;
+}
+
+.layer-switcher .panel li.group > label {
+    display: block;
+    padding: 0;
     font: 600 11px var(--font-display);
     letter-spacing: 0.1em;
     text-transform: uppercase;
