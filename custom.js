@@ -138,6 +138,61 @@
     }
   }
 
+  function setTextContent(id, value) {
+    var node = document.getElementById(id);
+    if (node) {
+      node.textContent = value;
+    }
+  }
+
+  function setDataControlsDisabled(isDisabled) {
+    ["list-search", "fit-map"].forEach(function (id) {
+      var node = document.getElementById(id);
+      if (node) {
+        node.disabled = isDisabled;
+      }
+    });
+  }
+
+  function showDataLoadError(message) {
+    var listContainer = document.getElementById("list-data");
+
+    setTextContent("count-points", "0");
+    setTextContent("count-groups", "0");
+    setTextContent("count-visible", "0");
+    setDataControlsDisabled(true);
+    hidePopup();
+
+    if (listContainer) {
+      var errorNode = document.createElement("div");
+      var title = document.createElement("h2");
+      var copy = document.createElement("p");
+      var action = document.createElement("button");
+
+      errorNode.className = "data-error";
+      errorNode.setAttribute("role", "alert");
+
+      title.className = "data-error__title";
+      title.textContent = "Data titik belum bisa dimuat";
+
+      copy.className = "data-error__copy";
+      copy.textContent = message ||
+        "Periksa koneksi dan file data/points.geojson, lalu muat ulang halaman.";
+
+      action.type = "button";
+      action.className = "secondary-action data-error__action";
+      action.textContent = "Muat ulang";
+      action.addEventListener("click", function () {
+        window.location.reload();
+      });
+
+      errorNode.appendChild(title);
+      errorNode.appendChild(copy);
+      errorNode.appendChild(action);
+      listContainer.replaceChildren(errorNode);
+    }
+  }
+
   function setPanelOpen(isOpen) {
     document.body.classList.toggle("is-panel-open", isOpen);
     var toggle = document.getElementById("panel-toggle");
@@ -151,7 +206,22 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
+    var hasResolvedDataLoad = false;
+    var loadWatchdog;
+
+    function failDataLoad(message) {
+      if (hasResolvedDataLoad) {
+        return;
+      }
+      hasResolvedDataLoad = true;
+      if (loadWatchdog) {
+        window.clearTimeout(loadWatchdog);
+      }
+      showDataLoadError(message);
+    }
+
     if (!window.map || !window.lyr_260331_4) {
+      failDataLoad("Peta atau layer titik tidak berhasil diinisialisasi.");
       return;
     }
 
@@ -841,10 +911,32 @@
 
     // Data titik dimuat async dari data/points.geojson — jalankan init
     // begitu fitur selesai dimuat (atau langsung kalau sudah ada).
-    if (pointSource.getFeatures().length) {
+    function runInit() {
+      if (hasResolvedDataLoad) {
+        return;
+      }
+      hasResolvedDataLoad = true;
+      if (loadWatchdog) {
+        window.clearTimeout(loadWatchdog);
+      }
+      setDataControlsDisabled(false);
       init();
+    }
+
+    pointSource.once("featuresloaderror", function () {
+      failDataLoad("File data/points.geojson gagal dimuat. Periksa path, format GeoJSON, dan koneksi server.");
+    });
+
+    loadWatchdog = window.setTimeout(function () {
+      if (!hasResolvedDataLoad && !pointSource.getFeatures().length) {
+        failDataLoad("File data/points.geojson belum selesai dimuat setelah 20 detik.");
+      }
+    }, 20000);
+
+    if (pointSource.getFeatures().length) {
+      runInit();
     } else {
-      pointSource.once("featuresloadend", init);
+      pointSource.once("featuresloadend", runInit);
     }
   });
 })();

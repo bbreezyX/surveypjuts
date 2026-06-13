@@ -14,9 +14,10 @@
     <meta name="theme-color" content="#293d50" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="./favicon.svg?v=20260421" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://mt1.google.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&family=Work+Sans:wght@400;500;600&display=swap"
       rel="stylesheet"
@@ -35,6 +36,7 @@
     />
     <link rel="stylesheet" href="./resources/ol-layerswitcher.css?v=20260421" />
     <link rel="stylesheet" href="./resources/qgis2web.css?v=20260421" />
+    <link rel="preload" href="./custom.css?v=20260612j" as="style" />
     <link rel="stylesheet" href="./custom.css?v=20260612j" />
     <title>Peta Sebaran PJUTS 2026 · Penerangan Jalan Umum Tenaga Surya Provinsi Jambi</title>
   </head>
@@ -43,10 +45,11 @@
       <header class="masthead">
         <img
           class="masthead-lambang"
-          src="./assets/lambang-jambi.svg"
+          src="./assets/lambang-jambi.svg?v=20260612"
           alt="Lambang Provinsi Jambi"
           width="34"
           height="40"
+          decoding="async"
         />
         <div class="masthead-copy">
           <p class="masthead-kicker">Pemprov Jambi &middot; Dinas ESDM</p>
@@ -167,10 +170,8 @@
     <script src="resources/photon-geocoder-autocomplete.min.js?v=20260421"></script>
     <script src="layers/BatasKabupaten2011_1.js?v=20260421"></script>
     <script src="layers/Dissolved_2.js?v=20260421"></script>
-    <script src="layers/Lines_3.js?v=20260421"></script>
     <script src="styles/BatasKabupaten2011_1_style.js?v=20260607"></script>
     <script src="styles/Dissolved_2_style.js?v=20260607"></script>
-    <script src="styles/Lines_3_style.js?v=20260421"></script>
     <script src="styles/260331_4_style.js?v=20260612"></script>
     <script src="./layers/layers.js?v=20260612" type="text/javascript"></script>
     <script src="./resources/Autolinker.min.js?v=20260421"></script>
