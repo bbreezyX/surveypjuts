@@ -1028,18 +1028,6 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         transform: translate3d(0, 0, 0);
     }
 
-    body.is-popup-open #sidebar {
-        transform: translate3d(0, 100%, 0);
-        pointer-events: none;
-        transition-duration: 0.28s;
-    }
-
-    /* Panel open always wins over a stale popup state on mobile. */
-    body.is-panel-open.is-popup-open #sidebar {
-        transform: translate3d(0, 0, 0);
-        pointer-events: auto;
-    }
-
     body.is-panel-open .ol-popup {
         pointer-events: none;
         visibility: hidden;
