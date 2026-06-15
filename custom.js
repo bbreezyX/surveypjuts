@@ -193,7 +193,14 @@
     }
   }
 
+  function isMobileViewport() {
+    return window.innerWidth < 960;
+  }
+
   function setPanelOpen(isOpen) {
+    if (isOpen && isMobileViewport()) {
+      hidePopup();
+    }
     document.body.classList.toggle("is-panel-open", isOpen);
     var toggle = document.getElementById("panel-toggle");
     if (toggle) {
@@ -203,6 +210,17 @@
     if (handle) {
       handle.setAttribute("aria-expanded", isOpen ? "true" : "false");
     }
+  }
+
+  function configurePopupOverlayForViewport() {
+    if (!window.overlayPopup) {
+      return;
+    }
+    // Mobile popup is position:fixed and we pan manually — OL autoPan fights
+    // that animation and makes the bottom sheet feel stuck.
+    window.overlayPopup.autoPan = isMobileViewport()
+      ? false
+      : { animation: { duration: 300 }, margin: 60 };
   }
 
   document.addEventListener("DOMContentLoaded", function () {
@@ -242,7 +260,6 @@
     var fitButton = document.getElementById("fit-map");
     var panelToggle = document.getElementById("panel-toggle");
     var panelClose = document.getElementById("sidebar-close");
-    var panelBackdrop = document.getElementById("panel-backdrop");
     var countPoints = document.getElementById("count-points");
     var countGroups = document.getElementById("count-groups");
     var countGroupsLabel = document.getElementById("count-groups-label");
@@ -255,7 +272,7 @@
     // Selected pin: enlarged with a white ring, drawn on the feature overlay
     // above the layer's yellow pin.
     var selectedPinSvg =
-      '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="40" viewBox="0 0 36 48">' +
+      '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="43" viewBox="-2 -4 40 52">' +
         '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23fee50f" stroke="%23ffffff" stroke-width="3"/>' +
         '<circle cx="18" cy="18" r="6.5" fill="%23293d50"/>' +
       '</svg>';
@@ -433,7 +450,18 @@
 
       popupContent.innerHTML = buildPopupHtml(item);
       popup.style.display = "block";
-      document.body.classList.add("is-popup-open");
+
+      var popupWasOpen = document.body.classList.contains("is-popup-open");
+      if (isMobileViewport() && !popupWasOpen) {
+        document.body.classList.remove("is-popup-open");
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            document.body.classList.add("is-popup-open");
+          });
+        });
+      } else {
+        document.body.classList.add("is-popup-open");
+      }
 
       if (window.overlayPopup && typeof window.overlayPopup.setPosition === "function") {
         window.overlayPopup.setPosition(coord);
@@ -473,6 +501,12 @@
         window.featureOverlay.setStyle(pinStyle);
       }
 
+      if (isMobileViewport()) {
+        setPanelOpen(false);
+      } else if (config.closePanel) {
+        setPanelOpen(false);
+      }
+
       // Always use the feature's actual center for everything to avoid shifting
       openPopupForItem(item, featureCenter);
 
@@ -487,7 +521,9 @@
       // the tallest cards), so pan the pin into the strip between the
       // masthead and the card.
       var animateCenter = featureCenter;
-      if (window.innerWidth < 960) {
+      var mapDuration = 800;
+      if (isMobileViewport()) {
+        mapDuration = 520;
         var size = window.map.getSize();
         if (size && size[1]) {
           var targetResolution = view.getResolutionForZoom(targetZoom);
@@ -503,12 +539,9 @@
       view.animate({
         center: animateCenter,
         zoom: targetZoom,
-        duration: 800
+        duration: mapDuration,
+        easing: ol.easing.easeOut
       });
-
-      if (config.closePanel && window.innerWidth < 960) {
-        setPanelOpen(false);
-      }
     }
 
     function renderList(query) {
@@ -825,12 +858,6 @@
       });
     }
 
-    if (panelBackdrop) {
-      panelBackdrop.addEventListener("click", function () {
-        setPanelOpen(false);
-      });
-    }
-
     var sheetHandle = document.getElementById("sheet-handle");
     if (sheetHandle) {
       sheetHandle.addEventListener("click", function () {
@@ -852,12 +879,15 @@
     });
 
     window.addEventListener("resize", function () {
+      configurePopupOverlayForViewport();
       if (window.innerWidth >= 960) {
         setPanelOpen(false);
       } else {
         document.body.classList.remove("is-sidebar-collapsed");
       }
     });
+
+    configurePopupOverlayForViewport();
 
     // Override qgis2web's closer so it also clears the map selection & sidebar highlight
     var popupCloser = document.getElementById("popup-closer");
@@ -872,19 +902,6 @@
 
     window.map.on("singleclick", handleMapSingleClick);
 
-    // Sync body.is-popup-open with popup visibility so mobile CSS can react
-    var popupObserver = new MutationObserver(function (mutations) {
-      mutations.forEach(function (m) {
-        if (m.attributeName === "style") {
-          var isVisible = popup.style.display !== "none" && popup.style.display !== "";
-          document.body.classList.toggle("is-popup-open", isVisible);
-        }
-      });
-    });
-    if (popup) {
-      popupObserver.observe(popup, { attributes: true, attributeFilter: ["style"] });
-    }
-
     // Keep popup in view after user zooms/pans — re-trigger autoPan
     // (skip on mobile: popup is position:fixed and no longer anchored to
     // the feature, so panIntoView would fight our intentional offset)
@@ -894,7 +911,7 @@
         panGuard = false;
         return;
       }
-      if (window.innerWidth < 960) {
+      if (isMobileViewport()) {
         return;
       }
       if (window.overlayPopup && window.overlayPopup.getPosition()) {

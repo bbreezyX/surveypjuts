@@ -12,7 +12,6 @@
     --muted-2: #7e8fa0;
     --surface: #ffffff;
     --surface-glass: rgba(255, 255, 255, 0.96);
-    --scrim: rgba(41, 61, 80, 0.45);
     --shadow-lg: 0 18px 48px rgba(41, 61, 80, 0.22);
     --shadow-sm: 0 6px 18px rgba(41, 61, 80, 0.14);
     --radius-lg: 16px;
@@ -516,10 +515,6 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     transform: rotate(225deg) translate(1px, -1px);
 }
 
-#panel-backdrop {
-    display: none;
-}
-
 /* ---------- Point popup (desktop: anchored overlay) ---------- */
 
 .ol-popup {
@@ -586,6 +581,7 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
    strip inside the card. The card (.ol-popup) owns the width. */
 #popup-content {
     max-width: none;
+    margin: 0;
 }
 
 .feature-popup {
@@ -951,6 +947,8 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 @media (max-width: 959px) {
     :root {
         --sheet-peek: 178px;
+        --sheet-ease: cubic-bezier(0.32, 0.72, 0, 1);
+        --popup-ease: cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     .masthead {
@@ -1019,16 +1017,32 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         border-left: none;
         border-right: none;
         border-bottom: none;
-        transform: translateY(calc(100% - var(--sheet-peek)));
-        transition: transform 0.3s ease;
+        transform: translate3d(0, calc(100% - var(--sheet-peek)), 0);
+        transition: transform 0.32s var(--sheet-ease);
+        will-change: transform;
+        contain: layout style;
+        backface-visibility: hidden;
     }
 
     body.is-panel-open #sidebar {
-        transform: translateY(0);
+        transform: translate3d(0, 0, 0);
     }
 
     body.is-popup-open #sidebar {
-        transform: translateY(100%);
+        transform: translate3d(0, 100%, 0);
+        pointer-events: none;
+        transition-duration: 0.28s;
+    }
+
+    /* Panel open always wins over a stale popup state on mobile. */
+    body.is-panel-open.is-popup-open #sidebar {
+        transform: translate3d(0, 0, 0);
+        pointer-events: auto;
+    }
+
+    body.is-panel-open .ol-popup {
+        pointer-events: none;
+        visibility: hidden;
     }
 
     #sheet-handle {
@@ -1102,24 +1116,6 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         display: block;
     }
 
-    #panel-backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: 18;
-        border: none;
-        padding: 0;
-        background: var(--scrim);
-        cursor: pointer;
-    }
-
-    body:not(.is-panel-open) #panel-backdrop {
-        display: none;
-    }
-
-    body.is-panel-open #panel-backdrop {
-        display: block;
-    }
-
     /* Bottom-docked point popup.
        OpenLayers positions its overlay wrapper (.ol-overlay-container, the
        parent of #popup) with inline left/top/transform. A transform on an
@@ -1129,6 +1125,7 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     .ol-overlay-container {
         position: static !important;
         transform: none !important;
+        pointer-events: none;
     }
 
     /* Card sits centered on screen; the JS pans the pin into the strip
@@ -1140,16 +1137,30 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         left: 10px !important;
         right: 10px !important;
         width: auto !important;
-        transform: translateY(-50%) !important;
+        transform: translate3d(0, calc(-50% + 10px), 0) scale(0.97) !important;
+        opacity: 0;
         max-height: 62dvh;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
         z-index: 22;
+        pointer-events: none;
+        will-change: transform, opacity;
+        transition:
+            transform 0.3s var(--popup-ease),
+            opacity 0.24s var(--popup-ease);
+    }
+
+    body.is-popup-open .ol-popup {
+        transform: translate3d(0, -50%, 0) scale(1) !important;
+        opacity: 1;
+        pointer-events: auto;
     }
 
     /* The card scrolls; the inner content must not nest its own scroller */
     #popup-content {
         max-height: none;
         overflow: visible;
+        margin: 0;
     }
 
     .ol-popup::after {
