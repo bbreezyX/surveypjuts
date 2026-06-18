@@ -483,9 +483,156 @@
       hidePopup();
     }
 
+    var FOCUS_EASING = ol.easing.inAndOut;
+    var mapFocusAnimUntil = 0;
+
+    function markMapFocusAnimation(duration) {
+      mapFocusAnimUntil = Date.now() + duration + 180;
+    }
+
+    function measurePopupHeight() {
+      var popup = document.getElementById("popup");
+      if (!popup || popup.style.display === "none") {
+        return 300;
+      }
+      return popup.offsetHeight || popup.scrollHeight || 300;
+    }
+
+    function getMastheadBottomOffset() {
+      var masthead = document.querySelector(".masthead");
+      var mapEl = document.getElementById("map");
+      if (!masthead || !mapEl) {
+        return 80;
+      }
+      var mapRect = mapEl.getBoundingClientRect();
+      var mastheadRect = masthead.getBoundingClientRect();
+      return Math.max(0, Math.ceil(mastheadRect.bottom - mapRect.top));
+    }
+
+    function getFocusTargetCenter(view, featureCenter, targetZoom, popupHeight) {
+      var animateCenter = featureCenter.slice();
+      var size = window.map.getSize();
+      if (!size || !size[1]) {
+        return animateCenter;
+      }
+
+      var targetResolution = view.getResolutionForZoom(targetZoom);
+      var pinTargetY;
+
+      if (isMobileViewport()) {
+        // Mobile: the popup card sits centered on screen (top edge ~24% on
+        // the tallest cards), so pan the pin into the strip between the
+        // masthead and the card.
+        pinTargetY = size[1] * 0.16;
+      } else {
+        // Desktop: popup docks above the pin (bottom: 48px). Guarantee the
+        // card top clears the masthead at every desktop height.
+        var mastheadBottom = getMastheadBottomOffset();
+        var topPadding = 8;
+        var pinGap = 48;
+        var bottomMargin = 56;
+        var popupH = popupHeight || 300;
+        var minPinY = mastheadBottom + topPadding + pinGap + popupH;
+        var maxPinY = size[1] - bottomMargin;
+        var preferredPinY = minPinY + 16;
+
+        if (minPinY > maxPinY) {
+          // Cramped viewport: keep the popup top visible even if the pin
+          // sits lower than the ideal bottom margin.
+          pinTargetY = minPinY;
+        } else {
+          pinTargetY = Math.min(preferredPinY, maxPinY);
+        }
+      }
+
+      var offsetPxDown = pinTargetY - size[1] / 2;
+      animateCenter[1] = featureCenter[1] + offsetPxDown * targetResolution;
+      return animateCenter;
+    }
+
+    function getFocusAnimationDuration(view, featureCenter, targetZoom) {
+      var currentZoom = view.getZoom() || 0;
+      var zoomDelta = Math.abs(targetZoom - currentZoom);
+      var currentCenter = view.getCenter();
+      var panPixels = 0;
+
+      if (currentCenter) {
+        var startPixel = window.map.getPixelFromCoordinate(currentCenter);
+        var endPixel = window.map.getPixelFromCoordinate(featureCenter);
+        if (startPixel && endPixel) {
+          panPixels = Math.hypot(
+            endPixel[0] - startPixel[0],
+            endPixel[1] - startPixel[1]
+          );
+        }
+      }
+
+      var base = isMobileViewport() ? 560 : 760;
+      var zoomBoost = Math.min(zoomDelta * 42, 360);
+      var panBoost = Math.min(panPixels * 0.22, 260);
+      return Math.round(Math.max(base, Math.min(base + zoomBoost + panBoost, 1180)));
+    }
+
+    function animateMapFocus(view, featureCenter, targetZoom, popupHeight) {
+      if (view.getAnimating()) {
+        view.cancelAnimations();
+      }
+
+      var targetCenter = getFocusTargetCenter(
+        view,
+        featureCenter,
+        targetZoom,
+        popupHeight
+      );
+      var duration = getFocusAnimationDuration(view, featureCenter, targetZoom);
+      var currentZoom = view.getZoom() || 0;
+      var zoomDelta = Math.abs(targetZoom - currentZoom);
+
+      markMapFocusAnimation(duration);
+
+      function finishFocusAnimation() {
+        mapFocusAnimUntil = Date.now() + 120;
+      }
+
+      if (zoomDelta <= 2.5) {
+        view.animate(
+          {
+            center: targetCenter,
+            zoom: targetZoom,
+            duration: duration,
+            easing: FOCUS_EASING,
+          },
+          finishFocusAnimation
+        );
+        return;
+      }
+
+      var isZoomingIn = targetZoom > currentZoom;
+      var bridgeZoom = isZoomingIn
+        ? Math.min(currentZoom + zoomDelta * 0.58, targetZoom - 0.4)
+        : Math.max(currentZoom - zoomDelta * 0.58, targetZoom + 0.4);
+      var phaseOne = Math.round(duration * 0.44);
+      var phaseTwo = duration - phaseOne;
+
+      view.animate(
+        {
+          center: targetCenter,
+          zoom: bridgeZoom,
+          duration: phaseOne,
+          easing: FOCUS_EASING,
+        },
+        {
+          center: targetCenter,
+          zoom: targetZoom,
+          duration: phaseTwo,
+          easing: FOCUS_EASING,
+        },
+        finishFocusAnimation
+      );
+    }
+
     function focusItem(item, options) {
       var config = options || {};
-      var currentZoom = window.map.getView().getZoom() || 0;
       var ext = item.feature.getGeometry().getExtent();
       var featureCenter = [(ext[0] + ext[2]) / 2, (ext[1] + ext[3]) / 2];
 
@@ -511,37 +658,8 @@
       openPopupForItem(item, featureCenter);
 
       var targetZoom = config.zoom || 17;
-      var view = window.map.getView();
-
-      if (view.getAnimating()) {
-        view.cancelAnimations();
-      }
-
-      // Mobile: the popup card sits centered on screen (top edge ~24% on
-      // the tallest cards), so pan the pin into the strip between the
-      // masthead and the card.
-      var animateCenter = featureCenter;
-      var mapDuration = 800;
-      if (isMobileViewport()) {
-        mapDuration = 520;
-        var size = window.map.getSize();
-        if (size && size[1]) {
-          var targetResolution = view.getResolutionForZoom(targetZoom);
-          var pinTargetY = size[1] * 0.16;
-          var offsetPxDown = pinTargetY - size[1] / 2;
-          animateCenter = [
-            featureCenter[0],
-            featureCenter[1] + offsetPxDown * targetResolution
-          ];
-        }
-      }
-
-      view.animate({
-        center: animateCenter,
-        zoom: targetZoom,
-        duration: mapDuration,
-        easing: ol.easing.easeOut
-      });
+      var popupHeight = measurePopupHeight();
+      animateMapFocus(window.map.getView(), featureCenter, targetZoom, popupHeight);
     }
 
     function renderList(query) {
@@ -909,6 +1027,9 @@
     window.map.on("moveend", function () {
       if (panGuard) {
         panGuard = false;
+        return;
+      }
+      if (Date.now() < mapFocusAnimUntil) {
         return;
       }
       if (isMobileViewport()) {
