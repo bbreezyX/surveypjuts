@@ -20,6 +20,24 @@
       });
   }
 
+  // Degree suffixes that must stay uppercase when title-casing names
+  // ("PUTRA ABSOR HASIBUAN, SH" -> "Putra Absor Hasibuan, SH").
+  var NAME_SUFFIXES = ["sh", "se", "st", "sp", "mm", "mh", "msi", "mpd", "spd", "skom", "ssos", "amd", "shut"];
+
+  function toDisplayName(value) {
+    return String(value || "")
+      .trim()
+      .split(/\s+/)
+      .map(function (word) {
+        var letters = word.replace(/[^a-z]/gi, "").toLowerCase();
+        if (NAME_SUFFIXES.indexOf(letters) !== -1) {
+          return word.toUpperCase();
+        }
+        return toDisplayCase(word);
+      })
+      .join(" ");
+  }
+
   function sanitizeMediaPath(value) {
     return String(value || "").replace(/[\\/:]/g, "_").trim();
   }
@@ -224,14 +242,16 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    var hasResolvedDataLoad = false;
+    // pending -> done (init ran) | failed (error shown). A load that finishes
+    // after the watchdog fired still recovers: failed -> done.
+    var dataLoadState = "pending";
     var loadWatchdog;
 
     function failDataLoad(message) {
-      if (hasResolvedDataLoad) {
+      if (dataLoadState !== "pending") {
         return;
       }
-      hasResolvedDataLoad = true;
+      dataLoadState = "failed";
       if (loadWatchdog) {
         window.clearTimeout(loadWatchdog);
       }
@@ -335,7 +355,7 @@
     var items = allFeatures
       .map(function (feature, index) {
         var nomor = String(feature.get("Nomor") || "-").trim();
-        var nama = String(feature.get("Nama Anggota") || "Tanpa Nama").trim();
+        var nama = toDisplayName(feature.get("Nama Anggota")) || "Tanpa Nama";
         var alamat = String(feature.get("Alamat") || "").trim();
         var keterangan = String(feature.get("Keterangan") || "").trim();
         var tanggal = String(feature.get("Tanggal Dokumentasi") || "").trim();
@@ -432,10 +452,18 @@
       var next = listContainer.querySelector('[data-item-id="' + itemId + '"]');
       if (next) {
         next.classList.add("is-active");
-        next.scrollIntoView({
-          block: "nearest",
-          inline: "nearest",
-        });
+        // block:"nearest" scoped to the list pane — scrollIntoView would
+        // also scroll body/html and shift the fixed shell upward.
+        var scroller = document.querySelector(".sidebar-scroll");
+        if (scroller) {
+          var scrollerRect = scroller.getBoundingClientRect();
+          var itemRect = next.getBoundingClientRect();
+          if (itemRect.top < scrollerRect.top) {
+            scroller.scrollTop += itemRect.top - scrollerRect.top;
+          } else if (itemRect.bottom > scrollerRect.bottom) {
+            scroller.scrollTop += itemRect.bottom - scrollerRect.bottom;
+          }
+        }
       }
     }
 
@@ -798,6 +826,8 @@
 
       listContainer.appendChild(fragment);
       countVisible.textContent = visibleCount.toLocaleString("id-ID");
+      // "tampil" only earns its place while a filter hides something.
+      countVisible.parentElement.hidden = visibleCount === items.length;
       updateHighlight(activeItemId);
     }
 
@@ -854,6 +884,17 @@
     }
 
     function handleMapSingleClick(event) {
+      // The switcher lives inside the map viewport, so its own clicks also
+      // arrive here — don't treat them as map clicks (it would re-close the
+      // panel the button just opened, and clear the selection).
+      var domTarget = event.originalEvent && event.originalEvent.target;
+      if (domTarget && domTarget.closest && domTarget.closest(".layer-switcher")) {
+        return;
+      }
+      // Click-activated layer panel has no auto-close of its own.
+      if (window.layerSwitcher) {
+        window.layerSwitcher.hidePanel();
+      }
       var clickedFeature = window.map.forEachFeatureAtPixel(
         event.pixel,
         function (feature, layer) {
@@ -991,7 +1032,15 @@
     });
 
     document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") {
+      if (event.key !== "Escape") {
+        return;
+      }
+      if (window.layerSwitcher) {
+        window.layerSwitcher.hidePanel();
+      }
+      if (document.body.classList.contains("is-popup-open")) {
+        clearSelection();
+      } else {
         setPanelOpen(false);
       }
     });
@@ -1050,10 +1099,10 @@
     // Data titik dimuat async dari data/points.geojson — jalankan init
     // begitu fitur selesai dimuat (atau langsung kalau sudah ada).
     function runInit() {
-      if (hasResolvedDataLoad) {
+      if (dataLoadState === "done") {
         return;
       }
-      hasResolvedDataLoad = true;
+      dataLoadState = "done";
       if (loadWatchdog) {
         window.clearTimeout(loadWatchdog);
       }
@@ -1066,7 +1115,7 @@
     });
 
     loadWatchdog = window.setTimeout(function () {
-      if (!hasResolvedDataLoad && !pointSource.getFeatures().length) {
+      if (!pointSource.getFeatures().length) {
         failDataLoad("File data/points.geojson belum selesai dimuat setelah 20 detik.");
       }
     }, 20000);
