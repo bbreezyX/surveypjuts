@@ -197,7 +197,11 @@ body {
     top: var(--panel-top);
     bottom: 16px;
     left: var(--panel-left);
-    z-index: 19;
+    /* Above OpenLayers' .ol-overlaycontainer-stopevent, which ships z-index 21.
+       Below 21 the map's own furniture — attribution, layer chip, zoom, scale —
+       painted straight through the panel. Invisible on desktop, where they never
+       overlap; obvious on mobile, where the sheet covers the whole screen. */
+    z-index: 22;
     width: var(--panel-width);
     display: flex;
     flex-direction: column;
@@ -783,7 +787,7 @@ body.is-data-unavailable .list-summary {
     position: absolute;
     top: calc(var(--panel-top) + 15px);
     left: calc(var(--panel-left) + var(--panel-width) - 46px);
-    z-index: 21;
+    z-index: 23;
     width: 32px;
     height: 32px;
     border: 1px solid transparent;
@@ -1387,6 +1391,11 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         right: 0;
         bottom: 0;
         width: auto;
+        /* Opaque here, unlike the desktop card. The sheet covers the whole
+           screen, so the 4% of --surface-glass that lets the map through buys
+           no depth and makes high-contrast satellite labels legible straight
+           through the list. */
+        background: var(--surface);
         max-height: 85dvh;
         height: 85dvh;
         border-radius: 18px 18px 0 0;
@@ -1502,11 +1511,16 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         pointer-events: none;
     }
 
-    /* The popup's OL wrapper is a z-index:0 stacking context, which traps
-       the card below the bottom sheet (z-index 19) — lift it. Safe: while
-       a popup is open every other control in this wrapper is hidden. */
-    .ol-overlaycontainer-stopevent {
-        z-index: 21 !important;
+    /* The popup's OL wrapper is a z-index:0 stacking context, which traps the
+       card below the bottom sheet — lift it above the panel.
+
+       Scoped to is-popup-open on purpose. The lift is only safe in that state,
+       because that is the state where every other control in this wrapper is
+       hidden. Applying it unconditionally is what let the attribution badge and
+       the layer chip paint straight through the open sheet: the wrapper was
+       raised, but nothing was hiding its contents. */
+    body.is-popup-open .ol-overlaycontainer-stopevent {
+        z-index: 24 !important;
     }
 
     /* Card sits centered on screen; the JS pans the pin into the strip
