@@ -20,7 +20,7 @@
     --radius-sm: 8px;
     --panel-width: clamp(330px, 26vw, 380px);
     --panel-left: 16px;
-    --panel-top: 84px;
+    --panel-top: 16px;
     --font-display: "Montserrat", sans-serif;
     --font-ui: "Work Sans", sans-serif;
 }
@@ -124,6 +124,48 @@ body {
     font-weight: 700;
     letter-spacing: -0.01em;
     line-height: 1.1;
+    color: var(--ink);
+}
+
+/* Desktop: the panel carries the identity, so the floating masthead retires
+   and the panel takes over its slot at the top of the map. */
+@media (min-width: 960px) {
+    .masthead {
+        display: none;
+    }
+}
+
+.panel-brand {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid var(--divider);
+}
+
+.panel-brand__lambang {
+    flex-shrink: 0;
+    width: 30px;
+    height: auto;
+}
+
+.panel-brand__copy {
+    min-width: 0;
+}
+
+.panel-brand__kicker {
+    margin: 0;
+    font: 600 9.5px var(--font-display);
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+}
+
+.panel-brand__title {
+    margin: 2px 0 0;
+    font: 700 16px var(--font-display);
+    line-height: 1.2;
     color: var(--ink);
 }
 
@@ -1153,6 +1195,12 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         --sheet-peek: 178px;
         --sheet-ease: cubic-bezier(0.32, 0.72, 0, 1);
         --popup-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Mobile keeps the floating masthead: the sheet is mostly off-screen, so
+       the panel's own brand block would take the map's identity down with it. */
+    .panel-brand {
+        display: none;
     }
 
     .masthead {
