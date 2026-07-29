@@ -241,24 +241,37 @@ body.is-sidebar-collapsed #sidebar {
     color: var(--muted);
 }
 
-.sidebar-actions {
-    display: flex;
-    gap: 8px;
-}
-
 .search-field {
     position: relative;
-    flex: 1;
+    display: block;
+    width: 100%;
 }
 
+/* CSS-drawn magnifier: circle + handle. Font Awesome is gone from this
+   project, so the old <i class="fas fa-search"> rendered nothing. */
 .search-icon {
     position: absolute;
-    left: 12px;
+    left: 13px;
     top: 50%;
-    transform: translateY(-50%);
-    font-size: 13px;
-    color: var(--muted-2);
+    width: 10px;
+    height: 10px;
+    margin-top: -6px;
+    border: 1.6px solid var(--muted-2);
+    border-radius: 50%;
     pointer-events: none;
+}
+
+.search-icon::after {
+    content: "";
+    position: absolute;
+    top: 9px;
+    left: 7px;
+    width: 1.6px;
+    height: 5px;
+    border-radius: 1px;
+    background: var(--muted-2);
+    transform: rotate(-45deg);
+    transform-origin: top center;
 }
 
 .search-field input {
@@ -267,7 +280,7 @@ body.is-sidebar-collapsed #sidebar {
     border: 1px solid var(--hairline-strong);
     border-radius: 10px;
     background: var(--surface);
-    padding: 0 12px 0 34px;
+    padding: 0 12px 0 36px;
     font: 500 14px var(--font-ui);
     color: var(--ink);
 }
