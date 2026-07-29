@@ -546,7 +546,13 @@ map.addControl(new ol.control.ScaleLine({}));
 //layerswitcher
 
 var layerSwitcher = new ol.control.LayerSwitcher({
-    tipLabel: "Layers",
+    // click (not hover): predictable on desktop, required on touch.
+    // Empty labels keep the chip's SVG background icon text-free.
+    activationMode: 'click',
+    label: '',
+    collapseLabel: '',
+    tipLabel: 'Tampilkan pilihan layer',
+    collapseTipLabel: 'Tutup pilihan layer',
     target: 'top-right-container'
 });
 map.addControl(layerSwitcher);

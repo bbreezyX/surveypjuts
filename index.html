@@ -1,16 +1,22 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width"
-    />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta
       name="description"
       content="Peta sebaran Penerangan Jalan Umum Tenaga Surya Provinsi Jambi Tahun 2026 hasil survey lapangan."
     />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="id_ID" />
+    <meta property="og:site_name" content="Dinas ESDM Provinsi Jambi" />
+    <meta property="og:title" content="Peta Sebaran PJUTS 2026 — Provinsi Jambi" />
+    <meta
+      property="og:description"
+      content="Peta sebaran Penerangan Jalan Umum Tenaga Surya Provinsi Jambi Tahun 2026 hasil survey lapangan."
+    />
+    <meta name="twitter:card" content="summary" />
     <meta name="theme-color" content="#293d50" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -41,6 +47,12 @@
     <title>Peta Sebaran PJUTS 2026 · Penerangan Jalan Umum Tenaga Surya Provinsi Jambi</title>
   </head>
   <body>
+    <noscript>
+      <p class="noscript-note">
+        Peta ini membutuhkan JavaScript. Aktifkan JavaScript di browser Anda,
+        lalu muat ulang halaman.
+      </p>
+    </noscript>
     <div class="app-shell">
       <header class="masthead">
         <img
@@ -127,7 +139,12 @@
         </div>
 
         <div class="sidebar-scroll">
-          <div id="list-data" aria-live="polite"></div>
+          <div id="list-data" aria-live="polite">
+            <div class="loading-state" role="status">
+              <span class="loading-spinner" aria-hidden="true"></span>
+              Memuat data titik&hellip;
+            </div>
+          </div>
         </div>
 
         <p class="sidebar-footer">
