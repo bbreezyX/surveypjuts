@@ -223,6 +223,10 @@ body.is-sidebar-collapsed #sidebar {
     display: none;
 }
 
+/* The mobile sheet closes by its drag handle, which is the bottom-sheet idiom
+   and spans the full width. A second X button in the same 40px band duplicated
+   it, so this stays hidden at every size. The element is kept in the markup:
+   custom.js binds a listener to it. */
 #sidebar-close {
     display: none;
 }
@@ -1458,29 +1462,6 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         background: var(--hairline-strong);
     }
 
-    #sidebar-close {
-        position: absolute;
-        top: 8px;
-        right: 12px;
-        z-index: 2;
-        display: none;
-        width: 40px;
-        height: 40px;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid var(--hairline-strong);
-        border-radius: 50%;
-        background: var(--surface);
-        color: var(--muted);
-        font-size: 18px;
-        line-height: 1;
-        cursor: pointer;
-        padding: 0;
-    }
-
-    body.is-panel-open #sidebar-close {
-        display: flex;
-    }
 
     .sidebar-scroll {
         padding: 4px 16px 10px;
