@@ -9,7 +9,8 @@
     --hairline-strong: #c9d6e2;
     --divider: #e5edf4;
     --muted: #5a6b7d;
-    --muted-2: #7e8fa0;
+    /* was #7e8fa0 — 3.32:1 on white, below the 4.5:1 AA floor */
+    --muted-2: #647587;
     --surface: #ffffff;
     --surface-glass: rgba(255, 255, 255, 0.96);
     --shadow-lg: 0 18px 48px rgba(41, 61, 80, 0.22);
@@ -250,7 +251,7 @@ body.is-sidebar-collapsed #sidebar {
     transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-.secondary-action:hover {
+.secondary-action:not(:disabled):hover {
     background: var(--blue-tint);
     border-color: var(--blue);
     box-shadow: 0 6px 16px rgba(0, 114, 188, 0.18);
@@ -292,7 +293,7 @@ body.is-sidebar-collapsed #sidebar {
     cursor: pointer;
 }
 
-.group-mode__btn:hover {
+.group-mode__btn:not(:disabled):hover {
     color: var(--ink-soft);
 }
 
@@ -350,10 +351,38 @@ body.is-sidebar-collapsed #sidebar {
     color: var(--ink);
 }
 
+/* Weight sits below .group-title so the name leads and the count supports. */
 .group-meta {
+    flex-shrink: 0;
     margin: 0;
-    font: 700 13px var(--font-display);
+    font: 600 12.5px var(--font-display);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
     color: var(--blue);
+}
+
+/* The group currently driving the map filter. */
+.group-toggle.is-filtering .group-title {
+    color: var(--blue-deep);
+}
+
+.group-toggle.is-filtering .group-chevron {
+    border-color: var(--blue-deep);
+}
+
+/* Groups the active filter is holding back — still one click away, but clearly
+   not what the map is showing. */
+.group-toggle.is-muted .group-title,
+.group-toggle.is-muted .group-meta {
+    color: var(--muted-2);
+}
+
+.group-toggle.is-muted .group-chevron {
+    border-color: var(--muted-2);
+}
+
+.group-toggle.is-muted:hover .group-title {
+    color: var(--ink);
 }
 
 .group-items {
@@ -365,7 +394,7 @@ body.is-sidebar-collapsed #sidebar {
     width: 100%;
     display: flex;
     align-items: flex-start;
-    gap: 10px;
+    gap: 9px;
     margin: 2px 0;
     padding: 9px 10px;
     border: none;
@@ -381,7 +410,7 @@ body.is-sidebar-collapsed #sidebar {
     flex-shrink: 0;
     width: 8px;
     height: 8px;
-    margin-top: 5px;
+    margin-top: 6px;
     border-radius: 50%;
     background: var(--hairline-strong);
 }
@@ -399,6 +428,18 @@ body.is-sidebar-collapsed #sidebar {
     box-shadow: 0 0 0 1.5px var(--ink);
 }
 
+/* The sequence number is the row's identity, not a footnote: leading position,
+   fixed column so the digits line up, and readable contrast. */
+.item-code {
+    flex-shrink: 0;
+    min-width: 2.4em;
+    padding-top: 1px;
+    font: 700 12px var(--font-display);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+}
+
 .item-copy {
     flex: 1;
     min-width: 0;
@@ -406,29 +447,192 @@ body.is-sidebar-collapsed #sidebar {
     gap: 2px;
 }
 
+.item-headline {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
 .item-label {
+    flex: 1;
+    min-width: 0;
     font: 500 13.5px var(--font-ui);
+    line-height: 1.35;
     color: var(--ink);
+}
+
+/* Tiebreaker for rows the landmark pass could not separate. */
+.item-coord {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    white-space: nowrap;
 }
 
 .item-subline {
     font-size: 12px;
+    line-height: 1.35;
     color: var(--muted);
-}
-
-.item-code {
-    order: 3;
-    margin-left: auto;
-    padding-top: 2px;
-    font: 600 11px var(--font-display);
-    color: var(--muted-2);
 }
 
 .empty-state {
+    display: grid;
+    justify-items: start;
+    gap: 12px;
     padding: 18px 4px;
+}
+
+.empty-state__copy {
+    margin: 0;
     font-size: 13px;
     line-height: 1.55;
     color: var(--muted);
+}
+
+/* ---------- Active map filter ---------- */
+
+.active-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px 7px 12px;
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    background: var(--blue-tint);
+}
+
+.active-filter[hidden] {
+    display: none;
+}
+
+.active-filter__label {
+    flex-shrink: 0;
+    font: 600 11px var(--font-display);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--blue-deep);
+}
+
+.active-filter__value {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 600 13px var(--font-ui);
+    color: var(--ink);
+}
+
+.active-filter__clear {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: none;
+    color: var(--blue-deep);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.active-filter__clear:hover {
+    background: var(--surface);
+    border-color: var(--blue);
+}
+
+/* ---------- Loading state ---------- */
+
+.data-loading__note {
+    margin: 0 0 4px;
+    padding: 8px 4px 0;
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.skeleton-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 11px 10px;
+}
+
+.skeleton-row__copy {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 6px;
+}
+
+.skeleton {
+    display: block;
+    height: 9px;
+    border-radius: 4px;
+    background: var(--divider);
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton--code {
+    flex-shrink: 0;
+    width: 26px;
+    margin-top: 1px;
+}
+
+.skeleton--label {
+    width: 78%;
+}
+
+.skeleton--sub {
+    width: 52%;
+    height: 8px;
+}
+
+/* Stagger so the rows read as a list settling in, not one flashing block. */
+.skeleton-row:nth-child(3) .skeleton { animation-delay: 0.08s; }
+.skeleton-row:nth-child(4) .skeleton { animation-delay: 0.16s; }
+.skeleton-row:nth-child(5) .skeleton { animation-delay: 0.24s; }
+.skeleton-row:nth-child(6) .skeleton { animation-delay: 0.32s; }
+.skeleton-row:nth-child(7) .skeleton { animation-delay: 0.4s; }
+
+@keyframes skeleton-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+
+/* ---------- Unavailable data: make disabled look disabled ---------- */
+
+.search-field input:disabled,
+.secondary-action:disabled,
+.group-mode__btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+body.is-data-unavailable .search-field input::placeholder {
+    color: var(--muted-2);
+}
+
+/* Unknown counts render as an em dash. Keeping the yellow highlight would make
+   it read as a redacted bar rather than "not known yet". */
+body.is-data-unavailable .sidebar-stats {
+    opacity: 0.65;
+}
+
+body.is-data-unavailable .stat--lead strong {
+    background: none;
+    padding: 1px 0;
+    color: var(--muted-2);
+}
+
+body.is-data-unavailable .stat strong {
+    color: var(--muted-2);
+    font-weight: 600;
 }
 
 .data-error {

@@ -31,7 +31,12 @@
     });
   }
 
-  function buildDisplayParts(nomor) {
+  // Nomor is "KABUPATEN-KECAMATAN-DESA-NNN". The desa repeats across most of a
+  // group's points (223/230 rows would be identical on desa alone), so the
+  // survey landmark in Keterangan is the primary label whenever it exists and
+  // the desa drops to context. Rows that still collide get a coordinate hint
+  // appended at render time — see markDuplicates().
+  function buildDisplayParts(nomor, keterangan) {
     var parts = String(nomor || "")
       .split("-")
       .map(function (part) {
@@ -45,18 +50,38 @@
       parts.pop();
     }
 
-    var primary = parts.length ? toDisplayCase(parts[parts.length - 1]) : String(nomor || "Titik");
-    var secondary = parts.length > 1
-      ? parts
-          .slice(0, -1)
-          .map(toDisplayCase)
-          .join(" • ")
-      : "Lokasi survey lapangan";
+    var desa = parts.length ? toDisplayCase(parts[parts.length - 1]) : "";
+    var kecamatan = parts.length > 1 ? toDisplayCase(parts[parts.length - 2]) : "";
+    var landmark = String(keterangan || "").trim();
+
+    var primary;
+    var secondary;
+
+    if (landmark) {
+      primary = landmark;
+      secondary = [desa, kecamatan].filter(Boolean).join(" · ");
+    } else {
+      primary = desa || String(nomor || "Titik");
+      secondary = kecamatan;
+    }
 
     return {
-      code: code || "Titik",
+      code: code || "—",
       primary: primary,
-      secondary: secondary,
+      secondary: secondary || "Lokasi survey lapangan",
+    };
+  }
+
+  // Within a rendered group, flag every row whose primary label is shared with
+  // another row so it can carry a coordinate tiebreaker. Clean rows stay clean.
+  function markDuplicates(list) {
+    var tally = Object.create(null);
+    list.forEach(function (item) {
+      var key = item.display.primary;
+      tally[key] = (tally[key] || 0) + 1;
+    });
+    return function (item) {
+      return tally[item.display.primary] > 1;
     };
   }
 
@@ -93,7 +118,9 @@
     if (item.tanggal) {
       rows.push(metaRow(fieldIcons.tanggal, "Dokumentasi", item.tanggal));
     }
-    if (item.keterangan) {
+    // The landmark is now the popup's own title, so repeating it as a meta row
+    // would just say the same thing twice.
+    if (item.keterangan && item.keterangan !== item.display.primary) {
       rows.push(metaRow(fieldIcons.keterangan, "Keterangan", item.keterangan));
     }
 
@@ -152,45 +179,104 @@
         node.disabled = isDisabled;
       }
     });
+    // The grouping tabs only get their listeners inside init(), so before data
+    // lands they are decoration — disable them too rather than leave dead
+    // controls that look live.
+    document.querySelectorAll(".group-mode__btn").forEach(function (node) {
+      node.disabled = isDisabled;
+    });
+    document.body.classList.toggle("is-data-unavailable", isDisabled);
   }
 
-  function showDataLoadError(message) {
+  // Counts are unknown until the data lands. "0" is a claim; an em dash is not.
+  function setCountsUnknown() {
+    setTextContent("count-points", "—");
+    setTextContent("count-groups", "—");
+    setTextContent("count-visible", "—");
+  }
+
+  function showDataLoading() {
     var listContainer = document.getElementById("list-data");
 
-    setTextContent("count-points", "0");
-    setTextContent("count-groups", "0");
-    setTextContent("count-visible", "0");
+    setCountsUnknown();
+    setDataControlsDisabled(true);
+
+    if (!listContainer) {
+      return;
+    }
+
+    var wrap = document.createElement("div");
+    wrap.className = "data-loading";
+
+    var note = document.createElement("p");
+    note.className = "data-loading__note";
+    note.textContent = "Memuat titik survey…";
+    wrap.appendChild(note);
+
+    // Skeleton rows mirror the real row shape so nothing jumps when they are
+    // replaced by data.
+    for (var i = 0; i < 6; i++) {
+      var row = document.createElement("div");
+      row.className = "skeleton-row";
+      var code = document.createElement("span");
+      code.className = "skeleton skeleton--code";
+      var copy = document.createElement("span");
+      copy.className = "skeleton-row__copy";
+      var label = document.createElement("span");
+      label.className = "skeleton skeleton--label";
+      var sub = document.createElement("span");
+      sub.className = "skeleton skeleton--sub";
+      copy.appendChild(label);
+      copy.appendChild(sub);
+      row.appendChild(code);
+      row.appendChild(copy);
+      wrap.appendChild(row);
+    }
+
+    listContainer.replaceChildren(wrap);
+  }
+
+  function showDataLoadError(message, onRetry) {
+    var listContainer = document.getElementById("list-data");
+
+    setCountsUnknown();
     setDataControlsDisabled(true);
     hidePopup();
 
-    if (listContainer) {
-      var errorNode = document.createElement("div");
-      var title = document.createElement("h2");
-      var copy = document.createElement("p");
-      var action = document.createElement("button");
-
-      errorNode.className = "data-error";
-      errorNode.setAttribute("role", "alert");
-
-      title.className = "data-error__title";
-      title.textContent = "Data titik belum bisa dimuat";
-
-      copy.className = "data-error__copy";
-      copy.textContent = message ||
-        "Periksa koneksi dan file data/points.geojson, lalu muat ulang halaman.";
-
-      action.type = "button";
-      action.className = "secondary-action data-error__action";
-      action.textContent = "Muat ulang";
-      action.addEventListener("click", function () {
-        window.location.reload();
-      });
-
-      errorNode.appendChild(title);
-      errorNode.appendChild(copy);
-      errorNode.appendChild(action);
-      listContainer.replaceChildren(errorNode);
+    if (!listContainer) {
+      return;
     }
+
+    var errorNode = document.createElement("div");
+    var title = document.createElement("p");
+    var copy = document.createElement("p");
+    var action = document.createElement("button");
+
+    errorNode.className = "data-error";
+    errorNode.setAttribute("role", "alert");
+
+    title.className = "data-error__title";
+    title.textContent = "Data titik belum bisa dimuat";
+
+    copy.className = "data-error__copy";
+    copy.textContent = message ||
+      "Periksa koneksi dan file data/points.geojson, lalu coba lagi.";
+
+    action.type = "button";
+    action.className = "secondary-action data-error__action";
+    action.textContent = onRetry ? "Coba lagi" : "Muat ulang halaman";
+    action.addEventListener("click", function () {
+      if (onRetry) {
+        onRetry();
+      } else {
+        window.location.reload();
+      }
+    });
+
+    errorNode.appendChild(title);
+    errorNode.appendChild(copy);
+    errorNode.appendChild(action);
+    listContainer.replaceChildren(errorNode);
   }
 
   function isMobileViewport() {
@@ -224,24 +310,70 @@
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    var hasResolvedDataLoad = false;
-    var loadWatchdog;
-
-    function failDataLoad(message) {
-      if (hasResolvedDataLoad) {
-        return;
-      }
-      hasResolvedDataLoad = true;
-      if (loadWatchdog) {
-        window.clearTimeout(loadWatchdog);
-      }
-      showDataLoadError(message);
-    }
+    var hasInitialised = false;
+    var loadWatchdog = null;
 
     if (!window.map || !window.lyr_260331_4) {
-      failDataLoad("Peta atau layer titik tidak berhasil diinisialisasi.");
+      // Nothing to retry against — the map itself never came up.
+      showDataLoadError("Peta atau layer titik tidak berhasil diinisialisasi.");
       return;
     }
+
+    var pointSource = window.lyr_260331_4.getSource();
+
+    function retryDataLoad() {
+      showDataLoading();
+      armWatchdog();
+      pointSource.refresh();
+    }
+
+    function failDataLoad(message) {
+      if (hasInitialised) {
+        return;
+      }
+      disarmWatchdog();
+      showDataLoadError(message, retryDataLoad);
+    }
+
+    // OpenLayers only runs a vector source's loader while the layer is being
+    // rendered, and a hidden tab never renders. Counting wall-clock time would
+    // therefore "time out" a page that is merely sitting in a background tab
+    // with a perfectly healthy network — so the watchdog only runs while the
+    // document is actually visible.
+    function armWatchdog() {
+      if (hasInitialised || loadWatchdog !== null || document.hidden) {
+        return;
+      }
+      loadWatchdog = window.setTimeout(function () {
+        loadWatchdog = null;
+        if (!hasInitialised && !pointSource.getFeatures().length) {
+          failDataLoad(
+            "File data/points.geojson belum selesai dimuat setelah 20 detik."
+          );
+        }
+      }, 20000);
+    }
+
+    function disarmWatchdog() {
+      if (loadWatchdog !== null) {
+        window.clearTimeout(loadWatchdog);
+        loadWatchdog = null;
+      }
+    }
+
+    document.addEventListener("visibilitychange", function () {
+      if (document.hidden) {
+        disarmWatchdog();
+        return;
+      }
+      if (hasInitialised) {
+        return;
+      }
+      // Back in view: the layer will render and the loader will finally run.
+      // Give it a fresh window, and pick up data that arrived meanwhile.
+      runInit();
+      armWatchdog();
+    });
 
     if (typeof window.onSingleClickFeatures === "function") {
       window.map.un("singleclick", window.onSingleClickFeatures);
@@ -249,8 +381,6 @@
     if (typeof window.onSingleClickWMS === "function") {
       window.map.un("singleclick", window.onSingleClickWMS);
     }
-
-    var pointSource = window.lyr_260331_4.getSource();
 
     function init() {
     var collator = getCollator();
@@ -354,6 +484,8 @@
           lat = ll[1].toFixed(5);
         }
         var koordinat = lat + ", " + lon;
+        var koordinatSingkat =
+          Number(lat).toFixed(4) + ", " + Number(lon).toFixed(4);
 
         return {
           id: String(index),
@@ -366,7 +498,8 @@
           photo: photo,
           kabupaten: kabupaten,
           koordinat: koordinat,
-          display: buildDisplayParts(nomor),
+          koordinatSingkat: koordinatSingkat,
+          display: buildDisplayParts(nomor, keterangan),
           searchText: getNormalizedText(
             [nomor, nama, alamat, keterangan, tanggal].join(" ")
           ),
@@ -417,7 +550,14 @@
     countPoints.textContent = items.length.toLocaleString("id-ID");
     updateGroupStats();
 
-    var expandedGroups = new Set();
+    // ---- Single source of truth for "what is on the map right now" ----------
+    // Both grouping modes behave identically: opening a group filters the map
+    // to that group and zooms to it. Search narrows further, inside the active
+    // group when there is one. The map layer, the list and the "tampil" counter
+    // all read from visibleIds, so they can never disagree.
+    var activeGroup = null;
+    var visibleIds = new Set(items.map(function (item) { return item.id; }));
+    var restoreFocusGroup = null;
 
     function updateHighlight(itemId) {
       var previous = listContainer.querySelector(".item.is-active");
@@ -548,24 +688,35 @@
       var normalizedQuery = getNormalizedText(query);
       var fragment = document.createDocumentFragment();
       var visibleCount = 0;
+      var focusTarget = null;
 
+      visibleIds.clear();
       listContainer.innerHTML = "";
 
       groupedItems.forEach(function (group, groupIndex) {
-        var matchedItems = group.items.filter(function (item) {
-          return !normalizedQuery || item.searchText.indexOf(normalizedQuery) !== -1;
-        });
+        // While a group filter is active only that group contributes rows — but
+        // the other headers stay on screen so switching groups is still one
+        // click, they just render dimmed and collapsed.
+        var isMuted = Boolean(activeGroup) && group.name !== activeGroup;
 
-        if (!matchedItems.length) {
+        var matchedItems = isMuted
+          ? []
+          : group.items.filter(function (item) {
+              return !normalizedQuery || item.searchText.indexOf(normalizedQuery) !== -1;
+            });
+
+        if (!isMuted && !matchedItems.length && !activeGroup) {
           return;
         }
 
         visibleCount += matchedItems.length;
+        matchedItems.forEach(function (item) {
+          visibleIds.add(item.id);
+        });
 
-        var isExpanded = normalizedQuery
-          ? true
-          : expandedGroups.has(group.name);
+        var isExpanded = !isMuted && (Boolean(normalizedQuery) || group.name === activeGroup);
         var itemsId = "group-items-" + groupIndex;
+        var needsCoordHint = markDuplicates(matchedItems);
 
         var groupNode = document.createElement("section");
         groupNode.className = "group";
@@ -573,44 +724,39 @@
         var toggle = document.createElement("button");
         toggle.type = "button";
         toggle.className = "group-toggle";
+        toggle.dataset.groupName = group.name;
         toggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
         toggle.setAttribute("aria-controls", itemsId);
+        if (group.name === activeGroup) {
+          toggle.classList.add("is-filtering");
+        }
+        if (isMuted) {
+          toggle.classList.add("is-muted");
+        }
 
         var chevron = document.createElement("span");
         chevron.className = "group-chevron";
         chevron.setAttribute("aria-hidden", "true");
 
-        var title = document.createElement("h2");
+        // span, not h2/p: <button> only accepts phrasing content, and the
+        // flow-content nesting was dropping the button's accessible name.
+        var title = document.createElement("span");
         title.className = "group-title";
         title.textContent = group.name;
 
-        var meta = document.createElement("p");
+        var meta = document.createElement("span");
         meta.className = "group-meta";
-        meta.textContent = matchedItems.length + " titik";
+        meta.textContent = normalizedQuery && !isMuted
+          ? matchedItems.length + " dari " + group.items.length
+          : group.items.length + " titik";
 
         toggle.appendChild(chevron);
         toggle.appendChild(title);
         toggle.appendChild(meta);
 
+        // Identical in both modes: open a group = filter the map to it and zoom.
         toggle.addEventListener("click", function () {
-          var wasExpanded = expandedGroups.has(group.name);
-          if (groupMode === "kabupaten") {
-            // Single-open: selecting a kabupaten focuses the map on it.
-            expandedGroups.clear();
-            if (wasExpanded) {
-              setMapKabupaten(null);
-              fitToAllPoints();
-            } else {
-              expandedGroups.add(group.name);
-              setMapKabupaten(group.name);
-              fitToKabupaten(group.name);
-            }
-          } else if (wasExpanded) {
-            expandedGroups.delete(group.name);
-          } else {
-            expandedGroups.add(group.name);
-          }
-          renderList(searchInput.value);
+          setActiveGroup(activeGroup === group.name ? null : group.name);
         });
 
         var itemsWrap = document.createElement("div");
@@ -620,10 +766,17 @@
           itemsWrap.hidden = true;
         }
 
+        // A filtered group with no search hits explains itself in place, right
+        // under its own header, instead of at the bottom of the whole list.
+        if (isExpanded && !matchedItems.length) {
+          itemsWrap.appendChild(buildEmptyState(Boolean(normalizedQuery)));
+        }
+
         matchedItems.forEach(function (item) {
           var button = document.createElement("button");
           var code = document.createElement("span");
           var copy = document.createElement("span");
+          var headline = document.createElement("span");
           var label = document.createElement("span");
           var subline = document.createElement("span");
 
@@ -633,7 +786,12 @@
           button.title = item.nomor;
           button.setAttribute(
             "aria-label",
-            ["Titik " + item.nomor, item.nama, item.alamat]
+            [
+              "Titik " + item.display.code,
+              item.display.primary,
+              item.display.secondary,
+              item.nama
+            ]
               .filter(Boolean)
               .join(". ")
           );
@@ -642,14 +800,25 @@
           code.textContent = item.display.code;
 
           copy.className = "item-copy";
+          headline.className = "item-headline";
 
           label.className = "item-label";
           label.textContent = item.display.primary;
+          headline.appendChild(label);
+
+          // Only rows that are still ambiguous after the landmark pass pay the
+          // cost of a coordinate tiebreaker.
+          if (needsCoordHint(item)) {
+            var coord = document.createElement("span");
+            coord.className = "item-coord";
+            coord.textContent = item.koordinatSingkat;
+            headline.appendChild(coord);
+          }
 
           subline.className = "item-subline";
           subline.textContent = item.display.secondary;
 
-          copy.appendChild(label);
+          copy.appendChild(headline);
           copy.appendChild(subline);
           button.appendChild(code);
           button.appendChild(copy);
@@ -668,71 +837,156 @@
         groupNode.appendChild(toggle);
         groupNode.appendChild(itemsWrap);
         fragment.appendChild(groupNode);
+
+        if (group.name === activeGroup) {
+          focusTarget = toggle;
+        }
       });
 
-      if (!visibleCount) {
-        var emptyState = document.createElement("div");
-        emptyState.className = "empty-state";
-        emptyState.textContent =
-          "Tidak ada titik yang cocok dengan pencarian. Coba gunakan nomor titik, nama pengusul, atau potongan alamat.";
-        fragment.appendChild(emptyState);
+      if (!visibleCount && !activeGroup) {
+        fragment.appendChild(buildEmptyState(Boolean(normalizedQuery)));
       }
 
       listContainer.appendChild(fragment);
       countVisible.textContent = visibleCount.toLocaleString("id-ID");
+      renderActiveFilter();
+      window.lyr_260331_4.changed();
       updateHighlight(activeItemId);
+
+      // innerHTML wipe destroys the node the user just activated, so hand focus
+      // back to its replacement instead of dropping it on <body>.
+      if (restoreFocusGroup) {
+        var restored = focusTarget && activeGroup === restoreFocusGroup
+          ? focusTarget
+          : findGroupToggle(restoreFocusGroup);
+        if (restored) {
+          restored.focus();
+        }
+        restoreFocusGroup = null;
+      }
     }
 
-    function fitToAllPoints() {
-      var leftPadding = window.innerWidth >= 960 ? 48 : 20;
-
-      clearSelection();
-
-      window.map.getView().fit(window.lyr_260331_4.getSource().getExtent(), {
-        padding: [32, 28, 32, leftPadding],
-        maxZoom: 15,
-        duration: 700,
-      });
+    function findGroupToggle(name) {
+      var toggles = listContainer.querySelectorAll(".group-toggle");
+      for (var i = 0; i < toggles.length; i++) {
+        if (toggles[i].dataset.groupName === name) {
+          return toggles[i];
+        }
+      }
+      return null;
     }
 
-    // Map filter: show only the selected kabupaten's pins (null = show all).
-    var selectedKabupaten = null;
+    function buildEmptyState(hasQuery) {
+      var wrap = document.createElement("div");
+      wrap.className = "empty-state";
+
+      var copy = document.createElement("p");
+      copy.className = "empty-state__copy";
+      wrap.appendChild(copy);
+
+      if (hasQuery && activeGroup) {
+        copy.textContent =
+          "Tidak ada titik yang cocok di dalam " + activeGroup + ".";
+        var widen = document.createElement("button");
+        widen.type = "button";
+        widen.className = "secondary-action";
+        widen.textContent = "Cari di semua titik";
+        widen.addEventListener("click", function () {
+          setActiveGroup(null, { fit: false });
+        });
+        wrap.appendChild(widen);
+      } else if (hasQuery) {
+        copy.textContent =
+          "Tidak ada titik yang cocok dengan pencarian. Coba nomor titik, nama pengusul, patokan lokasi, atau nama desa.";
+      } else {
+        copy.textContent = "Belum ada titik untuk ditampilkan.";
+      }
+
+      return wrap;
+    }
+
+    // ---- Map <-> list synchronisation --------------------------------------
+    // The layer renders exactly the ids the list is showing, so the "tampil"
+    // counter is true by construction.
     window.lyr_260331_4.setStyle(function (feature, resolution) {
-      if (selectedKabupaten && feature.get("kabupaten") !== selectedKabupaten) {
+      var item = featureLookup.get(feature);
+      if (item && !visibleIds.has(item.id)) {
         return null;
       }
       return style_260331_4(feature, resolution);
     });
 
-    function setMapKabupaten(kab) {
-      selectedKabupaten = kab || null;
-      window.lyr_260331_4.changed();
-    }
+    function fitToVisible(options) {
+      var config = options || {};
+      var extent = null;
 
-    function fitToKabupaten(kab) {
-      var feats = window.lyr_260331_4
-        .getSource()
-        .getFeatures()
-        .filter(function (f) {
-          return f.get("kabupaten") === kab;
-        });
-      if (!feats.length) {
+      items.forEach(function (item) {
+        if (!visibleIds.has(item.id)) {
+          return;
+        }
+        var e = item.feature.getGeometry().getExtent();
+        extent = extent
+          ? [
+              Math.min(extent[0], e[0]),
+              Math.min(extent[1], e[1]),
+              Math.max(extent[2], e[2]),
+              Math.max(extent[3], e[3])
+            ]
+          : e.slice();
+      });
+
+      if (!extent) {
         return;
       }
-      var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      feats.forEach(function (f) {
-        var e = f.getGeometry().getExtent();
-        if (e[0] < minX) minX = e[0];
-        if (e[1] < minY) minY = e[1];
-        if (e[2] > maxX) maxX = e[2];
-        if (e[3] > maxY) maxY = e[3];
+
+      window.map.getView().fit(extent, {
+        // Reserve the panel's real footprint, otherwise the westernmost points
+        // land underneath it.
+        padding: [40, 32, 40, panelInset() + 24],
+        maxZoom: config.maxZoom || 15,
+        duration: config.duration || 700
       });
-      var leftPadding = window.innerWidth >= 960 ? 56 : 24;
-      window.map.getView().fit([minX, minY, maxX, maxY], {
-        padding: [48, 40, 48, leftPadding],
-        maxZoom: 14,
-        duration: 700,
-      });
+    }
+
+    // Horizontal space the data panel steals from the map (0 when it is a
+    // bottom sheet or collapsed).
+    function panelInset() {
+      if (window.innerWidth < 960) {
+        return 0;
+      }
+      if (document.body.classList.contains("is-sidebar-collapsed")) {
+        return 0;
+      }
+      var panel = document.getElementById("sidebar");
+      return panel ? Math.round(panel.getBoundingClientRect().right) : 0;
+    }
+
+    function setActiveGroup(name, options) {
+      var config = options || {};
+      activeGroup = name || null;
+      if (activeGroup) {
+        restoreFocusGroup = activeGroup;
+      }
+      clearSelection();
+      renderList(searchInput.value);
+      if (config.fit !== false) {
+        fitToVisible({ maxZoom: activeGroup ? 14 : 15 });
+      }
+    }
+
+    function fitToAllPoints() {
+      clearSelection();
+      fitToVisible({ maxZoom: 15 });
+    }
+
+    function renderActiveFilter() {
+      var bar = document.getElementById("active-filter");
+      var name = document.getElementById("active-filter-name");
+      if (!bar || !name) {
+        return;
+      }
+      bar.hidden = !activeGroup;
+      name.textContent = activeGroup || "";
     }
 
     function handleMapSingleClick(event) {
@@ -765,16 +1019,22 @@
       clearTimeout(searchDebounce);
       searchDebounce = setTimeout(function () {
         renderList(value);
-      }, 150);
+        // Search now narrows the map too, so bring the survivors into view
+        // instead of leaving the user staring at an empty viewport.
+        fitToVisible({ maxZoom: 16, duration: 500 });
+      }, 250);
     });
 
+    var filterClear = document.getElementById("active-filter-clear");
+    if (filterClear) {
+      filterClear.addEventListener("click", function () {
+        setActiveGroup(null);
+      });
+    }
+
     fitButton.addEventListener("click", function () {
-      if (groupMode === "kabupaten") {
-        expandedGroups.clear();
-        setMapKabupaten(null);
-        renderList(searchInput.value);
-      }
-      fitToAllPoints();
+      searchInput.value = "";
+      setActiveGroup(null);
       if (window.innerWidth < 960) {
         setPanelOpen(false);
       }
@@ -791,8 +1051,7 @@
       }
       groupMode = mode;
       groupedItems = buildGroupedItems(groupMode);
-      expandedGroups.clear();
-      setMapKabupaten(null);
+      activeGroup = null;
       updateGroupStats();
       groupModeButtons.forEach(function (btn) {
         var on = btn.getAttribute("data-mode") === mode;
@@ -929,31 +1188,31 @@
     // Data titik dimuat async dari data/points.geojson — jalankan init
     // begitu fitur selesai dimuat (atau langsung kalau sudah ada).
     function runInit() {
-      if (hasResolvedDataLoad) {
+      if (hasInitialised) {
         return;
       }
-      hasResolvedDataLoad = true;
-      if (loadWatchdog) {
-        window.clearTimeout(loadWatchdog);
+      if (!pointSource.getFeatures().length) {
+        return;
       }
+      hasInitialised = true;
+      disarmWatchdog();
       setDataControlsDisabled(false);
       init();
     }
 
-    pointSource.once("featuresloaderror", function () {
-      failDataLoad("File data/points.geojson gagal dimuat. Periksa path, format GeoJSON, dan koneksi server.");
+    pointSource.on("featuresloaderror", function () {
+      failDataLoad(
+        "File data/points.geojson gagal dimuat. Periksa path, format GeoJSON, dan koneksi server."
+      );
     });
 
-    loadWatchdog = window.setTimeout(function () {
-      if (!hasResolvedDataLoad && !pointSource.getFeatures().length) {
-        failDataLoad("File data/points.geojson belum selesai dimuat setelah 20 detik.");
-      }
-    }, 20000);
+    // featuresloadend can fire more than once (a retry re-runs the loader), so
+    // listen continuously rather than once — a late success must still be able
+    // to replace a previously shown error.
+    pointSource.on("featuresloadend", runInit);
 
-    if (pointSource.getFeatures().length) {
-      runInit();
-    } else {
-      pointSource.once("featuresloadend", runInit);
-    }
+    showDataLoading();
+    armWatchdog();
+    runInit();
   });
 })();
