@@ -135,12 +135,14 @@ body {
     }
 }
 
+/* Right padding reserves the collapse toggle's slot so the title can never
+   run underneath it, even at the panel's 330px minimum width. */
 .panel-brand {
     flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: 11px;
-    padding: 16px 18px 14px;
+    padding: 16px 48px 14px 18px;
     border-bottom: 1px solid var(--divider);
 }
 
@@ -723,31 +725,51 @@ body.is-data-unavailable .list-summary {
 
 /* ---------- Panel toggle (desktop) ---------- */
 
+/* Open: the toggle sits inside the panel's own header, flat and chrome-less,
+   so the panel reads as one object instead of a card trailed by a loose chip.
+   It cannot live in the panel's DOM — collapsing translates the panel off
+   screen and would take its own re-open control with it — so it is positioned
+   over the header from outside. */
 .panel-toggle {
     position: absolute;
-    top: var(--panel-top);
-    left: calc(var(--panel-left) + var(--panel-width) + 12px);
+    top: calc(var(--panel-top) + 15px);
+    left: calc(var(--panel-left) + var(--panel-width) - 46px);
     z-index: 21;
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--hairline-strong);
-    border-radius: 10px;
-    background: var(--surface-glass);
-    box-shadow: var(--shadow-sm);
+    width: 32px;
+    height: 32px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: none;
+    box-shadow: none;
     cursor: pointer;
-    transition: left 0.3s ease, background-color 0.15s ease;
+    transition: top 0.3s ease, left 0.3s ease, width 0.3s ease,
+        height 0.3s ease, background-color 0.15s ease, border-color 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
 .panel-toggle:hover {
-    background: var(--surface);
+    background: var(--blue-tint);
 }
 
 .panel-toggle:hover .panel-toggle__chevron {
     border-color: var(--blue);
 }
 
+/* Collapsed: the panel is gone, so the control has nothing to belong to and
+   takes back its card chrome as a standalone chip at the map's edge. */
 body.is-sidebar-collapsed .panel-toggle {
+    top: var(--panel-top);
     left: var(--panel-left);
+    width: 40px;
+    height: 40px;
+    border-color: var(--hairline-strong);
+    border-radius: 10px;
+    background: var(--surface-glass);
+    box-shadow: var(--shadow-sm);
+}
+
+body.is-sidebar-collapsed .panel-toggle:hover {
+    background: var(--surface);
 }
 
 .panel-toggle__chevron {
