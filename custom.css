@@ -559,12 +559,20 @@ body.is-sidebar-collapsed #sidebar {
     gap: 8px;
 }
 
+/* Survey landmarks run to 60+ characters. Two lines keeps the rows a uniform
+   height and scannable; the full text is in the row's accessible name and in
+   the popup. */
 .item-label {
     flex: 1;
     min-width: 0;
     font: 500 13.5px var(--font-ui);
     line-height: 1.35;
     color: var(--ink);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
 }
 
 /* Tiebreaker for rows the landmark pass could not separate. */
@@ -872,6 +880,11 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     font: 700 18px var(--font-display);
     line-height: 1.2;
     color: var(--ink);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    overflow-wrap: anywhere;
 }
 
 .feature-popup__meta {

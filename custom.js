@@ -31,6 +31,21 @@
     });
   }
 
+  // Keterangan doubles as the row's title, but some rows carry survey
+  // bookkeeping in brackets — "(Foto pertama yang dikirim pak agung)",
+  // "(Tanpa Foto (Tempat Pemandian 1,2,3))". That says nothing about the place
+  // and wraps the label onto five lines, so it goes. Brackets that qualify the
+  // landmark itself are kept: "Depan Rumah Pak Hambali (Dewan)" survives.
+  //
+  // The lookahead only fires when the bracket's own text mentions the photo
+  // workflow; everything from that bracket to the end is then dropped, which
+  // also disposes of nested brackets in one pass.
+  var SURVEY_NOTE = /\s*\((?=[^)]*(?:foto|dikirim))[\s\S]*$/i;
+
+  function cleanKeterangan(value) {
+    return String(value || "").replace(SURVEY_NOTE, "").trim();
+  }
+
   // Nomor is "KABUPATEN-KECAMATAN-DESA-NNN". The desa repeats across most of a
   // group's points (223/230 rows would be identical on desa alone), so the
   // survey landmark in Keterangan is the primary label whenever it exists and
@@ -52,7 +67,7 @@
 
     var desa = parts.length ? toDisplayCase(parts[parts.length - 1]) : "";
     var kecamatan = parts.length > 1 ? toDisplayCase(parts[parts.length - 2]) : "";
-    var landmark = String(keterangan || "").trim();
+    var landmark = cleanKeterangan(keterangan);
 
     var primary;
     var secondary;
@@ -462,7 +477,11 @@
         var nomor = String(feature.get("Nomor") || "-").trim();
         var nama = String(feature.get("Nama Anggota") || "Tanpa Nama").trim();
         var alamat = String(feature.get("Alamat") || "").trim();
-        var keterangan = String(feature.get("Keterangan") || "").trim();
+        // Cleaned at the source, not just at the title: buildPopupHtml shows
+        // Keterangan as its own meta row whenever it differs from the title,
+        // so cleaning only the title would push the survey note down the popup
+        // instead of removing it.
+        var keterangan = cleanKeterangan(feature.get("Keterangan"));
         var tanggal = String(feature.get("Tanggal Dokumentasi") || "").trim();
         var photo = String(feature.get("Foto Survey Awal") || "").trim();
         var kabupaten = resolveKabupaten(feature);
