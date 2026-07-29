@@ -376,80 +376,123 @@ body.is-sidebar-collapsed #sidebar {
     scrollbar-color: var(--hairline-strong) transparent;
 }
 
-.group {
-    border-bottom: 1px solid var(--divider);
-}
+/* ---------- Screen 1: group rows ---------- */
 
-.group-toggle {
+.group-row {
     width: 100%;
+    min-height: 44px;
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 2px;
-    background: none;
+    padding: 11px 10px;
     border: none;
+    border-radius: 9px;
+    background: none;
     cursor: pointer;
     font: inherit;
     text-align: left;
 }
 
-.group-chevron {
+.group-row + .group-row {
+    box-shadow: inset 0 1px 0 var(--divider);
+}
+
+.group-row:hover,
+.group-row:focus-visible {
+    background: var(--blue-tint);
+    box-shadow: none;
+}
+
+.group-row__title {
+    flex: 1;
+    min-width: 0;
+    font: 500 13.5px var(--font-ui);
+    color: var(--ink);
+}
+
+.group-row__count {
+    flex-shrink: 0;
+    font: 600 12.5px var(--font-display);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+/* Chevron points right: this row takes you somewhere, it does not unfold. */
+.group-row__chevron {
     flex-shrink: 0;
     width: 7px;
     height: 7px;
+    margin-right: 2px;
+    border-top: 2px solid var(--blue);
     border-right: 2px solid var(--blue);
-    border-bottom: 2px solid var(--blue);
-    transform: rotate(-45deg);
-    transition: transform 0.18s ease;
-}
-
-.group-toggle[aria-expanded="true"] .group-chevron {
     transform: rotate(45deg);
 }
 
-.group-title {
-    flex: 1;
-    margin: 0;
-    font: 600 13.5px var(--font-ui);
-    color: var(--ink);
+/* ---------- Screen 2: context header ---------- */
+
+.panel-context {
+    display: grid;
+    gap: 2px;
+    margin: -18px -18px 0;
+    padding: 14px 18px 12px;
+    background: var(--blue-tint);
+    border-bottom: 1px solid var(--hairline);
 }
 
-/* Weight sits below .group-title so the name leads and the count supports. */
-.group-meta {
-    flex-shrink: 0;
-    margin: 0;
-    font: 600 12.5px var(--font-display);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+.panel-back {
+    justify-self: start;
+    min-height: 24px;
+    appearance: none;
+    border: none;
+    background: none;
+    padding: 0 0 0 13px;
+    position: relative;
+    font: 600 12px var(--font-display);
     color: var(--blue);
+    cursor: pointer;
 }
 
-/* The group currently driving the map filter. */
-.group-toggle.is-filtering .group-title {
+.panel-back::before {
+    content: "";
+    position: absolute;
+    left: 1px;
+    top: 50%;
+    width: 6px;
+    height: 6px;
+    margin-top: -3px;
+    border-left: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+}
+
+.panel-back:hover {
     color: var(--blue-deep);
 }
 
-.group-toggle.is-filtering .group-chevron {
-    border-color: var(--blue-deep);
-}
-
-/* Groups the active filter is holding back — still one click away, but clearly
-   not what the map is showing. */
-.group-toggle.is-muted .group-title,
-.group-toggle.is-muted .group-meta {
-    color: var(--muted-2);
-}
-
-.group-toggle.is-muted .group-chevron {
-    border-color: var(--muted-2);
-}
-
-.group-toggle.is-muted:hover .group-title {
+.panel-context__title {
+    margin: 0;
+    font: 700 16px var(--font-display);
+    line-height: 1.25;
     color: var(--ink);
 }
 
-.group-items {
-    padding-bottom: 8px;
+/* Screen 2 reorders its zones: context header, then the summary that explains
+   the filter, then a search box now scoped to this group. The grouping toggle
+   has no coherent meaning from inside a single group, so it steps out. */
+.sidebar-header.is-detail .group-mode-field {
+    display: none;
+}
+
+.sidebar-header.is-detail .panel-context {
+    order: 1;
+}
+
+.sidebar-header.is-detail .summary-row {
+    order: 2;
+}
+
+.sidebar-header.is-detail .search-field {
+    order: 3;
 }
 
 .item {
@@ -551,63 +594,6 @@ body.is-sidebar-collapsed #sidebar {
     font-size: 13px;
     line-height: 1.55;
     color: var(--muted);
-}
-
-/* ---------- Active map filter ---------- */
-
-.active-filter {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 8px 7px 12px;
-    border: 1px solid var(--hairline);
-    border-radius: 10px;
-    background: var(--blue-tint);
-}
-
-.active-filter[hidden] {
-    display: none;
-}
-
-.active-filter__label {
-    flex-shrink: 0;
-    font: 600 11px var(--font-display);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--blue-deep);
-}
-
-.active-filter__value {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font: 600 13px var(--font-ui);
-    color: var(--ink);
-}
-
-.active-filter__clear {
-    flex-shrink: 0;
-    width: 26px;
-    height: 26px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 1px solid transparent;
-    border-radius: 7px;
-    background: none;
-    color: var(--blue-deep);
-    font-size: 16px;
-    line-height: 1;
-    cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.active-filter__clear:hover {
-    background: var(--surface);
-    border-color: var(--blue);
 }
 
 /* ---------- Loading state ---------- */

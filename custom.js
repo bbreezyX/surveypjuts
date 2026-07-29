@@ -726,193 +726,249 @@
     function renderList(query) {
       var normalizedQuery = getNormalizedText(query);
       var fragment = document.createDocumentFragment();
-      var visibleCount = 0;
-      var focusTarget = null;
 
       visibleIds.clear();
       listContainer.innerHTML = "";
 
-      groupedItems.forEach(function (group, groupIndex) {
-        // While a group filter is active only that group contributes rows — but
-        // the other headers stay on screen so switching groups is still one
-        // click, they just render dimmed and collapsed.
-        var isMuted = Boolean(activeGroup) && group.name !== activeGroup;
+      var visibleCount = activeGroup
+        ? renderItemScreen(fragment, normalizedQuery)
+        : renderGroupScreen(fragment, normalizedQuery);
 
-        var matchedItems = isMuted
-          ? []
-          : group.items.filter(function (item) {
-              return !normalizedQuery || item.searchText.indexOf(normalizedQuery) !== -1;
-            });
-
-        if (!isMuted && !matchedItems.length && !activeGroup) {
-          return;
-        }
-
-        visibleCount += matchedItems.length;
-        matchedItems.forEach(function (item) {
-          visibleIds.add(item.id);
-        });
-
-        var isExpanded = !isMuted && (Boolean(normalizedQuery) || group.name === activeGroup);
-        var itemsId = "group-items-" + groupIndex;
-        var needsCoordHint = markDuplicates(matchedItems);
-
-        var groupNode = document.createElement("section");
-        groupNode.className = "group";
-
-        var toggle = document.createElement("button");
-        toggle.type = "button";
-        toggle.className = "group-toggle";
-        toggle.dataset.groupName = group.name;
-        toggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
-        toggle.setAttribute("aria-controls", itemsId);
-        if (group.name === activeGroup) {
-          toggle.classList.add("is-filtering");
-        }
-        if (isMuted) {
-          toggle.classList.add("is-muted");
-        }
-
-        var chevron = document.createElement("span");
-        chevron.className = "group-chevron";
-        chevron.setAttribute("aria-hidden", "true");
-
-        // span, not h2/p: <button> only accepts phrasing content, and the
-        // flow-content nesting was dropping the button's accessible name.
-        var title = document.createElement("span");
-        title.className = "group-title";
-        title.textContent = group.name;
-
-        var meta = document.createElement("span");
-        meta.className = "group-meta";
-        meta.textContent = normalizedQuery && !isMuted
-          ? matchedItems.length + " dari " + group.items.length
-          : group.items.length + " titik";
-
-        toggle.appendChild(chevron);
-        toggle.appendChild(title);
-        toggle.appendChild(meta);
-
-        // Identical in both modes: open a group = filter the map to it and zoom.
-        toggle.addEventListener("click", function () {
-          setActiveGroup(activeGroup === group.name ? null : group.name);
-        });
-
-        var itemsWrap = document.createElement("div");
-        itemsWrap.className = "group-items";
-        itemsWrap.id = itemsId;
-        if (!isExpanded) {
-          itemsWrap.hidden = true;
-        }
-
-        // A filtered group with no search hits explains itself in place, right
-        // under its own header, instead of at the bottom of the whole list.
-        if (isExpanded && !matchedItems.length) {
-          itemsWrap.appendChild(buildEmptyState(Boolean(normalizedQuery)));
-        }
-
-        matchedItems.forEach(function (item) {
-          var button = document.createElement("button");
-          var code = document.createElement("span");
-          var copy = document.createElement("span");
-          var headline = document.createElement("span");
-          var label = document.createElement("span");
-          var subline = document.createElement("span");
-
-          button.type = "button";
-          button.className = "item";
-          button.dataset.itemId = item.id;
-          button.title = item.nomor;
-          button.setAttribute(
-            "aria-label",
-            [
-              "Titik " + item.display.code,
-              item.display.primary,
-              item.display.secondary,
-              item.nama
-            ]
-              .filter(Boolean)
-              .join(". ")
-          );
-
-          code.className = "item-code";
-          code.textContent = item.display.code;
-
-          copy.className = "item-copy";
-          headline.className = "item-headline";
-
-          label.className = "item-label";
-          label.textContent = item.display.primary;
-          headline.appendChild(label);
-
-          // Only rows that are still ambiguous after the landmark pass pay the
-          // cost of a coordinate tiebreaker.
-          if (needsCoordHint(item)) {
-            var coord = document.createElement("span");
-            coord.className = "item-coord";
-            coord.textContent = item.koordinatSingkat;
-            headline.appendChild(coord);
-          }
-
-          subline.className = "item-subline";
-          subline.textContent = item.display.secondary;
-
-          copy.appendChild(headline);
-          copy.appendChild(subline);
-          button.appendChild(code);
-          button.appendChild(copy);
-
-          if (item.id === activeItemId) {
-            button.classList.add("is-active");
-          }
-
-          button.addEventListener("click", function () {
-            focusItem(item, { closePanel: true, zoom: 17 });
-          });
-
-          itemsWrap.appendChild(button);
-        });
-
-        groupNode.appendChild(toggle);
-        groupNode.appendChild(itemsWrap);
-        fragment.appendChild(groupNode);
-
-        if (group.name === activeGroup) {
-          focusTarget = toggle;
-        }
-      });
-
-      if (!visibleCount && !activeGroup) {
-        fragment.appendChild(buildEmptyState(Boolean(normalizedQuery)));
-      }
+      renderPanelNav();
+      searchInput.placeholder = activeGroup
+        ? "Cari di grup ini..."
+        : "Cari nomor, pengusul, alamat...";
 
       listContainer.appendChild(fragment);
       renderSummary(visibleCount, Boolean(normalizedQuery));
-      renderActiveFilter();
       window.lyr_260331_4.changed();
       updateHighlight(activeItemId);
-
-      // innerHTML wipe destroys the node the user just activated, so hand focus
-      // back to its replacement instead of dropping it on <body>.
-      if (restoreFocusGroup) {
-        var restored = focusTarget && activeGroup === restoreFocusGroup
-          ? focusTarget
-          : findGroupToggle(restoreFocusGroup);
-        if (restored) {
-          restored.focus();
-        }
-        restoreFocusGroup = null;
-      }
     }
 
-    function findGroupToggle(name) {
-      var toggles = listContainer.querySelectorAll(".group-toggle");
-      for (var i = 0; i < toggles.length; i++) {
-        if (toggles[i].dataset.groupName === name) {
-          return toggles[i];
+    // Screen 1. With no query: one row per group, no points. With a query:
+    // matching points across every group, flat — search is the shortcut past
+    // the drill-down, so it must not make you pick a group first.
+    function renderGroupScreen(fragment, normalizedQuery) {
+      var visibleCount = 0;
+
+      if (normalizedQuery) {
+        var matched = [];
+        groupedItems.forEach(function (group) {
+          group.items.forEach(function (item) {
+            if (item.searchText.indexOf(normalizedQuery) === -1) {
+              return;
+            }
+            visibleIds.add(item.id);
+            visibleCount += 1;
+            matched.push({ item: item, groupName: group.name });
+          });
+        });
+
+        var needsCoordHint = markDuplicates(matched.map(function (entry) {
+          return entry.item;
+        }));
+
+        matched.forEach(function (entry) {
+          fragment.appendChild(
+            buildItemRow(entry.item, needsCoordHint, entry.groupName)
+          );
+        });
+
+        if (!visibleCount) {
+          fragment.appendChild(buildEmptyState(true));
+        }
+        return visibleCount;
+      }
+
+      groupedItems.forEach(function (group) {
+        group.items.forEach(function (item) {
+          visibleIds.add(item.id);
+          visibleCount += 1;
+        });
+        fragment.appendChild(buildGroupRow(group));
+      });
+
+      if (!groupedItems.length) {
+        fragment.appendChild(buildEmptyState(false));
+      }
+      return visibleCount;
+    }
+
+    // Screen 2. Only the active group contributes rows.
+    function renderItemScreen(fragment, normalizedQuery) {
+      var group = null;
+      for (var i = 0; i < groupedItems.length; i++) {
+        if (groupedItems[i].name === activeGroup) {
+          group = groupedItems[i];
+          break;
         }
       }
-      return null;
+      if (!group) {
+        activeGroup = null;
+        return renderGroupScreen(fragment, normalizedQuery);
+      }
+
+      var matchedItems = group.items.filter(function (item) {
+        return !normalizedQuery || item.searchText.indexOf(normalizedQuery) !== -1;
+      });
+
+      matchedItems.forEach(function (item) {
+        visibleIds.add(item.id);
+      });
+
+      var needsCoordHint = markDuplicates(matchedItems);
+      matchedItems.forEach(function (item) {
+        fragment.appendChild(buildItemRow(item, needsCoordHint, null));
+      });
+
+      if (!matchedItems.length) {
+        fragment.appendChild(buildEmptyState(Boolean(normalizedQuery)));
+      }
+      return matchedItems.length;
+    }
+
+    function buildGroupRow(group) {
+      var row = document.createElement("button");
+      var title = document.createElement("span");
+      var count = document.createElement("span");
+      var chevron = document.createElement("span");
+
+      row.type = "button";
+      row.className = "group-row";
+      row.dataset.groupName = group.name;
+      // The visible count is a bare number so the column lines up; the
+      // accessible name still spells out what it counts.
+      row.setAttribute(
+        "aria-label",
+        group.name + ", " + group.items.length + " titik, buka daftar"
+      );
+
+      title.className = "group-row__title";
+      title.textContent = group.name;
+
+      count.className = "group-row__count";
+      count.textContent = String(group.items.length);
+
+      chevron.className = "group-row__chevron";
+      chevron.setAttribute("aria-hidden", "true");
+
+      row.appendChild(title);
+      row.appendChild(count);
+      row.appendChild(chevron);
+
+      row.addEventListener("click", function () {
+        setActiveGroup(group.name);
+      });
+
+      return row;
+    }
+
+    // groupName is passed only on screen 1 search results, where the row has
+    // to say which group it came from.
+    function buildItemRow(item, needsCoordHint, groupName) {
+      var button = document.createElement("button");
+      var code = document.createElement("span");
+      var copy = document.createElement("span");
+      var headline = document.createElement("span");
+      var label = document.createElement("span");
+      var subline = document.createElement("span");
+
+      button.type = "button";
+      button.className = "item";
+      button.dataset.itemId = item.id;
+      button.title = item.nomor;
+      button.setAttribute(
+        "aria-label",
+        [
+          "Titik " + item.display.code,
+          item.display.primary,
+          item.display.secondary,
+          item.nama
+        ]
+          .filter(Boolean)
+          .join(". ")
+      );
+
+      code.className = "item-code";
+      code.textContent = item.display.code;
+
+      copy.className = "item-copy";
+      headline.className = "item-headline";
+
+      label.className = "item-label";
+      label.textContent = item.display.primary;
+      headline.appendChild(label);
+
+      if (needsCoordHint(item)) {
+        var coord = document.createElement("span");
+        coord.className = "item-coord";
+        coord.textContent = item.koordinatSingkat;
+        headline.appendChild(coord);
+      }
+
+      subline.className = "item-subline";
+      subline.textContent = groupName
+        ? item.display.secondary + " · " + groupName
+        : item.display.secondary;
+
+      copy.appendChild(headline);
+      copy.appendChild(subline);
+      button.appendChild(code);
+      button.appendChild(copy);
+
+      if (item.id === activeItemId) {
+        button.classList.add("is-active");
+      }
+
+      button.addEventListener("click", function () {
+        focusItem(item, { closePanel: true, zoom: 17 });
+      });
+
+      return button;
+    }
+
+    // The context header above the list: back button + group name, on screen 2
+    // only. Screen 1 has none.
+    function renderPanelNav() {
+      var header = document.querySelector(".sidebar-header");
+      var existing = document.querySelector(".panel-context");
+      if (existing) {
+        existing.remove();
+      }
+
+      // Screen 2 hides two controls: the grouping toggle, because changing how
+      // points are grouped from inside one group has no coherent meaning; and
+      // "Lihat semua", because the back button already does that job and says
+      // so more plainly.
+      header.classList.toggle("is-detail", Boolean(activeGroup));
+      var fitBtn = document.getElementById("fit-map");
+      if (fitBtn) {
+        fitBtn.hidden = Boolean(activeGroup);
+      }
+
+      if (!activeGroup) {
+        return;
+      }
+
+      var wrap = document.createElement("div");
+      var back = document.createElement("button");
+      var title = document.createElement("p");
+
+      wrap.className = "panel-context";
+
+      back.type = "button";
+      back.className = "panel-back";
+      back.textContent = "Semua " + groupNoun();
+      back.addEventListener("click", function () {
+        setActiveGroup(null);
+      });
+
+      title.className = "panel-context__title";
+      title.textContent = activeGroup;
+
+      wrap.appendChild(back);
+      wrap.appendChild(title);
+      header.insertBefore(wrap, header.firstChild);
     }
 
     function buildEmptyState(hasQuery) {
@@ -1003,11 +1059,10 @@
     function setActiveGroup(name, options) {
       var config = options || {};
       activeGroup = name || null;
-      if (activeGroup) {
-        restoreFocusGroup = activeGroup;
-      }
+      // A query typed on one screen must not leak onto the other.
+      searchInput.value = "";
       clearSelection();
-      renderList(searchInput.value);
+      renderList("");
       if (config.fit !== false) {
         fitToVisible({ maxZoom: activeGroup ? 14 : 15 });
       }
@@ -1016,16 +1071,6 @@
     function fitToAllPoints() {
       clearSelection();
       fitToVisible({ maxZoom: 15 });
-    }
-
-    function renderActiveFilter() {
-      var bar = document.getElementById("active-filter");
-      var name = document.getElementById("active-filter-name");
-      if (!bar || !name) {
-        return;
-      }
-      bar.hidden = !activeGroup;
-      name.textContent = activeGroup || "";
     }
 
     function handleMapSingleClick(event) {
@@ -1063,13 +1108,6 @@
         fitToVisible({ maxZoom: 16, duration: 500 });
       }, 250);
     });
-
-    var filterClear = document.getElementById("active-filter-clear");
-    if (filterClear) {
-      filterClear.addEventListener("click", function () {
-        setActiveGroup(null);
-      });
-    }
 
     fitButton.addEventListener("click", function () {
       searchInput.value = "";
