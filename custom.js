@@ -987,7 +987,15 @@
         widen.className = "secondary-action";
         widen.textContent = "Cari di semua titik";
         widen.addEventListener("click", function () {
-          setActiveGroup(null, { fit: false });
+          // Keep the query: the point of this button is to widen the same
+          // search, not to start over.
+          var carried = searchInput.value;
+          activeGroup = null;
+          restoreFocusGroup = null;
+          clearSelection();
+          searchInput.value = carried;
+          renderList(carried);
+          fitToVisible({ maxZoom: 16, duration: 500 });
         });
         wrap.appendChild(widen);
       } else if (hasQuery) {
@@ -1058,14 +1066,39 @@
 
     function setActiveGroup(name, options) {
       var config = options || {};
+      // Remember the row we are leaving so Back can hand focus straight back
+      // to it — innerHTML wiping destroys the node the user just activated.
+      restoreFocusGroup = name ? null : activeGroup;
       activeGroup = name || null;
       // A query typed on one screen must not leak onto the other.
       searchInput.value = "";
       clearSelection();
       renderList("");
+      moveFocusForScreen();
       if (config.fit !== false) {
         fitToVisible({ maxZoom: activeGroup ? 14 : 15 });
       }
+    }
+
+    function moveFocusForScreen() {
+      if (activeGroup) {
+        var back = document.querySelector(".panel-back");
+        if (back) {
+          back.focus();
+        }
+        return;
+      }
+      if (!restoreFocusGroup) {
+        return;
+      }
+      var rows = listContainer.querySelectorAll(".group-row");
+      for (var i = 0; i < rows.length; i++) {
+        if (rows[i].dataset.groupName === restoreFocusGroup) {
+          rows[i].focus();
+          break;
+        }
+      }
+      restoreFocusGroup = null;
     }
 
     function fitToAllPoints() {
