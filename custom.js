@@ -649,17 +649,18 @@
       popupContent.innerHTML = buildPopupHtml(item);
       popup.style.display = "block";
 
-      var popupWasOpen = document.body.classList.contains("is-popup-open");
-      if (isMobileViewport() && !popupWasOpen) {
-        document.body.classList.remove("is-popup-open");
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () {
-            document.body.classList.add("is-popup-open");
-          });
-        });
-      } else {
-        document.body.classList.add("is-popup-open");
-      }
+      // Flush layout so the browser registers the popup's pre-transition state:
+      // going from display:none to display:block and gaining the class in one
+      // frame gives the transition no starting point, so it would not animate.
+      //
+      // This reads the offset synchronously instead of deferring the class by
+      // two requestAnimationFrames. That deferral was a real bug on mobile:
+      // is-popup-open also tells the bottom sheet to drop out of the way, so
+      // whenever those frames were throttled or dropped the class never landed
+      // and the sheet stayed at its peek height, covering the popup it was
+      // supposed to make room for.
+      void popup.offsetWidth;
+      document.body.classList.add("is-popup-open");
 
       if (window.overlayPopup && typeof window.overlayPopup.setPosition === "function") {
         window.overlayPopup.setPosition(coord);
