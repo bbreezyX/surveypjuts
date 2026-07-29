@@ -1199,6 +1199,38 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         display: none;
     }
 
+    /* Peek shows search + grouping + a sliver of the first row, which is more
+       use than the stat row that used to sit here. */
+    .sidebar-header {
+        gap: 11px;
+        padding: 4px 16px 0;
+    }
+
+    .group-row {
+        min-height: 48px;
+        padding: 13px 10px;
+    }
+
+    .panel-back {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    .panel-context {
+        margin: -4px -16px 0;
+        padding: 10px 16px 12px;
+    }
+
+    .summary-row {
+        gap: 12px;
+    }
+
+    .item {
+        min-height: 48px;
+        padding: 11px 10px;
+    }
+
     .masthead {
         top: 12px;
         left: 12px;
