@@ -85,21 +85,6 @@
         </div>
 
         <div class="sidebar-header">
-          <div class="sidebar-stats" aria-label="Ringkasan data">
-            <div class="stat stat--lead">
-              <strong id="count-points">0</strong>
-              <span>titik</span>
-            </div>
-            <div class="stat">
-              <strong id="count-groups">0</strong>
-              <span id="count-groups-label">pengusul</span>
-            </div>
-            <div class="stat">
-              <strong id="count-visible">0</strong>
-              <span>tampil</span>
-            </div>
-          </div>
-
           <label class="search-field" for="list-search">
             <span class="visually-hidden">Cari titik PJUTS</span>
             <span class="search-icon" aria-hidden="true"></span>
@@ -110,10 +95,6 @@
               autocomplete="off"
             />
           </label>
-
-          <button id="fit-map" class="secondary-action" type="button">
-            Lihat semua
-          </button>
 
           <div
             id="active-filter"
@@ -153,6 +134,13 @@
                 Kabupaten
               </button>
             </div>
+          </div>
+
+          <div class="summary-row">
+            <p class="list-summary" id="list-summary">230 titik</p>
+            <button id="fit-map" class="link-action" type="button">
+              Lihat semua
+            </button>
           </div>
         </div>
 

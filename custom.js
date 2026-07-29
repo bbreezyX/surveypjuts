@@ -188,11 +188,9 @@
     document.body.classList.toggle("is-data-unavailable", isDisabled);
   }
 
-  // Counts are unknown until the data lands. "0" is a claim; an em dash is not.
+  // Counts are unknown until the data lands. "0" is a claim; this is not.
   function setCountsUnknown() {
-    setTextContent("count-points", "—");
-    setTextContent("count-groups", "—");
-    setTextContent("count-visible", "—");
+    setTextContent("list-summary", "Data titik belum tersedia");
   }
 
   function showDataLoading() {
@@ -390,10 +388,7 @@
     var fitButton = document.getElementById("fit-map");
     var panelToggle = document.getElementById("panel-toggle");
     var panelClose = document.getElementById("sidebar-close");
-    var countPoints = document.getElementById("count-points");
-    var countGroups = document.getElementById("count-groups");
-    var countGroupsLabel = document.getElementById("count-groups-label");
-    var countVisible = document.getElementById("count-visible");
+    var listSummary = document.getElementById("list-summary");
     var popup = document.getElementById("popup");
     var popupContent = document.getElementById("popup-content");
 
@@ -539,16 +534,60 @@
     var groupMode = "nama";
     var groupedItems = buildGroupedItems(groupMode);
 
-    function updateGroupStats() {
-      countGroups.textContent = groupedItems.length.toLocaleString("id-ID");
-      if (countGroupsLabel) {
-        countGroupsLabel.textContent =
-          groupMode === "kabupaten" ? "wilayah" : "pengusul";
-      }
+    function groupNoun() {
+      return groupMode === "kabupaten" ? "kabupaten" : "pengusul";
     }
 
-    countPoints.textContent = items.length.toLocaleString("id-ID");
-    updateGroupStats();
+    function formatCount(value) {
+      return value.toLocaleString("id-ID");
+    }
+
+    // One line that changes with the situation, instead of three numbers that
+    // are usually identical and therefore unreadable.
+    function renderSummary(matchCount, hasQuery) {
+      if (!listSummary) {
+        return;
+      }
+      var text;
+      if (activeGroup) {
+        text = hasQuery
+          ? formatCount(matchCount) + " dari " + formatCount(activeGroupSize()) +
+            " titik · peta difilter ke grup ini"
+          : formatCount(matchCount) + " titik · peta difilter ke grup ini";
+      } else if (hasQuery) {
+        text = matchCount
+          ? formatCount(matchCount) + " titik cocok di " +
+            formatCount(countMatchedGroups()) + " " + groupNoun()
+          : "Tidak ada titik yang cocok";
+      } else {
+        text = formatCount(items.length) + " titik · " +
+          formatCount(groupedItems.length) + " " + groupNoun();
+      }
+      listSummary.textContent = text;
+    }
+
+    function activeGroupSize() {
+      for (var i = 0; i < groupedItems.length; i++) {
+        if (groupedItems[i].name === activeGroup) {
+          return groupedItems[i].items.length;
+        }
+      }
+      return 0;
+    }
+
+    // How many groups contributed at least one row to the current result set.
+    function countMatchedGroups() {
+      var seen = 0;
+      groupedItems.forEach(function (group) {
+        for (var i = 0; i < group.items.length; i++) {
+          if (visibleIds.has(group.items[i].id)) {
+            seen += 1;
+            return;
+          }
+        }
+      });
+      return seen;
+    }
 
     // ---- Single source of truth for "what is on the map right now" ----------
     // Both grouping modes behave identically: opening a group filters the map
@@ -848,7 +887,7 @@
       }
 
       listContainer.appendChild(fragment);
-      countVisible.textContent = visibleCount.toLocaleString("id-ID");
+      renderSummary(visibleCount, Boolean(normalizedQuery));
       renderActiveFilter();
       window.lyr_260331_4.changed();
       updateHighlight(activeItemId);
@@ -1052,7 +1091,6 @@
       groupMode = mode;
       groupedItems = buildGroupedItems(groupMode);
       activeGroup = null;
-      updateGroupStats();
       groupModeButtons.forEach(function (btn) {
         var on = btn.getAttribute("data-mode") === mode;
         btn.classList.toggle("is-active", on);

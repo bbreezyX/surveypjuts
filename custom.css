@@ -209,36 +209,39 @@ body.is-sidebar-collapsed #sidebar {
     padding: 18px 18px 0;
 }
 
-.sidebar-stats {
+.summary-row {
     display: flex;
     align-items: baseline;
-    gap: 16px;
-    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 10px;
 }
 
-.stat {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-}
-
-.stat strong {
-    font-family: var(--font-display);
-    font-size: 22px;
-    font-weight: 700;
-    line-height: 1.15;
-    color: var(--ink);
-}
-
-.stat--lead strong {
-    background: var(--yellow);
-    border-radius: 6px;
-    padding: 1px 7px;
-}
-
-.stat span {
-    font-size: 12px;
+.list-summary {
+    margin: 0;
+    min-width: 0;
+    font: 400 12.5px var(--font-ui);
     color: var(--muted);
+}
+
+.link-action {
+    flex-shrink: 0;
+    appearance: none;
+    border: none;
+    background: none;
+    padding: 0;
+    font: 600 12.5px var(--font-display);
+    color: var(--blue);
+    cursor: pointer;
+}
+
+.link-action:not(:disabled):hover {
+    color: var(--blue-deep);
+    text-decoration: underline;
+}
+
+.link-action:disabled {
+    color: var(--muted-2);
+    cursor: default;
 }
 
 .search-field {
@@ -678,21 +681,10 @@ body.is-data-unavailable .search-field input::placeholder {
     color: var(--muted-2);
 }
 
-/* Unknown counts render as an em dash. Keeping the yellow highlight would make
-   it read as a redacted bar rather than "not known yet". */
-body.is-data-unavailable .sidebar-stats {
-    opacity: 0.65;
-}
-
-body.is-data-unavailable .stat--lead strong {
-    background: none;
-    padding: 1px 0;
+/* Unknown counts must not look like a claim of zero. */
+body.is-data-unavailable .list-summary {
     color: var(--muted-2);
-}
-
-body.is-data-unavailable .stat strong {
-    color: var(--muted-2);
-    font-weight: 600;
+    font-style: italic;
 }
 
 .data-error {
@@ -1481,9 +1473,9 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         gap: 6px;
     }
 
-    .sidebar-stats {
-        display: none;
-    }
+    /* The old stat block was hidden here to buy vertical room. Its replacement
+       is a single 12.5px line that also carries "Lihat semua", so it stays —
+       losing that action costs more than the row saves. */
 }
 
 @media (prefers-reduced-motion: reduce) {
