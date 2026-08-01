@@ -24,6 +24,33 @@
     --panel-top: 16px;
     --font-display: "Montserrat", sans-serif;
     --font-ui: "Work Sans", sans-serif;
+
+    /* Map control chrome. Shadows are two-layer — a tight contact shadow plus
+       a wide ambient one. A single soft blur (what --shadow-sm is) reads flat
+       at 40px, which is most of why the controls looked like default chrome. */
+    --ctl-surface: rgba(255, 255, 255, 0.84);
+    --ctl-surface-near: rgba(255, 255, 255, 0.93);
+    --ctl-surface-hover: #ffffff;
+    --ctl-border: rgba(41, 61, 80, 0.16);
+    --ctl-border-hover: rgba(0, 114, 188, 0.5);
+    --ctl-shadow: 0 1px 2px rgba(41, 61, 80, 0.12), 0 4px 12px rgba(41, 61, 80, 0.1);
+    --ctl-shadow-near: 0 1px 2px rgba(41, 61, 80, 0.14),
+        0 7px 18px rgba(41, 61, 80, 0.15);
+    --ctl-shadow-hover: 0 2px 4px rgba(41, 61, 80, 0.12),
+        0 10px 26px rgba(0, 114, 188, 0.24);
+    --ctl-shadow-press: 0 1px 2px rgba(41, 61, 80, 0.2);
+    --ctl-blur: saturate(170%) blur(10px);
+    /* Layer chip footprint. The icon overlay is sized from the same token —
+       see .ctl-layers-slot for why the icon cannot live inside the button. */
+    --ctl-chip: 42px;
+
+    --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
+    /* Slight overshoot — this is what makes icon motion read as alive
+       rather than as a property animating. Only for icons, never layout. */
+    --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+    --dur-press: 90ms;
+    --dur: 190ms;
+    --dur-state: 320ms;
 }
 
 * {
@@ -780,6 +807,115 @@ body.is-data-unavailable .list-summary {
     color: var(--muted-2);
 }
 
+/* ---------- Map control state ladder ---------- */
+
+/* One ladder for every floating control: rest -> near -> hover -> press.
+   `.is-near` is set from custom.js when the pointer comes within ~90px. It
+   is not a CSS-only effect on purpose: widening a pseudo-element to catch
+   the pointer early also steals pan/drag from the map in that band, and 14px
+   of reach would not reproduce the "heading over there" feel anyway. */
+.ol-zoom,
+.layer-switcher > button,
+.panel-toggle {
+    transition: background-color var(--dur) var(--ease-out),
+        border-color var(--dur) var(--ease-out),
+        box-shadow var(--dur) var(--ease-out),
+        transform var(--dur) var(--ease-out);
+}
+
+.ol-zoom.is-near,
+.layer-switcher.is-near > button,
+body.is-sidebar-collapsed .panel-toggle.is-near {
+    background-color: var(--ctl-surface-near);
+    box-shadow: var(--ctl-shadow-near);
+    transform: translateY(-0.5px);
+}
+
+.ol-zoom:hover,
+.layer-switcher > button:hover,
+body.is-sidebar-collapsed .panel-toggle:hover {
+    background-color: var(--ctl-surface-hover);
+    border-color: var(--ctl-border-hover);
+    box-shadow: var(--ctl-shadow-hover);
+    transform: translateY(-1.5px);
+}
+
+.ol-zoom:active,
+.layer-switcher > button:active,
+.panel-toggle:active {
+    box-shadow: var(--ctl-shadow-press);
+    transform: translateY(0) scale(0.965);
+    transition-duration: var(--dur-press);
+}
+
+/* ol.css paints `.ol-control button:focus` dark blue (rgba(0,60,136,.7)), and
+   a mouse click leaves focus on the button — so that colour stayed behind
+   after every zoom or layer click. Reset the pointer case only; :focus-visible
+   still gets the keyboard state, and :not(:hover) keeps the hover tint from
+   being outranked while the button is both focused and hovered. */
+.ol-zoom button:focus:not(:focus-visible):not(:hover) {
+    background-color: transparent;
+    color: var(--ink);
+}
+
+/* Excluded while the panel is open: the shown state owns the chip's surface
+   there and must not be reset back to rest. */
+.layer-switcher:not(.shown) > button:focus:not(:focus-visible):not(:hover) {
+    background-color: var(--ctl-surface);
+}
+
+/* ---------- Control tooltips ---------- */
+
+/* Pointer devices only — on touch these would fire on tap and linger. */
+@media (hover: hover) and (pointer: fine) {
+    [data-tooltip] {
+        position: relative;
+    }
+
+    [data-tooltip]::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        top: 50%;
+        right: calc(100% + 10px);
+        z-index: 30;
+        translate: 4px -50%;
+        padding: 5px 9px;
+        border-radius: var(--radius-xs);
+        background: var(--ink);
+        color: #fff;
+        font: 500 11.5px/1 var(--font-ui);
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        box-shadow: var(--ctl-shadow);
+        transition: opacity var(--dur) var(--ease-out),
+            translate var(--dur) var(--ease-out);
+    }
+
+    [data-tooltip]:hover::after,
+    [data-tooltip]:focus-visible::after {
+        opacity: 1;
+        translate: 0 -50%;
+        /* Delay on the way in only — instant on the way out, so sweeping
+           across the stack does not trail a queue of labels. */
+        transition-delay: 350ms;
+    }
+
+    /* The open panel toggle sits at the sidebar's right edge, so a tooltip
+       to its left would land on top of the panel it belongs to. */
+    .panel-toggle[data-tooltip]::after {
+        right: auto;
+        left: calc(100% + 10px);
+        translate: -4px -50%;
+    }
+
+    .panel-toggle[data-tooltip]:hover::after,
+    .panel-toggle[data-tooltip]:focus-visible::after {
+        translate: 0 -50%;
+    }
+}
+
 /* ---------- Panel toggle (desktop) ---------- */
 
 /* Open: the toggle sits inside the panel's own header, flat and chrome-less,
@@ -799,11 +935,18 @@ body.is-data-unavailable .list-summary {
     background: none;
     box-shadow: none;
     cursor: pointer;
-    transition: top 0.3s ease, left 0.3s ease, width 0.3s ease,
-        height 0.3s ease, background-color 0.15s ease, border-color 0.15s ease,
-        box-shadow 0.15s ease;
+    transition: top var(--dur-state) var(--ease-out),
+        left var(--dur-state) var(--ease-out),
+        width var(--dur-state) var(--ease-out),
+        height var(--dur-state) var(--ease-out),
+        background-color var(--dur) var(--ease-out),
+        border-color var(--dur) var(--ease-out),
+        box-shadow var(--dur) var(--ease-out),
+        transform var(--dur) var(--ease-out);
 }
 
+/* Open state has no chrome — it belongs to the panel header — so its hover
+   is a tint, not the chip ladder. */
 .panel-toggle:hover {
     background: var(--blue-tint);
 }
@@ -819,16 +962,16 @@ body.is-sidebar-collapsed .panel-toggle {
     left: var(--panel-left);
     width: 40px;
     height: 40px;
-    border-color: var(--hairline-strong);
+    border-color: var(--ctl-border);
     border-radius: 10px;
-    background: var(--surface-glass);
-    box-shadow: var(--shadow-sm);
+    background: var(--ctl-surface);
+    box-shadow: var(--ctl-shadow);
 }
 
-body.is-sidebar-collapsed .panel-toggle:hover {
-    background: var(--surface);
-}
-
+/* The chevron slides toward wherever the panel is about to travel — left to
+   close, right to open. Cheap directional preview of what the click does.
+   The slide uses the standalone `translate` property so it happens in the
+   parent's coordinate space, unrotated by the 45deg in `transform`. */
 .panel-toggle__chevron {
     display: block;
     width: 8px;
@@ -837,11 +980,23 @@ body.is-sidebar-collapsed .panel-toggle:hover {
     border-left: 2px solid var(--ink);
     border-bottom: 2px solid var(--ink);
     transform: rotate(45deg) translate(1px, -1px);
-    transition: transform 0.3s ease;
+    translate: 0;
+    transition: transform var(--dur-state) var(--ease-out),
+        translate var(--dur) var(--ease-spring),
+        border-color var(--dur) var(--ease-out);
+}
+
+.panel-toggle:hover .panel-toggle__chevron {
+    translate: -2px;
 }
 
 body.is-sidebar-collapsed .panel-toggle__chevron {
     transform: rotate(225deg) translate(1px, -1px);
+}
+
+body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
+    translate: 2px;
+    border-color: var(--blue);
 }
 
 /* ---------- Point popup (desktop: anchored overlay) ---------- */
@@ -852,54 +1007,63 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     bottom: 48px;
     left: 0;
     transform: translateX(-50%);
-    width: 300px;
+    width: 312px;
     padding: 0;
     background: var(--surface);
-    border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--ctl-border);
+    border-radius: var(--radius-lg);
+    /* Same two-layer contact + ambient recipe as the map controls, scaled up
+       for a card this size. */
+    box-shadow: 0 2px 6px rgba(41, 61, 80, 0.1),
+        0 22px 48px rgba(41, 61, 80, 0.26);
     display: none;
 }
 
 /* qgis2web.css draws its own popup arrow with BOTH :before (gray) and
-   :after (white) triangles — hide :before and fully reset :after's
-   vendor props (top:100%, 10px borders, -10px margin) before redrawing
-   the caret as a bordered diamond. */
-.ol-popup::before {
+   :after (white) triangles. The card already sits directly above the
+   selected pin, so the caret only notched the card's edge without adding
+   any information — hide both. */
+.ol-popup::before,
+.ol-popup::after {
     display: none;
 }
 
-.ol-popup::after {
-    content: "";
-    position: absolute;
-    top: auto;
-    bottom: -8px;
-    left: 50%;
-    width: 14px;
-    height: 14px;
-    margin-left: 0;
-    border: none;
-    border-right: 1px solid var(--hairline-strong);
-    border-bottom: 1px solid var(--hairline-strong);
-    transform: translateX(-50%) rotate(45deg);
-    background: var(--surface);
-}
-
+/* Squared off and given the same glass/hairline/shadow recipe as the map
+   controls — a lone white circle read as a different design language. */
 .ol-popup-closer {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: 10px;
+    right: 10px;
     z-index: 2;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: var(--shadow-sm);
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--ctl-border);
+    border-radius: 9px;
+    background: var(--ctl-surface);
+    box-shadow: var(--ctl-shadow);
     text-align: center;
-    line-height: 36px;
+    line-height: 28px;
     text-decoration: none;
-    color: var(--muted);
-    font-size: 15px;
+    color: var(--ink);
+    font-size: 12px;
+    transition: background-color var(--dur) var(--ease-out),
+        border-color var(--dur) var(--ease-out),
+        box-shadow var(--dur) var(--ease-out),
+        transform var(--dur) var(--ease-out);
+}
+
+.ol-popup-closer:hover {
+    background: var(--ctl-surface-hover);
+    border-color: var(--ctl-border-hover);
+    box-shadow: var(--ctl-shadow-hover);
+    color: var(--blue);
+    transform: translateY(-1.5px);
+}
+
+.ol-popup-closer:active {
+    box-shadow: var(--ctl-shadow-press);
+    transform: translateY(0) scale(0.94);
+    transition-duration: var(--dur-press);
 }
 
 .ol-popup-closer::after {
@@ -914,13 +1078,15 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 }
 
 .feature-popup {
-    border-radius: var(--radius-md);
+    /* Inner radius = card radius minus its 1px border, or the media corners
+       sit a hair proud of the card's. */
+    border-radius: calc(var(--radius-lg) - 1px);
     overflow: hidden;
 }
 
 .feature-popup__media {
     position: relative;
-    height: 150px;
+    height: 152px;
     background: var(--hairline-strong);
 }
 
@@ -931,33 +1097,67 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     object-fit: cover;
 }
 
+/* Scrim so the caption holds up over a bright photo — which is what the old
+   dark pill was compensating for. With it, the caption can drop the pill. */
+.feature-popup__media::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 68px;
+    background: linear-gradient(
+        to top,
+        rgba(20, 32, 44, 0.74),
+        rgba(20, 32, 44, 0)
+    );
+    pointer-events: none;
+}
+
 .feature-popup__media-badge {
     position: absolute;
-    left: 10px;
-    bottom: 8px;
-    background: rgba(41, 61, 80, 0.85);
-    color: #ffffff;
-    font-size: 11px;
-    padding: 3px 9px;
-    border-radius: var(--radius-xs);
+    left: 14px;
+    bottom: 10px;
+    z-index: 1;
+    padding: 0;
+    background: none;
+    border-radius: 0;
+    color: rgba(255, 255, 255, 0.94);
+    font: 600 10px var(--font-display);
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
 }
 
 .feature-popup__body {
-    padding: 12px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px 16px;
 }
 
+/* The yellow rule shipped last in the DOM and floated unattached at the
+   bottom-left. Reordered to lead the card, it becomes the header's anchor
+   and the only accent the eye has to account for. */
+.feature-popup__rule {
+    order: -1;
+    width: 26px;
+    border-top: 3px solid var(--yellow);
+    border-radius: 2px;
+    margin: 0 0 10px;
+}
+
+/* Demoted from --blue-deep: with blue meta icons and the yellow rule, three
+   accents were competing inside a 312px card. This line is locator text. */
 .feature-popup__eyebrow {
     margin: 0;
-    font: 600 11px var(--font-display);
+    font: 600 10.5px var(--font-display);
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--blue-deep);
+    color: var(--muted-2);
 }
 
 .feature-popup__title {
-    margin: 3px 0 8px;
-    font: 700 18px var(--font-display);
-    line-height: 1.2;
+    margin: 4px 0 0;
+    font: 700 19px var(--font-display);
+    line-height: 1.18;
+    letter-spacing: -0.01em;
     color: var(--ink);
     display: -webkit-box;
     -webkit-line-clamp: 3;
@@ -966,44 +1166,50 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     overflow-wrap: anywhere;
 }
 
+/* One rule between header and detail instead of a hairline on every row —
+   four full-width borders read as a receipt, not a card. Spacing carries
+   the separation now. */
 .feature-popup__meta {
-    margin: 0;
+    margin: 13px 0 0;
+    padding-top: 13px;
+    border-top: 1px solid var(--divider);
     display: grid;
+    gap: 11px;
 }
 
 .feature-popup__meta-row {
-    display: flex;
-    gap: 9px;
-    padding: 6px 0;
-    border-top: 1px solid var(--divider);
+    display: grid;
+    grid-template-columns: 16px 1fr;
+    gap: 10px;
+    align-items: start;
+    padding: 0;
+    border-top: none;
 }
 
 .meta-icon {
-    flex-shrink: 0;
     width: 16px;
-    padding-top: 1px;
+    padding-top: 2px;
     text-align: center;
     color: var(--blue);
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .feature-popup__meta-row dt {
-    margin: 0;
-    font-size: 11px;
+    margin: 0 0 1px;
+    font: 600 9.5px var(--font-display);
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
     color: var(--muted-2);
 }
 
 .feature-popup__meta-row dd {
     margin: 0;
-    font-size: 12.5px;
-    line-height: 1.45;
-    color: var(--ink-soft);
-}
-
-.feature-popup__rule {
-    width: 32px;
-    border-top: 3px solid var(--yellow);
-    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--ink);
+    /* Coordinates and dates line up column-wise instead of shimmying. */
+    font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Map furniture ---------- */
@@ -1017,43 +1223,51 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     margin: 0;
 }
 
-/* qgis2web nests zoom/scale controls inside unnamed absolutely-positioned
-   wrapper divs, so right/bottom offsets resolve against those wrappers.
-   position:fixed escapes them and docks against the real viewport. */
-.ol-zoom {
+/* qgis2web nests zoom/scale/attribution inside unnamed absolutely-positioned
+   wrapper divs, so their own right/bottom offsets resolve against those.
+   custom.js re-parents all three into .map-meta instead — one fixed anchor,
+   no magic numbers holding three separately-docked boxes in alignment. */
+.map-meta {
     position: fixed;
-    top: auto;
-    left: auto;
     right: 16px;
-    bottom: 75px;
-    background: var(--surface-glass);
-    border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
+    bottom: 16px;
+    /* Same tier as OL's .ol-overlaycontainer-stopevent (21): above the map,
+       below the sidebar (22) and the panel toggle (23). */
+    z-index: 21;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+/* Scale + attribution are metadata, not controls. They deliberately carry
+   less chrome than the zoom rail — flatter, more transparent, no lift — so
+   the corner has a hierarchy instead of three equally-loud boxes. */
+.map-meta__info {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: var(--radius-xs);
+    box-shadow: 0 1px 3px rgba(41, 61, 80, 0.16);
+}
+
+.ol-zoom {
+    position: static;
+    margin: 0;
     padding: 0;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-}
-
-/* Shared chip hover: blue border, 1px lift, soft blue glow */
-.ol-zoom:hover,
-.layer-switcher > button:hover,
-.panel-toggle:hover {
-    border-color: var(--blue);
-    box-shadow: 0 8px 22px rgba(0, 114, 188, 0.28);
-    transform: translateY(-1px);
-}
-
-.ol-zoom:active,
-.layer-switcher > button:active,
-.panel-toggle:active {
-    transform: translateY(0);
-    box-shadow: var(--shadow-sm);
+    /* Not hidden: the tooltips have to escape this box. Buttons carry their
+       own corner radii instead. */
+    overflow: visible;
+    background: var(--ctl-surface);
+    border: 1px solid var(--ctl-border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--ctl-shadow);
 }
 
 .ol-zoom button {
     display: block;
-    width: 38px;
+    position: relative;
+    width: 40px;
     height: 36px;
     background: none;
     border: none;
@@ -1061,15 +1275,39 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     color: var(--ink);
     font-size: 18px;
     font-weight: 500;
+    line-height: 1;
     cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease;
+    transition: background-color var(--dur) var(--ease-out),
+        color var(--dur) var(--ease-out);
+}
+
+/* Inner radius = outer radius minus the 1px border. */
+.ol-zoom .ol-zoom-in {
+    border-radius: 9px 9px 0 0;
+}
+
+.ol-zoom .ol-zoom-out {
+    border-radius: 0 0 9px 9px;
+}
+
+/* Inset hairline rather than a full-bleed border, so the divider stops short
+   of the rounded edge instead of running into it. ::before because ::after
+   is spoken for by the tooltip. */
+.ol-zoom .ol-zoom-out::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 8px;
+    right: 8px;
+    height: 1px;
+    background: var(--divider);
+    transition: background-color var(--dur) var(--ease-out);
 }
 
 .ol-zoom button:hover,
-.ol-zoom button:focus {
+.ol-zoom button:focus-visible {
     background: var(--blue-tint);
     color: var(--blue);
-    outline: none;
 }
 
 .ol-zoom button:active {
@@ -1077,23 +1315,34 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     color: var(--blue-deep);
 }
 
-.ol-zoom .ol-zoom-in {
-    border-bottom: 1px solid var(--hairline);
+/* custom.js wraps the vendor's bare +/- text nodes so the glyph can be
+   transformed without scaling the button box with it. */
+.ctl-glyph {
+    display: block;
+    scale: 1;
+    transition: scale var(--dur) var(--ease-spring);
+}
+
+.ol-zoom button:hover .ctl-glyph {
+    scale: 1.18;
+}
+
+.ol-zoom button:active .ctl-glyph {
+    scale: 0.9;
+    transition-duration: var(--dur-press);
 }
 
 .ol-scale-line {
-    position: fixed;
+    position: static;
     float: none;
-    left: auto;
-    right: 16px;
-    bottom: 45px;
     margin: 0;
+    padding: 3px 8px 2px;
     /* qgis2web.css forces background:none !important here */
-    background: var(--surface-glass) !important;
-    border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-xs);
-    padding: 3px 8px;
-    box-shadow: var(--shadow-sm);
+    background: rgba(255, 255, 255, 0.75) !important;
+    border: 1px solid var(--ctl-border);
+    border-bottom: none;
+    border-radius: var(--radius-xs) var(--radius-xs) 0 0;
+    box-shadow: none;
 }
 
 .ol-scale-line-inner {
@@ -1106,19 +1355,16 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 }
 
 /* qgis2web replaces the stock attribution with className 'bottom-attribution'
-   (resources/qgis2web.js:563) — style that, not .ol-attribution */
+   (resources/qgis2web.js:569) — style that, not .ol-attribution */
 .bottom-attribution {
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    left: auto;
-    top: auto;
-    background: var(--surface-glass);
-    border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-xs);
+    position: static;
+    float: none;
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid var(--ctl-border);
+    border-radius: 0 0 var(--radius-xs) var(--radius-xs);
     padding: 1px 6px;
     max-width: none;
-    box-shadow: var(--shadow-sm);
+    box-shadow: none;
 }
 
 .bottom-attribution ul {
@@ -1136,6 +1382,19 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 
 .bottom-attribution button {
     display: none;
+}
+
+/* Blur only on the two interactive chips. Backdrop-filter over a moving tile
+   layer is a real paint cost, and the metadata strip gains nothing from it. */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    @media (min-width: 960px) {
+        .ol-zoom,
+        .layer-switcher > button,
+        body.is-sidebar-collapsed .panel-toggle {
+            -webkit-backdrop-filter: var(--ctl-blur);
+            backdrop-filter: var(--ctl-blur);
+        }
+    }
 }
 
 .ol-rotate {
@@ -1179,22 +1438,82 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
 /* The chip styling belongs to the main toggle ONLY — the group fold
    button inside the panel is also a <button> and must not get it. */
 .layer-switcher > button {
-    width: 42px;
-    height: 42px;
-    border: 1px solid var(--hairline-strong);
+    width: var(--ctl-chip);
+    height: var(--ctl-chip);
+    border: 1px solid var(--ctl-border);
     border-radius: var(--radius-sm);
-    background-color: var(--surface-glass);
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%23293d50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 9l9 5 9-5-9-5z"/><path d="m3 14 9 5 9-5"/></svg>');
-    background-position: center;
-    background-repeat: no-repeat;
-    box-shadow: var(--shadow-sm);
+    /* The icon used to be a background-image data URI, so the only hover it
+       could ever have was swapping to a second copy in another colour. It is
+       inline SVG now (custom.js) so the plates can actually move. */
+    background-color: var(--ctl-surface);
+    background-image: none;
+    box-shadow: var(--ctl-shadow);
     cursor: pointer;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
 }
 
-.layer-switcher > button:hover {
-    background-color: var(--surface);
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%230072bc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 9l9 5 9-5-9-5z"/><path d="m3 14 9 5 9-5"/></svg>');
+/* The icon is a SIBLING overlay, not a child of the button. The vendor sets
+   button.textContent on every panel open/close (ol-layerswitcher.js:202,207),
+   which wipes any child node — an injected SVG would survive exactly one
+   toggle. Sitting outside the button, it is untouchable. */
+.ctl-layers-slot {
+    position: absolute;
+    top: 0;
+    right: 0;
+    /* ol-layerswitcher.css puts z-index:1 on the button, so an auto-z overlay
+       paints underneath it and the icon vanishes behind the white chip. */
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--ctl-chip);
+    height: var(--ctl-chip);
+    pointer-events: none;
+}
+
+.ctl-layers {
+    display: block;
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke var(--dur) var(--ease-out);
+}
+
+/* The stack fans apart on hover, the lower plates lagging the top by 25 and
+   50ms. The stagger is the whole trick — moving all three at once just reads
+   as a scale. */
+.ctl-layers path {
+    translate: 0;
+    transition: translate var(--dur-state) var(--ease-spring);
+}
+
+.layer-switcher > button:hover ~ .ctl-layers-slot .ctl-layers,
+.layer-switcher.shown > .ctl-layers-slot .ctl-layers {
+    stroke: var(--blue);
+}
+
+.layer-switcher > button:hover ~ .ctl-layers-slot .ctl-layers__top,
+.layer-switcher.shown > .ctl-layers-slot .ctl-layers__top {
+    translate: 0 -1.6px;
+}
+
+.layer-switcher > button:hover ~ .ctl-layers-slot .ctl-layers__mid,
+.layer-switcher.shown > .ctl-layers-slot .ctl-layers__mid {
+    translate: 0 0.4px;
+    transition-delay: 25ms;
+}
+
+.layer-switcher > button:hover ~ .ctl-layers-slot .ctl-layers__bottom,
+.layer-switcher.shown > .ctl-layers-slot .ctl-layers__bottom {
+    translate: 0 1.6px;
+    transition-delay: 50ms;
+}
+
+.layer-switcher > button:active ~ .ctl-layers-slot .ctl-layers path {
+    translate: 0;
+    transition-duration: var(--dur-press);
+    transition-delay: 0s;
 }
 
 /* Click activation keeps the chip visible while the panel is shown, but the
@@ -1208,8 +1527,9 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
     position: static;
     right: auto;
     margin: 0;
-    background-color: var(--surface-glass);
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="%23293d50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 9l9 5 9-5-9-5z"/><path d="m3 14 9 5 9-5"/></svg>');
+    background-color: var(--ctl-surface-hover);
+    background-image: none;
+    border-color: var(--ctl-border-hover);
 }
 
 .layer-switcher .panel {
@@ -1301,6 +1621,9 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         --sheet-peek: 240px;
         --sheet-ease: cubic-bezier(0.32, 0.72, 0, 1);
         --popup-ease: cubic-bezier(0.22, 1, 0.36, 1);
+        /* 48px touch target. Drives the layer button AND its icon overlay —
+           they must stay on the same token or the icon goes off-centre. */
+        --ctl-chip: 48px;
     }
 
     /* Mobile keeps the floating masthead: the sheet is mostly off-screen, so
@@ -1360,10 +1683,6 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         right: 12px;
     }
 
-    .layer-switcher > button {
-        width: 48px;
-        height: 48px;
-    }
 
     .masthead-lambang {
         width: 26px;
@@ -1539,10 +1858,6 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         margin: 0;
     }
 
-    .ol-popup::after {
-        display: none;
-    }
-
     .feature-popup__media {
         height: 132px;
     }
@@ -1557,24 +1872,29 @@ body.is-sidebar-collapsed .panel-toggle__chevron {
         display: none;
     }
 
-    .ol-zoom {
+    /* The cluster spans the full width above the sheet: metadata left, zoom
+       rail right. `order` rather than row-reverse so that when the rail hides
+       (panel open) the metadata block stays put instead of sliding right. */
+    .map-meta {
+        left: 12px;
+        right: 12px;
         bottom: calc(var(--sheet-peek) + 16px);
+        flex-direction: row;
+        align-items: flex-end;
+        justify-content: space-between;
+    }
+
+    .map-meta__info {
+        order: 1;
+    }
+
+    .ol-zoom {
+        order: 2;
     }
 
     .ol-zoom button {
-        width: 42px;
-        height: 40px;
-    }
-
-    .ol-scale-line {
-        bottom: calc(var(--sheet-peek) + 16px);
-        right: 62px;
-    }
-
-    .bottom-attribution {
-        bottom: calc(var(--sheet-peek) + 16px);
-        right: auto;
-        left: 12px;
+        width: 44px;
+        height: 42px;
     }
 }
 

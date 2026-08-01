@@ -340,6 +340,178 @@
       : { animation: { duration: 300 }, margin: 60 };
   }
 
+  // ---------- Map control chrome ----------
+
+  var LAYER_ICON =
+    '<svg class="ctl-layers" xmlns="http://www.w3.org/2000/svg" ' +
+    'viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">' +
+    '<path class="ctl-layers__top" d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/>' +
+    '<path class="ctl-layers__mid" d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>' +
+    '<path class="ctl-layers__bottom" d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/>' +
+    "</svg>";
+
+  // Native title tooltips are slow, unstyleable, and would sit next to ours.
+  // The layer switcher re-adds its own on every panel toggle
+  // (ol-layerswitcher.js:203,208), so strip on the way in, not once at setup.
+  function stripNativeTitle(node) {
+    node.removeAttribute("title");
+    node.addEventListener("pointerenter", function () {
+      if (node.hasAttribute("title")) {
+        node.removeAttribute("title");
+      }
+    });
+  }
+
+  // "Alive when the cursor heads over there." A CSS-only version means
+  // widening a pseudo-element to catch the pointer early, which also steals
+  // pan and drag from the map inside that band — and 14px of reach would not
+  // read as approach anyway. 90px does.
+  function initControlProximity(targets) {
+    if (!targets.length || !window.matchMedia) {
+      return;
+    }
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+      return;
+    }
+
+    var NEAR = 90;
+    var rects = [];
+    var stale = true;
+    var queued = false;
+    var pointerX = 0;
+    var pointerY = 0;
+
+    function apply() {
+      queued = false;
+      // Cached, because measuring on every frame forces a layout flush on
+      // top of whatever the map is already painting.
+      if (stale) {
+        rects = targets.map(function (node) {
+          return node.getBoundingClientRect();
+        });
+        stale = false;
+      }
+      for (var i = 0; i < targets.length; i++) {
+        var rect = rects[i];
+        if (!rect || !rect.width) {
+          continue;
+        }
+        var dx = Math.max(rect.left - pointerX, 0, pointerX - rect.right);
+        var dy = Math.max(rect.top - pointerY, 0, pointerY - rect.bottom);
+        targets[i].classList.toggle("is-near", dx * dx + dy * dy <= NEAR * NEAR);
+      }
+    }
+
+    function invalidate() {
+      stale = true;
+    }
+
+    window.addEventListener(
+      "pointermove",
+      function (event) {
+        if (event.pointerType && event.pointerType !== "mouse") {
+          return;
+        }
+        pointerX = event.clientX;
+        pointerY = event.clientY;
+        if (queued) {
+          return;
+        }
+        queued = true;
+        requestAnimationFrame(apply);
+      },
+      { passive: true }
+    );
+
+    // The controls only move on resize and when the sidebar collapse
+    // animation repositions the panel toggle.
+    window.addEventListener("resize", invalidate);
+    targets.forEach(function (node) {
+      node.addEventListener("transitionend", invalidate);
+    });
+
+    document.addEventListener("pointerleave", function () {
+      targets.forEach(function (node) {
+        node.classList.remove("is-near");
+      });
+    });
+  }
+
+  function enhanceMapControls() {
+    var shell = document.querySelector(".app-shell");
+    var zoom = document.querySelector(".ol-zoom");
+    var scale = document.querySelector(".ol-scale-line");
+    var attribution = document.querySelector(".bottom-attribution");
+    var switcher = document.querySelector(".layer-switcher");
+
+    // qgis2web docks zoom, scale and attribution as three separate fixed
+    // boxes held in line by hand-tuned offsets. Re-parent them under one
+    // anchor: the rail keeps full chrome, the metadata drops to a flat strip.
+    if (shell && (zoom || scale || attribution)) {
+      var meta = document.createElement("div");
+      meta.className = "map-meta";
+      var info = document.createElement("div");
+      info.className = "map-meta__info";
+      if (zoom) {
+        meta.appendChild(zoom);
+      }
+      if (scale) {
+        info.appendChild(scale);
+      }
+      if (attribution) {
+        info.appendChild(attribution);
+      }
+      if (info.childNodes.length) {
+        meta.appendChild(info);
+      }
+      shell.appendChild(meta);
+    }
+
+    if (zoom) {
+      // The vendor renders bare "+"/"−" text nodes. Wrap them so the glyph
+      // can be scaled without scaling the button box along with it.
+      [
+        { selector: ".ol-zoom-in", label: "Perbesar" },
+        { selector: ".ol-zoom-out", label: "Perkecil" }
+      ].forEach(function (entry) {
+        var button = zoom.querySelector(entry.selector);
+        if (!button) {
+          return;
+        }
+        var glyph = document.createElement("span");
+        glyph.className = "ctl-glyph";
+        glyph.setAttribute("aria-hidden", "true");
+        glyph.textContent = button.textContent;
+        button.textContent = "";
+        button.appendChild(glyph);
+        // Replaces the vendor's English title, which was the only label a
+        // screen reader had beyond the bare "+" glyph.
+        button.setAttribute("aria-label", entry.label);
+        button.setAttribute("data-tooltip", entry.label);
+        stripNativeTitle(button);
+      });
+    }
+
+    if (switcher) {
+      var switcherButton = switcher.querySelector(":scope > button");
+      if (switcherButton) {
+        switcherButton.setAttribute("data-tooltip", "Layer peta");
+        // aria-label is left alone here — the vendor keeps it in sync with
+        // the open/closed state and its tipLabels are already Indonesian.
+        stripNativeTitle(switcherButton);
+        var slot = document.createElement("span");
+        slot.className = "ctl-layers-slot";
+        slot.setAttribute("aria-hidden", "true");
+        slot.innerHTML = LAYER_ICON;
+        switcherButton.insertAdjacentElement("afterend", slot);
+      }
+    }
+
+    initControlProximity(
+      [zoom, switcher, document.getElementById("panel-toggle")].filter(Boolean)
+    );
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var hasInitialised = false;
     var loadWatchdog = null;
@@ -349,6 +521,10 @@
       showDataLoadError("Peta atau layer titik tidak berhasil diinisialisasi.");
       return;
     }
+
+    // Control chrome does not depend on the point data, so it runs here
+    // rather than in init() — which only fires once the GeoJSON lands.
+    enhanceMapControls();
 
     var pointSource = window.lyr_260331_4.getSource();
 
@@ -1386,6 +1562,10 @@
       document.body.classList.toggle("is-sidebar-collapsed", collapsed);
       if (panelToggle) {
         panelToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        panelToggle.setAttribute(
+          "data-tooltip",
+          collapsed ? "Tampilkan panel" : "Sembunyikan panel"
+        );
       }
       refreshMapSizeDuring(380);
     }
