@@ -44,7 +44,7 @@ var lyr_Dissolved_2 = new ol.layer.Vector({
             });
 var jsonSource_260331_4 = new ol.source.Vector({
     attributions: [],
-    url: './data/points.geojson?v=20260804',
+    url: './data/points.geojson?v=20260816',
     format: new ol.format.GeoJSON()
 });
 var lyr_260331_4 = new ol.layer.Vector({
