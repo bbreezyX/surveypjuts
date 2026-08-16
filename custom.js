@@ -1120,7 +1120,7 @@
       renderPanelNav();
       searchInput.placeholder = activeGroup
         ? "Cari di grup ini..."
-        : "Cari nomor, pengusul, alamat...";
+        : "Cari nomor, nama, alamat...";
 
       listContainer.appendChild(fragment);
       renderSummary(visibleCount, Boolean(normalizedQuery));
