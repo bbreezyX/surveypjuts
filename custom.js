@@ -959,10 +959,15 @@
       var pinTargetY;
 
       if (isMobileViewport()) {
-        // Mobile: the popup card sits centered on screen (top edge ~24% on
-        // the tallest cards), so pan the pin into the strip between the
-        // masthead and the card.
-        pinTargetY = size[1] * 0.16;
+        // Mobile: the card docks under the masthead, so the pin belongs in the
+        // strip below it. The gap has to clear the marker itself — it anchors
+        // at its tip and draws upward, so anything under ~40px tucks the pin's
+        // head behind the card. Tall cards on short screens run out of room;
+        // the floor keeps the pin on screen and lets the overlap happen there.
+        var cardTop = 70;
+        var markerGap = 56;
+        var pinFloor = size[1] - 40;
+        pinTargetY = Math.min(cardTop + (popupHeight || 300) + markerGap, pinFloor);
       } else {
         // Desktop: popup docks above the pin (bottom: 48px). Guarantee the
         // card top clears the masthead at every desktop height.

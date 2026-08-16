@@ -1897,16 +1897,18 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
         z-index: 24 !important;
     }
 
-    /* Card sits centered on screen; the JS pans the pin into the strip
-       above it. */
+    /* Card docks under the masthead and the JS pans the pin into the strip
+       below it, so the detail reads above its own point — the order desktop
+       already uses. Centring the card instead would leave a 62dvh one barely
+       19dvh of room underneath for the pin. */
     .ol-popup {
         position: fixed !important;
-        top: 50% !important;
+        top: 70px !important;
         bottom: auto !important;
         left: 10px !important;
         right: 10px !important;
         width: auto !important;
-        transform: translate3d(0, calc(-50% + 10px), 0) scale(0.97) !important;
+        transform: translate3d(0, 10px, 0) scale(0.97) !important;
         opacity: 0;
         max-height: 62dvh;
         overflow-y: auto;
@@ -1920,7 +1922,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     }
 
     body.is-popup-open .ol-popup {
-        transform: translate3d(0, -50%, 0) scale(1) !important;
+        transform: translate3d(0, 0, 0) scale(1) !important;
         opacity: 1;
         pointer-events: auto;
     }
