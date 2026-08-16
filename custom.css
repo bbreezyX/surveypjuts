@@ -339,13 +339,78 @@ body.is-sidebar-collapsed #sidebar {
     border: 1px solid var(--hairline-strong);
     border-radius: var(--radius-sm);
     background: var(--surface);
-    padding: 0 12px 0 36px;
+    padding: 0 38px 0 36px;
     font: 500 14px var(--font-ui);
     color: var(--ink);
 }
 
 .search-field input::placeholder {
     color: var(--muted-2);
+}
+
+/* The native cancel button is WebKit-only, takes almost no styling, carries no
+   accessible name, and the keyboard skips it. Ours replaces it outright. */
+.search-field input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.search-clear {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    width: 28px;
+    height: 28px;
+    margin-top: -14px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+/* Nothing typed, nothing to clear. :placeholder-shown tracks programmatic
+   resets too, so the button needs no JS to know when to hide. */
+.search-field input:placeholder-shown ~ .search-clear {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.search-clear:hover {
+    background: var(--hairline);
+}
+
+.search-clear:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 1px;
+}
+
+/* Drawn in CSS like .search-icon above — this project ships no icon font. */
+.search-clear::before,
+.search-clear::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 11px;
+    height: 1.6px;
+    margin: -0.8px 0 0 -5.5px;
+    border-radius: 1px;
+    background: var(--muted-2);
+}
+
+.search-clear::before {
+    transform: rotate(45deg);
+}
+
+.search-clear::after {
+    transform: rotate(-45deg);
+}
+
+.search-clear:hover::before,
+.search-clear:hover::after {
+    background: var(--ink);
 }
 
 .search-field input:focus-visible {
@@ -1736,6 +1801,12 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
         transform: translate3d(0, 0, 0);
     }
 
+    /* While a finger owns the sheet it has to sit exactly under it — a 0.32s
+       transition would make every drag lag behind by a third of a second. */
+    body.is-sheet-dragging #sidebar {
+        transition: none;
+    }
+
     /* A selected point owns the screen: the sheet drops fully out of the way
        instead of peeking over the popup.
 
@@ -1769,6 +1840,9 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
         background: none;
         border: none;
         cursor: pointer;
+        /* The drag gesture is ours; without this the browser claims the
+           vertical swipe for scroll/pull-to-refresh first. */
+        touch-action: none;
     }
 
     #sheet-handle::before {

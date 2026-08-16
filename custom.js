@@ -60,8 +60,46 @@
   // also disposes of nested brackets in one pass.
   var SURVEY_NOTE = /\s*\((?=[^)]*(?:foto|dikirim))[\s\S]*$/i;
 
+  // One Kerinci surveyor pasted their GPS app's log in wholesale — "Titik (1)
+  // — Survey Pemasangan PUTS; alamat GPS: Kemantan Darat; Jumat, 19 Juni 2026
+  // 09:26; elevasi 812.1 m". Only the "alamat GPS" segment names a place; the
+  // rest is a timestamp and an altimeter reading already covered by the
+  // Dokumentasi and Koordinat rows. Logs without that segment name nothing at
+  // all, so they collapse to "" and let the desa take the title.
+  var GPS_LOG = /survey pemasangan|alamat gps:|elevasi\s/i;
+  var GPS_ADDRESS = /alamat gps:\s*([^;]+)/i;
+  // Some addresses lead with a plus code: "3922+RMF Desa Talang Tinggi".
+  var PLUS_CODE = /^[a-z0-9]{4}\+[a-z0-9]{2,3}[\s,]*/i;
+
+  // Spellings that reached the sheet as the surveyor typed them. Whole-word so
+  // "Smp" becomes "SMP" without touching a name that merely contains it.
+  var SPELLING_FIXES = [
+    [/\bmadrash\b/gi, "Madrasah"],
+    [/\balternatip\b/gi, "Alternatif"],
+    [/\brmh\b/gi, "Rumah"],
+    [/\bsmp\b/gi, "SMP"],
+    [/\bJl\.(?=\S)/g, "Jl. "]
+  ];
+
   function cleanKeterangan(value) {
-    return String(value || "").replace(SURVEY_NOTE, "").trim();
+    var text = String(value || "").replace(SURVEY_NOTE, "").trim();
+    if (GPS_LOG.test(text)) {
+      var address = text.match(GPS_ADDRESS);
+      text = address ? address[1].trim().replace(PLUS_CODE, "") : "";
+    }
+    for (var i = 0; i < SPELLING_FIXES.length; i++) {
+      text = text.replace(SPELLING_FIXES[i][0], SPELLING_FIXES[i][1]);
+    }
+    return text.replace(/\s{2,}/g, " ").trim();
+  }
+
+  // "RT 11" / "Rt.05" is an address detail, not a place: 54 rows carry one as
+  // their entire Keterangan and ten collide on "RT 12" alone. It stays in the
+  // Keterangan row — where it reads correctly — but the desa takes the title.
+  var BARE_RT = /^rt[\s.]*\d+$/i;
+
+  function isUsableTitle(text) {
+    return Boolean(text) && !BARE_RT.test(text);
   }
 
   // Nomor is "KABUPATEN-KECAMATAN-DESA-NNN". The desa repeats across most of a
@@ -90,7 +128,7 @@
     var primary;
     var secondary;
 
-    if (landmark) {
+    if (isUsableTitle(landmark)) {
       primary = landmark;
       secondary = [desa, kecamatan].filter(Boolean).join(" · ");
     } else {
@@ -1505,6 +1543,20 @@
       }, 250);
     });
 
+    var searchClear = document.getElementById("list-search-clear");
+    if (searchClear) {
+      searchClear.addEventListener("click", function () {
+        // Kill the pending debounce first: without this a clear that lands
+        // within 250ms of the last keystroke gets overwritten by the stale
+        // term the timer is still holding.
+        clearTimeout(searchDebounce);
+        searchInput.value = "";
+        searchInput.focus();
+        renderList("");
+        fitToVisible({ maxZoom: 16, duration: 500 });
+      });
+    }
+
     fitButton.addEventListener("click", function () {
       searchInput.value = "";
       setActiveGroup(null);
@@ -1593,9 +1645,112 @@
       });
     }
 
+    // The mobile sheet is dragged, not tapped: it tracks the finger and snaps
+    // on release. Click stays bound because Enter/Space on the handle
+    // synthesises one — without it the sheet is unreachable by keyboard.
     var sheetHandle = document.getElementById("sheet-handle");
-    if (sheetHandle) {
+    var sheet = document.getElementById("sidebar");
+    if (sheetHandle && sheet) {
+      var TAP_SLOP = 6; // px of travel before a press counts as a drag
+      var COMMIT_RATIO = 0.25; // share of the travel that commits the new state
+      var FLING = 0.4; // px/ms that commits regardless of distance
+      var drag = null;
+      var suppressClick = false;
+
+      // Measured live: --sheet-peek drops to 122px in landscape.
+      function sheetTravel() {
+        var peek = parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue(
+            "--sheet-peek"
+          )
+        );
+        return Math.max(sheet.offsetHeight - (peek || 0), 1);
+      }
+
+      function endDrag(commit) {
+        if (!drag) {
+          return;
+        }
+        var open = drag.wasOpen;
+        if (commit) {
+          var moved = drag.y - drag.from;
+          if (Math.abs(drag.velocity) > FLING) {
+            open = drag.velocity < 0;
+          } else if (Math.abs(moved) > drag.travel * COMMIT_RATIO) {
+            open = moved < 0;
+          }
+        }
+        drag = null;
+        // Order matters: the transition has to be back before the inline
+        // transform clears, or the sheet jumps to its resting spot.
+        document.body.classList.remove("is-sheet-dragging");
+        sheet.style.transform = "";
+        setPanelOpen(open);
+      }
+
+      sheetHandle.addEventListener("pointerdown", function (event) {
+        if (!event.isPrimary) {
+          return;
+        }
+        var travel = sheetTravel();
+        var wasOpen = document.body.classList.contains("is-panel-open");
+        drag = {
+          id: event.pointerId,
+          startY: event.clientY,
+          lastY: event.clientY,
+          lastT: event.timeStamp,
+          velocity: 0,
+          travel: travel,
+          wasOpen: wasOpen,
+          from: wasOpen ? 0 : travel,
+          y: wasOpen ? 0 : travel,
+          moved: false
+        };
+        sheetHandle.setPointerCapture(event.pointerId);
+      });
+
+      sheetHandle.addEventListener("pointermove", function (event) {
+        if (!drag || event.pointerId !== drag.id) {
+          return;
+        }
+        var dy = event.clientY - drag.startY;
+        if (!drag.moved) {
+          if (Math.abs(dy) < TAP_SLOP) {
+            return;
+          }
+          drag.moved = true;
+          document.body.classList.add("is-sheet-dragging");
+        }
+        var dt = event.timeStamp - drag.lastT;
+        if (dt > 0) {
+          drag.velocity = (event.clientY - drag.lastY) / dt;
+        }
+        drag.lastY = event.clientY;
+        drag.lastT = event.timeStamp;
+        drag.y = Math.min(Math.max(drag.from + dy, 0), drag.travel);
+        sheet.style.transform = "translate3d(0, " + drag.y + "px, 0)";
+      });
+
+      sheetHandle.addEventListener("pointerup", function (event) {
+        if (!drag || event.pointerId !== drag.id) {
+          return;
+        }
+        // Touch fires a click after the drag; that must not re-toggle.
+        suppressClick = drag.moved;
+        endDrag(suppressClick);
+      });
+
+      sheetHandle.addEventListener("pointercancel", function (event) {
+        if (drag && event.pointerId === drag.id) {
+          endDrag(false);
+        }
+      });
+
       sheetHandle.addEventListener("click", function () {
+        if (suppressClick) {
+          suppressClick = false;
+          return;
+        }
         setPanelOpen(!document.body.classList.contains("is-panel-open"));
       });
     }
