@@ -15,31 +15,35 @@ var pinIcon_260331_4 = new ol.style.Icon({
     scale: 1
 });
 
+// Zoomed out past this resolution the points are drawn as plain dots instead of
+// pins. 76 m/px is about zoom 11: wider than that and most of the province is on
+// screen, where a 24x32 pin with a drop shadow is far too small to read as a pin
+// anyway — but all 471 of them still cost ~17ms of every panned frame. Dots carry
+// the same information there for a third less work (21.0ms -> 14.9ms measured on
+// a 4x-throttled mid-range phone profile).
+//
+// Nothing is ever hidden: every point is drawn at every zoom. Declutter was tried
+// as the alternative and rejected because it culled 22% of them — see the note in
+// layers/layers.js. The selected point is drawn by custom.js on its own overlay,
+// so it stays a full pin regardless of zoom.
+var PIN_MAX_RESOLUTION_260331_4 = 76;
+
+// Both styles are built once. The label branch qgis2web generates here is dead —
+// this layer has no label field, so it only ever produced an empty text style.
+var pinStyle_260331_4 = [new ol.style.Style({
+    image: pinIcon_260331_4
+})];
+
+var dotStyle_260331_4 = [new ol.style.Style({
+    image: new ol.style.Circle({
+        radius: 4.5,
+        fill: new ol.style.Fill({color: '#fee50f'}),
+        stroke: new ol.style.Stroke({color: '#293d50', width: 1.6})
+    })
+})];
+
 var style_260331_4 = function(feature, resolution){
-    var context = {
-        feature: feature,
-        variables: {}
-    };
-
-    var labelText = "";
-    var value = feature.get("");
-    var labelFont = "10px, sans-serif";
-    var labelFill = "#000000";
-    var bufferColor = "";
-    var bufferWidth = 0;
-    var textAlign = "left";
-    var offsetX = 0;
-    var offsetY = 0;
-    var placement = 'point';
-    if ("" !== null) {
-        labelText = String("");
-    }
-    var style = [ new ol.style.Style({
-        image: pinIcon_260331_4,
-        text: createTextStyle(feature, resolution, labelText, labelFont,
-                              labelFill, placement, bufferColor,
-                              bufferWidth)
-    })];
-
-    return style;
+    return resolution > PIN_MAX_RESOLUTION_260331_4
+        ? dotStyle_260331_4
+        : pinStyle_260331_4;
 };
