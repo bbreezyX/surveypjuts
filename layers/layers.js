@@ -54,13 +54,14 @@ var jsonSource_260331_4 = new ol.source.Vector({
     url: './data/points.geojson',
     format: new ol.format.GeoJSON()
 });
-// declutter drops pins whose icons would overlap one already drawn. At province
-// zoom all 471 land in the viewport at once and mostly cover each other, which
-// cost 14ms of a 19ms frame and made panning run at ~12fps on a mid-range phone.
-// Culling the hidden ones takes the point layer from 17.6ms to 9.6ms per frame.
-// Every point still lives in the sidebar list and reappears as you zoom in.
+// declutter stays OFF. It was tried as a way to cut the ~14ms the 471 pins add
+// to every panned frame, and it worked, but it drops any icon overlapping one
+// already drawn: at the default province zoom that hid 94 of the 414 points in
+// view (22%), and 28% at zoom 9. This is a coverage map — the pattern of dots is
+// the finding, so thinning it silently misreports how much of Jambi was surveyed.
+// Never trade completeness of this layer for frame rate.
 var lyr_260331_4 = new ol.layer.Vector({
-                declutter: true,
+                declutter: false,
                 source:jsonSource_260331_4,
                 style: style_260331_4,
                 popuplayertitle: 'Titik PUTS',
