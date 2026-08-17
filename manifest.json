@@ -1,0 +1,32 @@
+{
+  "name": "Peta Sebaran PUTS 2026 — Provinsi Jambi",
+  "short_name": "PUTS 2026",
+  "description": "Peta sebaran Penerangan Umum Tenaga Surya Provinsi Jambi Tahun 2026 hasil survey lapangan.",
+  "lang": "id",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#293d50",
+  "icons": [
+    {
+      "src": "./assets/icon-192.png?v=202608180040",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-512.png?v=202608180040",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icon-maskable-512.png?v=202608180040",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

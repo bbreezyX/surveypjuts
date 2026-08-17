@@ -1,7 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="18" fill="#1f2a2b"/>
-  <circle cx="32" cy="22" r="10" fill="#f0b44f"/>
-  <path d="M32 32v18" stroke="#fbf7ef" stroke-width="5" stroke-linecap="round"/>
-  <path d="M24 50h16" stroke="#fbf7ef" stroke-width="5" stroke-linecap="round"/>
-  <path d="M22 24h20" stroke="#f7d27b" stroke-width="3" stroke-linecap="round"/>
+  <!-- Peta Sebaran PUTS 2026 - Dinas ESDM Provinsi Jambi.
+       Every element carries a reference; none of it is ornament.
+       Sun dome    = solar energy, what PUTS runs on. The "E" in ESDM.
+       9 rays      = Sepucuk Jambi Sembilan Lurah, the nine tributaries of the
+                     Batanghari. THE COUNT IS THE MEANING - KEEP IT AT NINE.
+       3 earth layers = the "tiga lapisan bumi" of the Kementerian ESDM logo,
+                     the "SDM" half; deeper layer, deeper blue.
+       Blue and yellow follow the Jambi provincial emblem, which happens to
+       match the site tokens already. Read top to bottom it spells the agency:
+       energy above, mineral resources below.
+       Rasters are generated from this geometry by scripts/build-icons.py -
+       change one and you must change the other. -->
+  <rect width="64" height="64" rx="16" fill="#293d50"/>
+  <g fill="#fee50f" stroke="#fee50f" stroke-width="1.3" stroke-linejoin="round">
+    <path d="M30.2 19.6h3.6l-.5-6.6h-2.6z" transform="rotate(-75 32 33)"/>
+    <path d="M30.2 19.6h3.6l-.5-6.6h-2.6z" transform="rotate(-56.25 32 33)"/>
+    <path d="M30.2 19.6h3.6l-.5-6.6h-2.6z" transform="rotate(-37.5 32 33)"/>
+    <path d="M30.2 19.6h3.6l-.5-6.6h-2.6z" transform="rotate(-18.75 32 33)"/>
+    <path d="M30.2 19.6h3.6l-.5-6.6h-2.6z"/>
+    <path d="M30.2 19.6h3.6l-.5-6.6h-2.6z" transform="rotate(18.75 32 33)"/>
+    <path d="M30.2 19.6h3.6l-.5-6.6h-2.6z" transform="rotate(37.5 32 33)"/>
+    <path d="M30.2 19.6h3.6l-.5-6.6h-2.6z" transform="rotate(56.25 32 33)"/>
+    <path d="M30.2 19.6h3.6l-.5-6.6h-2.6z" transform="rotate(75 32 33)"/>
+  </g>
+  <path fill="#fee50f" d="M21 33a11 11 0 0 1 22 0z"/>
+  <rect x="11" y="36" width="42" height="5.5" rx="2.75" fill="#ecf5ff"/>
+  <rect x="16" y="44.5" width="32" height="5.5" rx="2.75" fill="#9ecbeb"/>
+  <rect x="21" y="53" width="22" height="5.5" rx="2.75" fill="#56a0d3"/>
 </svg>
