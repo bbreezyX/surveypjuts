@@ -1501,7 +1501,7 @@
       fitToVisible({ maxZoom: 15 });
     }
 
-    function handleMapSingleClick(event) {
+    function handleMapClick(event) {
       // The switcher lives inside the map viewport, so its own clicks also
       // arrive here — don't treat them as map clicks (it would re-close the
       // panel the button just opened, and clear the selection).
@@ -1803,7 +1803,28 @@
       };
     }
 
-    window.map.on("singleclick", handleMapSingleClick);
+    // Bind to "click", not "singleclick": OpenLayers defers singleclick behind a
+    // hardcoded 250ms timeout so it can tell a single tap from a double one, and
+    // since the popup is the only visible response to tapping a pin, that wait
+    // was the entire interaction latency (INP 248ms, of which 245ms was the
+    // timeout doing nothing). Both events are dispatched from the same
+    // emulateClick_ path under the same !dragging_ guard, so panning the map
+    // still won't open a popup.
+    //
+    // The trade is that a double-click now runs this twice and would also zoom,
+    // so DoubleClickZoom has to go. Nothing here listens for dblclick, and
+    // scroll, pinch, and the zoom buttons all still zoom.
+    window.map
+      .getInteractions()
+      .getArray()
+      .slice()
+      .forEach(function (interaction) {
+        if (interaction instanceof ol.interaction.DoubleClickZoom) {
+          window.map.removeInteraction(interaction);
+        }
+      });
+
+    window.map.on("click", handleMapClick);
 
     // Keep popup in view after user zooms/pans — re-trigger autoPan
     // (skip on mobile: popup is position:fixed and no longer anchored to
