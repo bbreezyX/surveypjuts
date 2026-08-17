@@ -27,13 +27,20 @@ var lyr_BatasKabupaten2011_1 = new ol.layer.Vector({
                 interactive: false,
                 title: 'Batas Kabupaten/Kota'
             });
-var format_Dissolved_2 = new ol.format.GeoJSON();
-var features_Dissolved_2 = format_Dissolved_2.readFeatures(json_Dissolved_2, 
-            {dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'});
+// Area Cakupan starts hidden (see setVisible below), so its geometry is fetched
+// by URL instead of being inlined as a <script>. OpenLayers only runs a vector
+// source's loader once the layer actually renders, so the polygon now costs
+// nothing until someone switches the layer on. Inlined it was 124KB of the
+// critical path on every visit, for something nobody had asked to see.
 var jsonSource_Dissolved_2 = new ol.source.Vector({
     attributions: [],
+    // No ?v= token on data files: Caddy already serves /data/* as
+    // "no-cache, must-revalidate", so a token buys nothing — and it would break
+    // the <link rel=preload> in index.html, because bump-version.sh rewrites
+    // every ?v= there but never touches this file. Mismatched URLs = two fetches.
+    url: './data/dissolved.geojson',
+    format: new ol.format.GeoJSON()
 });
-jsonSource_Dissolved_2.addFeatures(features_Dissolved_2);
 var lyr_Dissolved_2 = new ol.layer.Vector({
                 declutter: false,
                 source:jsonSource_Dissolved_2, 
@@ -44,12 +51,17 @@ var lyr_Dissolved_2 = new ol.layer.Vector({
             });
 var jsonSource_260331_4 = new ol.source.Vector({
     attributions: [],
-    url: './data/points.geojson?v=20260816',
+    url: './data/points.geojson',
     format: new ol.format.GeoJSON()
 });
+// declutter drops pins whose icons would overlap one already drawn. At province
+// zoom all 471 land in the viewport at once and mostly cover each other, which
+// cost 14ms of a 19ms frame and made panning run at ~12fps on a mid-range phone.
+// Culling the hidden ones takes the point layer from 17.6ms to 9.6ms per frame.
+// Every point still lives in the sidebar list and reappears as you zoom in.
 var lyr_260331_4 = new ol.layer.Vector({
-                declutter: false,
-                source:jsonSource_260331_4, 
+                declutter: true,
+                source:jsonSource_260331_4,
                 style: style_260331_4,
                 popuplayertitle: 'Titik PUTS',
                 interactive: true,
