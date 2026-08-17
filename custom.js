@@ -201,9 +201,14 @@
 
     return (
       '<div class="feature-popup">' +
+      // No loading="lazy" here: the card is only built at the moment it opens,
+      // so the photo is always already in view and lazy only defers the fetch
+      // behind a visibility check it is guaranteed to pass. decoding="async"
+      // does the useful work instead — source photos run to 1600x1200 and the
+      // slot is 312px wide, so a synchronous decode would stall the frame.
       (photoPath
         ? '<div class="feature-popup__media">' +
-          '<img src="images/' + encodeURI(photoPath) + '" alt="Foto lokasi ' + escapeHtml(item.nomor) + '" loading="lazy" />' +
+          '<img src="images/' + encodeURI(photoPath) + '" alt="Foto lokasi ' + escapeHtml(item.nomor) + '" decoding="async" />' +
           '<span class="feature-popup__media-badge">Foto survey awal</span>' +
           "</div>"
         : "") +
@@ -877,9 +882,11 @@
       }
     }
 
+    // Returns the card's laid-out height, which the caller needs to work out
+    // where to pan the pin to.
     function openPopupForItem(item, coordinate) {
       if (!popup || !popupContent) {
-        return;
+        return 0;
       }
 
       var ext = item.feature.getGeometry().getExtent();
@@ -899,12 +906,19 @@
       // whenever those frames were throttled or dropped the class never landed
       // and the sheet stayed at its peek height, covering the popup it was
       // supposed to make room for.
-      void popup.offsetWidth;
+      //
+      // The height comes off this same flush. Measuring it after the class
+      // instead would buy a second full layout for an identical number:
+      // is-popup-open only animates transform and opacity, and outside the
+      // mobile breakpoint it does not touch .ol-popup at all.
+      var popupHeight = popup.offsetHeight;
       document.body.classList.add("is-popup-open");
 
       if (window.overlayPopup && typeof window.overlayPopup.setPosition === "function") {
         window.overlayPopup.setPosition(coord);
       }
+
+      return popupHeight;
     }
 
     function clearSelection() {
@@ -927,14 +941,6 @@
 
     function markMapFocusAnimation(duration) {
       mapFocusAnimUntil = Date.now() + duration + 180;
-    }
-
-    function measurePopupHeight() {
-      var popup = document.getElementById("popup");
-      if (!popup || popup.style.display === "none") {
-        return 300;
-      }
-      return popup.offsetHeight || popup.scrollHeight || 300;
     }
 
     function getMastheadBottomOffset() {
@@ -1099,10 +1105,9 @@
       }
 
       // Always use the feature's actual center for everything to avoid shifting
-      openPopupForItem(item, featureCenter);
+      var popupHeight = openPopupForItem(item, featureCenter);
 
       var targetZoom = config.zoom || 17;
-      var popupHeight = measurePopupHeight();
       animateMapFocus(window.map.getView(), featureCenter, targetZoom, popupHeight);
     }
 
