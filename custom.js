@@ -896,6 +896,17 @@
       popupContent.innerHTML = buildPopupHtml(item);
       popup.style.display = "block";
 
+      // Position before measuring. OpenLayers owns the wrapper it puts around
+      // this element and holds that wrapper at display:none for as long as the
+      // overlay has no position, so reading offsetHeight any earlier came back
+      // 0 out of an unrendered subtree -- but only on the first open after a
+      // close, which is why the card landed correctly about half the time. The
+      // 0 fell through to the 300px guess in getFocusTargetCenter, so any card
+      // taller than that got framed ~200px too high and clipped off the map.
+      if (window.overlayPopup && typeof window.overlayPopup.setPosition === "function") {
+        window.overlayPopup.setPosition(coord);
+      }
+
       // Flush layout so the browser registers the popup's pre-transition state:
       // going from display:none to display:block and gaining the class in one
       // frame gives the transition no starting point, so it would not animate.
@@ -913,10 +924,6 @@
       // mobile breakpoint it does not touch .ol-popup at all.
       var popupHeight = popup.offsetHeight;
       document.body.classList.add("is-popup-open");
-
-      if (window.overlayPopup && typeof window.overlayPopup.setPosition === "function") {
-        window.overlayPopup.setPosition(coord);
-      }
 
       return popupHeight;
     }
