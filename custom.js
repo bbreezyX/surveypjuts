@@ -20,22 +20,51 @@
       });
   }
 
-  // Degree suffixes that must stay uppercase when title-casing names
-  // ("PUTRA ABSOR HASIBUAN, SH" -> "Putra Absor Hasibuan, SH").
-  var NAME_SUFFIXES = ["sh", "se", "st", "sp", "mm", "mh", "msi", "mpd", "spd", "skom", "ssos", "amd", "shut"];
+  // Titles and degrees keyed by their letters alone, so a survey typing
+  // "S.KOM", "s.kom" or "SKom" all land on one spelling. Mapping to a
+  // canonical form rather than uppercasing the token is what keeps the dots
+  // in "S.Kom" -- uppercasing turned it into "S.KOM".
+  var NAME_SUFFIXES = {
+    ir: "Ir.", drs: "Drs.", dra: "Dra.",
+    sh: "SH", se: "SE", st: "ST", sp: "SP", sipl: "S.IP",
+    spd: "S.Pd", skom: "S.Kom", ssos: "S.Sos", shut: "S.Hut",
+    spt: "S.Pt", sag: "S.Ag", spsi: "S.Psi", amd: "A.Md",
+    mm: "MM", mh: "MH", me: "ME", mt: "MT", map: "MAP",
+    msi: "M.Si", mpd: "M.Pd", mkes: "M.Kes", mkom: "M.Kom", msos: "M.Sos"
+  };
 
   function toDisplayName(value) {
     return String(value || "")
       .trim()
       .split(/\s+/)
       .map(function (word) {
-        var letters = word.replace(/[^a-z]/gi, "").toLowerCase();
-        if (NAME_SUFFIXES.indexOf(letters) !== -1) {
-          return word.toUpperCase();
+        // Peel off punctuation that trails the token -- but not the dots
+        // inside it -- so "S.Kom," matches on "skom" and still gets its
+        // separating comma back.
+        var trailing = (word.match(/[^A-Za-z.]+$/) || [""])[0];
+        var core = trailing ? word.slice(0, word.length - trailing.length) : word;
+        var canonical = NAME_SUFFIXES[core.replace(/[^a-z]/gi, "").toLowerCase()];
+        if (canonical) {
+          return canonical + trailing;
         }
         return toDisplayCase(word);
       })
       .join(" ");
+  }
+
+  // Two pengusul values name an office instead of a person. Both resolve
+  // unambiguously in the survey data -- every Bupati point falls in Kerinci,
+  // and the Gubernur points span four kabupaten, i.e. the province -- so they
+  // are spelled out rather than left as bare job titles. Revisit if a future
+  // export adds Bupati points outside Kerinci.
+  var PENGUSUL_ALIASES = {
+    gubernur: "Gubernur Jambi",
+    bupati: "Bupati Kerinci"
+  };
+
+  function toPengusulName(value) {
+    var name = toDisplayName(value);
+    return PENGUSUL_ALIASES[name.toLowerCase()] || name;
   }
 
   function sanitizeMediaPath(value) {
@@ -712,7 +741,7 @@
     var items = allFeatures
       .map(function (feature, index) {
         var nomor = String(feature.get("Nomor") || "-").trim();
-        var nama = toDisplayName(feature.get("Nama Anggota")) || "Tanpa Nama";
+        var nama = toPengusulName(feature.get("Nama Anggota")) || "Tanpa Nama";
         var alamat = String(feature.get("Alamat") || "").trim();
         // Cleaned at the source, not just at the title: buildPopupHtml shows
         // Keterangan as its own meta row whenever it differs from the title,
