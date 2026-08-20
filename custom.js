@@ -1114,8 +1114,15 @@
       // Always use the feature's actual center for everything to avoid shifting
       var popupHeight = openPopupForItem(item, featureCenter);
 
-      var targetZoom = config.zoom || 17;
-      animateMapFocus(window.map.getView(), featureCenter, targetZoom, popupHeight);
+      // 17 is a floor, not a setpoint: it exists to get close enough to read a
+      // pin, and once the view is already closer that job is done. Treating it
+      // as a setpoint pulled the camera back out on every click, which broke
+      // the one case that needs the zoom most -- points a few metres apart,
+      // where you zoom in to tell them apart and clicking the second one undid
+      // the zoom that made it clickable in the first place.
+      var view = window.map.getView();
+      var targetZoom = Math.max(config.zoom || 17, view.getZoom() || 0);
+      animateMapFocus(view, featureCenter, targetZoom, popupHeight);
     }
 
     function renderList(query) {
