@@ -1,4 +1,4 @@
-# PJUTS 2026 — UI/UX polish pass ("proper website")
+# PUTS 2026 — UI/UX polish pass ("proper website")
 
 Date: 2026-07-08
 Trigger: design critique of the current build; user approved acting on all findings

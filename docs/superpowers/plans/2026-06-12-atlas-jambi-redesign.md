@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Reskin the PJUTS 2026 map as "Atlas Jambi" — full-bleed map with floating panels, official ESDM tokens (navy/blue/yellow, Montserrat + Work Sans), bottom sheet + bottom-docked popup on mobile — per `docs/superpowers/specs/2026-06-12-atlas-jambi-redesign-design.md`.
+**Goal:** Reskin the PUTS 2026 map as "Atlas Jambi" — full-bleed map with floating panels, official ESDM tokens (navy/blue/yellow, Montserrat + Work Sans), bottom sheet + bottom-docked popup on mobile — per `docs/superpowers/specs/2026-06-12-atlas-jambi-redesign-design.md`.
 
 **Architecture:** Static qgis2web/OpenLayers app. All work happens in 4 files (`index.html`, `custom.css`, `custom.js`, `styles/260331_4_style.js`) plus one legend swatch in `layers/layers.js`, a new `assets/` dir, and Caddyfile cache header. Every element ID and body-class hook used by `custom.js` is preserved; `custom.css` is rewritten from scratch on the new token system.
 
@@ -61,7 +61,7 @@ Replace line 14:
 Replace line 39:
 
 ```html
-<title>Atlas PJUTS 2026 · Penerangan Jalan Umum Tenaga Surya Provinsi Jambi</title>
+<title>Atlas PUTS 2026 · Penerangan Jalan Umum Tenaga Surya Provinsi Jambi</title>
 ```
 
 - [ ] **Step 4: Add assets cache rule to Caddyfile**
@@ -104,11 +104,11 @@ Replace everything from `<div class="app-shell">` through `</main>` (lines 42-14
         />
         <div class="masthead-copy">
           <p class="masthead-kicker">Pemprov Jambi &middot; Dinas ESDM</p>
-          <h1 class="masthead-title">Atlas PJUTS 2026</h1>
+          <h1 class="masthead-title">Atlas PUTS 2026</h1>
         </div>
       </header>
 
-      <aside id="sidebar" aria-label="Daftar titik PJUTS">
+      <aside id="sidebar" aria-label="Daftar titik PUTS">
         <button
           id="sheet-handle"
           type="button"
@@ -138,7 +138,7 @@ Replace everything from `<div class="app-shell">` through `</main>` (lines 42-14
 
           <div class="sidebar-actions">
             <label class="search-field" for="list-search">
-              <span class="visually-hidden">Cari titik PJUTS</span>
+              <span class="visually-hidden">Cari titik PUTS</span>
               <i class="fas fa-search search-icon" aria-hidden="true"></i>
               <input
                 id="list-search"
@@ -200,7 +200,7 @@ Replace everything from `<div class="app-shell">` through `</main>` (lines 42-14
       </button>
 
       <main class="map-frame">
-        <div id="map" aria-label="Peta sebaran PJUTS">
+        <div id="map" aria-label="Peta sebaran PUTS">
           <div id="popup" class="ol-popup">
             <a href="#" id="popup-closer" class="ol-popup-closer" aria-label="Tutup info titik"></a>
             <div id="popup-content"></div>
@@ -1018,7 +1018,7 @@ Implementation note for the executor: the old `custom.css` contained overrides f
 
 Serve; chrome-devtools at 1440×900 and 1024×768:
 - Map fills the entire viewport (no padded frame).
-- Masthead chip top-left shows lambang + kicker + "Atlas PJUTS 2026" in Montserrat.
+- Masthead chip top-left shows lambang + kicker + "Atlas PUTS 2026" in Montserrat.
 - Panel floats below the masthead: yellow-chip titik stat, search with icon, yellow-underline active tab, accordion groups with blue counts.
 - Expanding a group shows items with dots, name, subline, right-aligned code.
 - Clicking an item: popup card appears anchored at the pin (photo top, blue-deep kicker, Montserrat title, meta rows, yellow rule); selected item gets blue-tint + yellow dot.
@@ -1487,7 +1487,7 @@ with:
 Replace the `title:` value of `lyr_260331_4` with:
 
 ```js
-                title: '<img src=\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="18" viewBox="0 0 36 48"><path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23fee50f" stroke="%23293d50" stroke-width="2"/><circle cx="18" cy="18" r="6.5" fill="%23293d50"/></svg>\' /> Titik PJUTS'
+                title: '<img src=\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="18" viewBox="0 0 36 48"><path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23fee50f" stroke="%23293d50" stroke-width="2"/><circle cx="18" cy="18" r="6.5" fill="%23293d50"/></svg>\' /> Titik PUTS'
 ```
 
 - [ ] **Step 4: Verify**

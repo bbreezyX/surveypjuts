@@ -84,7 +84,7 @@ Expected: all asserts pass; `layers/layers.js` contains `points.geojson?v=202608
 ```bash
 git add data/points.geojson images/ layers/layers.js scripts/append_update_27_juli.py
 git commit -m "$(cat <<'EOF'
-Append 105 PJUTS survey points from 27 Juli 2026 update.
+Append 105 PUTS survey points from 27 Juli 2026 update.
 
 EOF
 )"

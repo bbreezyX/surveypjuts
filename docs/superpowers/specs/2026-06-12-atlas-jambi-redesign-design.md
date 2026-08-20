@@ -5,7 +5,7 @@ Status: Approved direction, pending spec review
 
 ## Context & Goals
 
-The PJUTS 2026 map (qgis2web/OpenLayers static app, served by Caddy) currently wears the
+The PUTS 2026 map (qgis2web/OpenLayers static app, served by Caddy) currently wears the
 "Solar Amber" theme: light surfaces, navy text, amber accents, a 40px padded grid frame
 around sidebar + map. The owner wants a complete visual overhaul.
 
@@ -43,7 +43,7 @@ Three floating layers sit on the map:
 
 1. **Masthead chip** (top-left): lambang Provinsi Jambi, hairline divider, then kicker
    "PEMPROV JAMBI · DINAS ESDM" (Montserrat 600, letterspaced, `--blue-deep`) over the
-   title "Atlas PJUTS 2026" (Montserrat 700, `--ink`).
+   title "Atlas PUTS 2026" (Montserrat 700, `--ink`).
 2. **Data panel** (below masthead, left edge): width clamp(330px–380px), translucent
    white, 12px radius. Top to bottom:
    - Stats strip: titik count in a yellow chip with navy text; pengusul and kab/kota
@@ -68,7 +68,7 @@ separators, closed by a short yellow rule. Close button floats on the photo corn
 
 ## Layout — Mobile (<960px)
 
-- **Bottom sheet** replaces the slide-in side panel and the "Data PJUTS" edge toggle.
+- **Bottom sheet** replaces the slide-in side panel and the "Data PUTS" edge toggle.
   Peek state: grab handle + stats strip + search (~150px). Expanded state: full group
   list at ~85dvh. Tap-to-toggle only (handle tap switches states; no drag physics in
   this iteration); backdrop tap and Escape close it. Existing `is-panel-open` body-class mechanics are

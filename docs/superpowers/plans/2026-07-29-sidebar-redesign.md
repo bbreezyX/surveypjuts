@@ -125,7 +125,7 @@ In `index.html`, insert immediately after the `<button id="sidebar-close">…</b
           />
           <div class="panel-brand__copy">
             <p class="panel-brand__kicker">Pemprov Jambi &middot; Dinas ESDM</p>
-            <h1 class="panel-brand__title">Peta Sebaran PJUTS 2026</h1>
+            <h1 class="panel-brand__title">Peta Sebaran PUTS 2026</h1>
           </div>
         </div>
 ```
@@ -276,7 +276,7 @@ In `index.html`, replace the whole `<div class="sidebar-actions">…</div>` bloc
 
 ```html
           <label class="search-field" for="list-search">
-            <span class="visually-hidden">Cari titik PJUTS</span>
+            <span class="visually-hidden">Cari titik PUTS</span>
             <span class="search-icon" aria-hidden="true"></span>
             <input
               id="list-search"

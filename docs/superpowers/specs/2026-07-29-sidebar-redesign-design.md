@@ -1,4 +1,4 @@
-# Desain Ulang Panel Sidebar — Peta Sebaran PJUTS 2026
+# Desain Ulang Panel Sidebar — Peta Sebaran PUTS 2026
 
 Tanggal: 2026-07-29
 Status: disetujui untuk implementasi
@@ -41,7 +41,7 @@ Satu kartu mengambang, empat zona. Tiga zona tetap, satu menggulir.
 ```
 
 - `.panel-brand` — lambang Jambi + kicker "Pemprov Jambi · Dinas ESDM" + judul
-  "Peta Sebaran PJUTS 2026". Isinya dipindahkan dari `<header class="masthead">`.
+  "Peta Sebaran PUTS 2026". Isinya dipindahkan dari `<header class="masthead">`.
   Disembunyikan pada `<960px`, di mana `.masthead` yang lama tetap dipakai.
 
   Kedua blok sama-sama memakai `<h1>`, dan yang tidak aktif disembunyikan dengan
