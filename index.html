@@ -26,10 +26,10 @@
          the manifest. favicon.ico and apple-touch-icon.png sit at the root on
          purpose — plenty of clients request them there without reading any HTML.
          Every raster is built from the same geometry by scripts/build-icons.py. -->
-    <link rel="icon" href="./favicon.ico?v=202608180040" sizes="32x32" />
-    <link rel="icon" href="./favicon.svg?v=202608180040" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=202608180040" />
-    <link rel="manifest" href="./manifest.json?v=202608180040" />
+    <link rel="icon" href="./favicon.ico?v=202608270655" sizes="32x32" />
+    <link rel="icon" href="./favicon.svg?v=202608270655" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png?v=202608270655" />
+    <link rel="manifest" href="./manifest.json?v=202608270655" />
     <meta name="apple-mobile-web-app-title" content="PUTS 2026" />
     <meta name="application-name" content="PUTS 2026" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -43,25 +43,25 @@
          file gets fetched twice. -->
     <link rel="preload" href="./data/points.geojson" as="fetch" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./resources/ol.css?v=202608180040" />
-    <link rel="stylesheet" href="resources/fontawesome-all.min.css?v=202608180040" />
-    <link rel="stylesheet" type="text/css" href="resources/horsey.min.css?v=202608180040" />
+    <link rel="stylesheet" href="./resources/ol.css?v=202608270655" />
+    <link rel="stylesheet" href="resources/fontawesome-all.min.css?v=202608270655" />
+    <link rel="stylesheet" type="text/css" href="resources/horsey.min.css?v=202608270655" />
     <link
       rel="stylesheet"
       type="text/css"
-      href="resources/ol-search-layer.min.css?v=202608180040"
+      href="resources/ol-search-layer.min.css?v=202608270655"
     />
     <link
-      href="resources/photon-geocoder-autocomplete.min.css?v=202608180040"
+      href="resources/photon-geocoder-autocomplete.min.css?v=202608270655"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./resources/ol-layerswitcher.css?v=202608180040" />
-    <link rel="stylesheet" href="./resources/qgis2web.css?v=202608180040" />
-    <link rel="preload" href="./custom.css?v=202608180040" as="style" />
-    <link rel="stylesheet" href="./custom.css?v=202608180040" />
+    <link rel="stylesheet" href="./resources/ol-layerswitcher.css?v=202608270655" />
+    <link rel="stylesheet" href="./resources/qgis2web.css?v=202608270655" />
+    <link rel="preload" href="./custom.css?v=202608270655" as="style" />
+    <link rel="stylesheet" href="./custom.css?v=202608270655" />
     <title>Peta Sebaran PUTS 2026 · Penerangan Umum Tenaga Surya Provinsi Jambi</title>
   </head>
   <body>
@@ -75,7 +75,7 @@
       <header class="masthead">
         <img
           class="masthead-lambang"
-          src="./assets/lambang-jambi.svg?v=202608180040"
+          src="./assets/lambang-jambi.svg?v=202608270655"
           alt="Lambang Provinsi Jambi"
           width="34"
           height="40"
@@ -100,17 +100,19 @@
         </button>
 
         <div class="panel-brand">
-          <img
-            class="panel-brand__lambang"
-            src="./assets/lambang-jambi.svg?v=202608180040"
-            alt="Lambang Provinsi Jambi"
-            width="34"
-            height="40"
-            decoding="async"
-          />
+          <span class="panel-brand__mark">
+            <img
+              class="panel-brand__lambang"
+              src="./assets/lambang-jambi.svg?v=202608270655"
+              alt="Lambang Provinsi Jambi"
+              width="34"
+              height="40"
+              decoding="async"
+            />
+          </span>
           <div class="panel-brand__copy">
-            <p class="panel-brand__kicker">Pemprov Jambi &middot; Dinas ESDM</p>
-            <h1 class="panel-brand__title">Peta Sebaran PUTS 2026</h1>
+            <p class="panel-brand__kicker">Dinas ESDM Provinsi Jambi</p>
+            <h1 class="panel-brand__title">Sebaran PUTS 2026</h1>
           </div>
         </div>
 
@@ -121,7 +123,7 @@
             <input
               id="list-search"
               type="search"
-              placeholder="Cari nomor, nama, alamat..."
+              placeholder="Cari titik, lokasi, pengusul"
               autocomplete="off"
             />
             <button
@@ -133,7 +135,7 @@
           </label>
 
           <div class="group-mode-field">
-            <span class="group-mode-label" id="group-mode-label">Kelompok</span>
+            <span class="group-mode-label" id="group-mode-label">Lihat per</span>
             <div class="group-mode" role="group" aria-labelledby="group-mode-label">
               <button
                 type="button"
@@ -172,7 +174,7 @@
         </div>
 
         <p class="sidebar-footer">
-          Sumber: survey lapangan 2026 &middot; Dinas ESDM Provinsi Jambi
+          Survey lapangan 2026 <span aria-hidden="true">&middot;</span> Dinas ESDM Jambi
         </p>
       </aside>
 
@@ -198,20 +200,20 @@
       </main>
     </div>
 
-    <script src="resources/qgis2web_expressions.js?v=202608180040"></script>
-    <script src="./resources/functions.js?v=202608180040"></script>
-    <script src="./resources/ol.js?v=202608180040"></script>
-    <script src="resources/horsey.min.js?v=202608180040"></script>
-    <script src="resources/ol-search-layer.js?v=202608180040"></script>
-    <script src="./resources/ol-layerswitcher.js?v=202608180040"></script>
-    <script src="resources/photon-geocoder-autocomplete.min.js?v=202608180040"></script>
-    <script src="layers/BatasKabupaten2011_1.js?v=202608180040"></script>
-    <script src="styles/BatasKabupaten2011_1_style.js?v=202608180040"></script>
-    <script src="styles/Dissolved_2_style.js?v=202608180040"></script>
-    <script src="styles/260331_4_style.js?v=202608180040"></script>
-    <script src="./layers/layers.js?v=202608180040" type="text/javascript"></script>
-    <script src="./resources/Autolinker.min.js?v=202608180040"></script>
-    <script src="./resources/qgis2web.js?v=202608201236"></script>
-    <script src="./custom.js?v=202608201231"></script>
+    <script src="resources/qgis2web_expressions.js?v=202608270655"></script>
+    <script src="./resources/functions.js?v=202608270655"></script>
+    <script src="./resources/ol.js?v=202608270655"></script>
+    <script src="resources/horsey.min.js?v=202608270655"></script>
+    <script src="resources/ol-search-layer.js?v=202608270655"></script>
+    <script src="./resources/ol-layerswitcher.js?v=202608270655"></script>
+    <script src="resources/photon-geocoder-autocomplete.min.js?v=202608270655"></script>
+    <script src="layers/BatasKabupaten2011_1.js?v=202608270655"></script>
+    <script src="styles/BatasKabupaten2011_1_style.js?v=202608270655"></script>
+    <script src="styles/Dissolved_2_style.js?v=202608270655"></script>
+    <script src="styles/260331_4_style.js?v=202608270655"></script>
+    <script src="./layers/layers.js?v=202608270655" type="text/javascript"></script>
+    <script src="./resources/Autolinker.min.js?v=202608270655"></script>
+    <script src="./resources/qgis2web.js?v=202608270655"></script>
+    <script src="./custom.js?v=202608270655"></script>
   </body>
 </html>
