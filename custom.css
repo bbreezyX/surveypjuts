@@ -35,6 +35,9 @@
        panel a less generic voice than the old all-Inter treatment. */
     --font-display: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-ui: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    /* Titles only. A book serif reads as an official document rather than a
+       SaaS app, which is what the panel is: a survey register on a map. */
+    --font-serif: "Newsreader", "Iowan Old Style", Georgia, serif;
 
     /* Map control chrome. Shadows are two-layer — a tight contact shadow plus
        a wide ambient one. A single soft blur (what --shadow-sm is) reads flat
@@ -201,65 +204,41 @@ body {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-height: 66px;
-    padding: 11px 48px 11px 12px;
-    overflow: hidden;
-    background: #213b50;
-    box-shadow: inset 0 -1px rgba(255, 255, 255, 0.08);
-}
-
-.panel-brand::after {
-    content: "";
-    position: absolute;
-    top: -58px;
-    right: -34px;
-    width: 108px;
-    height: 108px;
-    border: 1px solid rgba(254, 229, 15, 0.22);
-    border-radius: 50%;
-    pointer-events: none;
+    gap: 12px;
+    min-height: 64px;
+    padding: 13px 48px 12px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--divider);
 }
 
 .panel-brand__mark {
-    position: relative;
-    z-index: 1;
-    flex: 0 0 38px;
-    height: 40px;
-    display: grid;
-    place-items: center;
-    border-radius: 12px 12px 9px 12px;
-    background: #f8fafc;
-    box-shadow: 0 1px 2px rgba(10, 27, 40, 0.2),
-        0 7px 18px rgba(10, 27, 40, 0.24);
+    flex: 0 0 auto;
+    display: block;
 }
 
 .panel-brand__lambang {
-    width: 27px;
+    width: 30px;
     height: auto;
     display: block;
 }
 
 .panel-brand__copy {
-    position: relative;
-    z-index: 1;
     min-width: 0;
 }
 
 .panel-brand__kicker {
     margin: 0;
-    font: 600 9.5px var(--font-display);
-    letter-spacing: 0.1em;
+    font: 600 10px var(--font-ui);
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #bbcad6;
+    color: var(--muted-2);
 }
 
 .panel-brand__title {
-    margin: 3px 0 0;
-    font: 700 16px var(--font-display);
-    letter-spacing: -0.025em;
-    line-height: 1.15;
-    color: #ffffff;
+    margin: 1px 0 0;
+    font: 500 21px/1.15 var(--font-serif);
+    letter-spacing: -0.01em;
+    color: var(--ink);
 }
 
 /* ---------- Data panel ---------- */
@@ -277,10 +256,13 @@ body {
     width: var(--panel-width);
     display: flex;
     flex-direction: column;
-    background: var(--surface-glass);
-    border: 1px solid rgba(255, 255, 255, 0.72);
-    border-radius: 24px 24px 18px 24px;
-    box-shadow: var(--shadow-lg);
+    background: var(--surface);
+    border: 1px solid var(--hairline-strong);
+    border-radius: 12px;
+    /* Still a floating object over satellite imagery, so it needs a real
+       shadow to separate — but one soft layer, not a card-stack glow. */
+    box-shadow: 0 1px 2px rgba(20, 38, 53, 0.1),
+        0 14px 36px rgba(20, 38, 53, 0.18);
     overflow: hidden;
     transition: transform 0.3s ease, opacity 0.3s ease;
 }
@@ -306,9 +288,9 @@ body.is-sidebar-collapsed #sidebar {
 .sidebar-header {
     flex-shrink: 0;
     display: grid;
-    gap: 9px;
-    padding: 12px 12px 8px;
-    background: #f7f9fb;
+    gap: 10px;
+    padding: 14px 16px 0;
+    background: var(--surface);
     border-bottom: 1px solid var(--divider);
 }
 
@@ -317,7 +299,7 @@ body.is-sidebar-collapsed #sidebar {
     align-items: baseline;
     justify-content: space-between;
     gap: 8px;
-    padding: 1px 2px 0;
+    padding: 0 0 9px;
 }
 
 .list-summary {
@@ -326,19 +308,20 @@ body.is-sidebar-collapsed #sidebar {
     display: flex;
     align-items: center;
     gap: 7px;
-    font: 600 11.5px var(--font-ui);
+    font: 500 11.5px var(--font-ui);
     font-variant-numeric: tabular-nums;
     color: var(--muted);
 }
 
+/* Legend swatch: the same yellow disc as the map marker. */
 .list-summary::before {
     content: "";
-    flex: 0 0 7px;
-    width: 7px;
-    height: 7px;
-    border-radius: 2px;
+    flex: 0 0 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
     background: var(--yellow);
-    box-shadow: 0 0 0 1px rgba(41, 61, 80, 0.32);
+    box-shadow: 0 0 0 1px rgba(41, 61, 80, 0.36);
 }
 
 .link-action {
@@ -348,32 +331,19 @@ body.is-sidebar-collapsed #sidebar {
     background: none;
     min-height: 28px;
     padding: 0 3px;
-    font: 700 11.5px var(--font-display);
+    font: 600 11.5px var(--font-ui);
     color: var(--blue);
     cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 3px;
     transition: color var(--dur) var(--ease-out),
-        transform var(--dur) var(--ease-out);
-}
-
-.link-action::after {
-    content: "";
-    display: inline-block;
-    width: 5px;
-    height: 5px;
-    margin-left: 6px;
-    border-top: 1.5px solid currentColor;
-    border-right: 1.5px solid currentColor;
-    transform: rotate(45deg);
-    transition: transform var(--dur) var(--ease-spring);
+        text-decoration-color var(--dur) var(--ease-out);
 }
 
 .link-action:not(:disabled):hover {
     color: var(--blue-deep);
-    transform: translateY(-1px);
-}
-
-.link-action:not(:disabled):hover::after {
-    transform: translateX(2px) rotate(45deg);
+    text-decoration-color: currentColor;
 }
 
 .link-action:disabled {
@@ -416,14 +386,13 @@ body.is-sidebar-collapsed #sidebar {
 
 .search-field input {
     width: 100%;
-    height: 38px;
-    border: 1px solid transparent;
-    border-radius: 11px 11px 8px 11px;
+    height: 36px;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 8px;
     background: var(--surface);
-    box-shadow: inset 0 0 0 1px #d3dee7,
-        0 3px 10px rgba(41, 61, 80, 0.06);
-    padding: 0 36px 0 36px;
-    font: 500 13.5px var(--font-ui);
+    box-shadow: none;
+    padding: 0 36px 0 34px;
+    font: 500 13px var(--font-ui);
     color: var(--ink);
     transition: border-color var(--dur) var(--ease-out),
         box-shadow var(--dur) var(--ease-out),
@@ -502,91 +471,79 @@ body.is-sidebar-collapsed #sidebar {
 .search-field input:focus-visible {
     outline: none;
     border-color: var(--blue);
-    box-shadow: inset 0 0 0 1px var(--blue),
-        0 5px 16px rgba(0, 114, 188, 0.13);
+    box-shadow: 0 0 0 3px rgba(0, 114, 188, 0.14);
 }
 
 .secondary-action {
     height: 40px;
     padding: 0 14px;
     border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-sm);
+    border-radius: 8px;
     background: var(--surface);
     color: var(--blue-deep);
-    font: 600 13.5px var(--font-display);
+    font: 600 13px var(--font-ui);
     cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .secondary-action:not(:disabled):hover {
     background: var(--blue-tint);
     border-color: var(--blue);
-    box-shadow: 0 6px 16px rgba(0, 114, 188, 0.18);
-    transform: translateY(-1px);
 }
 
 .secondary-action:active {
-    transform: translateY(0);
-    box-shadow: none;
+    background: var(--hairline);
 }
 
 .group-mode-field {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 9px;
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
 }
 
 .group-mode-label {
     flex-shrink: 0;
-    font: 600 11px var(--font-ui);
+    font: 500 11.5px var(--font-ui);
     color: var(--muted-2);
 }
 
 .group-mode {
     display: flex;
-    gap: 2px;
-    padding: 2px;
-    border-radius: 10px;
-    background: #e7edf2;
-    box-shadow: inset 0 0 0 1px rgba(41, 61, 80, 0.04);
+    gap: 16px;
 }
 
+/* Text tabs. The rule under the active one sits on the header's own bottom
+   border, so the toggle reads as part of the page furniture, not a widget. */
 .group-mode__btn {
     appearance: none;
     display: inline-flex;
     align-items: center;
-    flex: 1;
-    justify-content: center;
     min-height: 30px;
     border: none;
-    border-radius: 8px 8px 6px 8px;
+    border-radius: 0;
     background: none;
-    padding: 4px 9px;
-    font: 700 11.5px var(--font-display);
+    padding: 4px 0 8px;
+    margin-bottom: -1px;
+    font: 600 12.5px var(--font-ui);
     color: var(--muted-2);
     cursor: pointer;
-    transition: background-color var(--dur) var(--ease-out),
-        color var(--dur) var(--ease-out),
-        box-shadow var(--dur) var(--ease-out),
-        transform var(--dur-press) ease;
+    box-shadow: inset 0 -2px transparent;
+    transition: color var(--dur) var(--ease-out),
+        box-shadow var(--dur) var(--ease-out);
 }
 
 .group-mode__btn:not(:disabled):hover {
-    color: var(--ink-soft);
-    background: rgba(255, 255, 255, 0.48);
-}
-
-.group-mode__btn:not(:disabled):active {
-    transform: scale(0.98);
-}
-
-/* Yellow is the active marker across the whole panel. */
-.group-mode__btn.is-active {
-    background: var(--surface);
     color: var(--ink);
-    box-shadow: inset 0 -2px var(--yellow),
-        0 1px 3px rgba(41, 61, 80, 0.13);
+}
+
+.group-mode__btn:focus-visible {
+    outline: none;
+    box-shadow: inset 0 -2px var(--blue);
+}
+
+.group-mode__btn.is-active {
+    color: var(--ink);
+    box-shadow: inset 0 -2px var(--ink);
 }
 
 /* ---------- Group list ---------- */
@@ -595,8 +552,8 @@ body.is-sidebar-collapsed #sidebar {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 3px 8px 8px;
-    background: #f7f9fb;
+    padding: 0 0 8px;
+    background: var(--surface);
     scrollbar-width: thin;
     scrollbar-color: var(--hairline-strong) transparent;
 }
@@ -619,91 +576,54 @@ body.is-sidebar-collapsed #sidebar {
 .group-row {
     position: relative;
     width: 100%;
-    min-height: 39px;
+    min-height: 42px;
     display: flex;
     align-items: center;
-    gap: 7px;
-    padding: 7px 7px 7px 10px;
+    gap: 12px;
+    padding: 9px 16px;
     border: none;
-    border-radius: 9px 9px 7px 9px;
+    border-radius: 0;
     background: none;
     cursor: pointer;
     font: inherit;
     text-align: left;
-    transition: background-color var(--dur) var(--ease-out),
-        transform var(--dur) var(--ease-out),
-        box-shadow var(--dur) var(--ease-out);
-}
-
-.group-row::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    top: 50%;
-    width: 3px;
-    height: 18px;
-    border-radius: 0 3px 3px 0;
-    background: var(--blue);
-    opacity: 0;
-    transform: translateY(-50%) scaleY(0.5);
-    transition: opacity var(--dur) var(--ease-out),
-        transform var(--dur) var(--ease-spring);
+    transition: background-color var(--dur) var(--ease-out);
 }
 
 .group-row + .group-row {
     box-shadow: inset 0 1px 0 var(--divider);
 }
 
-.group-row:hover,
-.group-row:focus-visible {
-    background: #eaf2f7;
-    box-shadow: none;
-    transform: translateX(2px);
+.group-row:hover {
+    background: #f3f7fa;
 }
 
-.group-row:hover::before,
-.group-row:focus-visible::before {
-    opacity: 1;
-    transform: translateY(-50%) scaleY(1);
+.group-row:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--blue);
 }
 
 .group-row:active {
-    transform: translateX(1px) scale(0.995);
+    background: #eaf2f7;
 }
 
 .group-row__title {
     flex: 1;
     min-width: 0;
-    font: 600 13px var(--font-ui);
+    font: 500 13px var(--font-ui);
     color: var(--ink);
 }
 
+/* A bare number, right-aligned. The row is the control; it needs no badge. */
 .group-row__count {
     flex-shrink: 0;
-    min-width: 30px;
-    padding: 3px 6px;
-    border-radius: 6px;
-    background: #e7edf2;
-    font: 700 11.5px var(--font-display);
+    font: 500 12.5px var(--font-ui);
     font-variant-numeric: tabular-nums;
-    text-align: center;
-    color: var(--muted);
+    color: var(--muted-2);
 }
 
-/* Chevron points right: this row takes you somewhere, it does not unfold. */
 .group-row__chevron {
-    flex-shrink: 0;
-    width: 6px;
-    height: 6px;
-    margin: 0 3px 0 1px;
-    border-top: 1.5px solid var(--blue);
-    border-right: 1.5px solid var(--blue);
-    transform: rotate(45deg);
-    transition: transform var(--dur) var(--ease-spring);
-}
-
-.group-row:hover .group-row__chevron {
-    transform: translateX(2px) rotate(45deg);
+    display: none;
 }
 
 /* ---------- Screen 2: context header ---------- */
@@ -711,10 +631,10 @@ body.is-sidebar-collapsed #sidebar {
 .panel-context {
     display: grid;
     gap: 2px;
-    margin: -12px -12px 0;
-    padding: 9px 12px 10px;
-    background: #e8f0f5;
-    border-bottom: 1px solid #d5e2ea;
+    margin: -12px -16px 0;
+    padding: 10px 16px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--divider);
 }
 
 .panel-back {
@@ -725,7 +645,7 @@ body.is-sidebar-collapsed #sidebar {
     background: none;
     padding: 0 0 0 13px;
     position: relative;
-    font: 700 11.5px var(--font-display);
+    font: 600 11.5px var(--font-ui);
     color: var(--blue);
     cursor: pointer;
 }
@@ -749,15 +669,18 @@ body.is-sidebar-collapsed #sidebar {
 
 .panel-context__title {
     margin: 0;
-    font: 700 15px var(--font-display);
-    letter-spacing: -0.015em;
-    line-height: 1.25;
+    font: 500 19px/1.2 var(--font-serif);
+    letter-spacing: -0.01em;
     color: var(--ink);
 }
 
 /* Screen 2 reorders its zones: context header, then the summary that explains
    the filter, then a search box now scoped to this group. The grouping toggle
    has no coherent meaning from inside a single group, so it steps out. */
+.group-mode-field {
+    order: 3;
+}
+
 .sidebar-header.is-detail .group-mode-field {
     display: none;
 }
@@ -766,8 +689,16 @@ body.is-sidebar-collapsed #sidebar {
     order: 1;
 }
 
+/* Screen 1 ends in the tab row, whose underline sits on the header's border,
+   so the header carries no bottom padding. Screen 2 ends in the search field
+   and needs the same breathing room the rows get. */
+.sidebar-header.is-detail {
+    padding-bottom: 12px;
+}
+
 .sidebar-header.is-detail .summary-row {
     order: 2;
+    padding: 2px 0;
 }
 
 .sidebar-header.is-detail .search-field {
@@ -779,57 +710,49 @@ body.is-sidebar-collapsed #sidebar {
     width: 100%;
     display: flex;
     align-items: flex-start;
-    gap: 7px;
-    margin: 1px 0;
-    padding: 7px 7px;
+    gap: 10px;
+    margin: 0;
+    padding: 9px 16px 9px 13px;
     border: none;
-    border-radius: 9px 9px 7px 9px;
+    border-radius: 0;
     background: none;
     cursor: pointer;
     text-align: left;
     font: inherit;
+    box-shadow: inset 3px 0 transparent;
     transition: background-color var(--dur) var(--ease-out),
-        transform var(--dur) var(--ease-out);
+        box-shadow var(--dur) var(--ease-out);
 }
 
-.item::before {
-    content: "";
-    flex-shrink: 0;
-    width: 3px;
-    height: 28px;
-    margin-top: 1px;
-    border-radius: 3px;
-    background: #c7d3dc;
+.item + .item {
+    border-top: 1px solid var(--divider);
 }
 
 .item:hover {
-    background: #eaf2f7;
-    transform: translateX(2px);
+    background: #f3f7fa;
 }
 
+.item:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--blue);
+}
+
+/* Yellow means "this point on the map" — same as the marker and the legend. */
 .item.is-active {
-    background: #e4eff6;
+    background: #fdf8de;
+    box-shadow: inset 3px 0 var(--yellow);
 }
 
-.item.is-active::before {
-    background: var(--yellow);
-    box-shadow: 0 0 0 1px rgba(41, 61, 80, 0.36);
-}
-
-/* The sequence number is the row's identity, not a footnote: leading position,
-   fixed column so the digits line up, and readable contrast. */
+/* The sequence number is the row's identity: a fixed column so the digits
+   line up, set quiet so the landmark still leads. */
 .item-code {
     flex-shrink: 0;
-    min-width: 2.55em;
-    margin-top: 1px;
-    padding: 3px 5px;
-    border-radius: 6px;
-    background: #e5ebf0;
-    font: 700 10.5px var(--font-display);
+    min-width: 2.4em;
+    margin-top: 2px;
+    font: 500 11px var(--font-ui);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.02em;
-    text-align: center;
-    color: var(--ink-soft);
+    color: var(--muted-2);
 }
 
 .item-copy {
@@ -851,7 +774,7 @@ body.is-sidebar-collapsed #sidebar {
 .item-label {
     flex: 1;
     min-width: 0;
-    font: 600 13px var(--font-ui);
+    font: 500 13px var(--font-ui);
     line-height: 1.35;
     color: var(--ink);
     display: -webkit-box;
@@ -880,7 +803,7 @@ body.is-sidebar-collapsed #sidebar {
     display: grid;
     justify-items: start;
     gap: 10px;
-    padding: 16px 8px;
+    padding: 16px;
 }
 
 .empty-state__copy {
@@ -894,7 +817,7 @@ body.is-sidebar-collapsed #sidebar {
 
 .data-loading__note {
     margin: 0 0 4px;
-    padding: 7px 7px 0;
+    padding: 9px 16px 0;
     font-size: 11.5px;
     color: var(--muted);
 }
@@ -902,8 +825,8 @@ body.is-sidebar-collapsed #sidebar {
 .skeleton-row {
     display: flex;
     align-items: flex-start;
-    gap: 9px;
-    padding: 9px 8px;
+    gap: 10px;
+    padding: 10px 16px;
 }
 
 .skeleton-row__copy {
@@ -971,7 +894,7 @@ body.is-data-unavailable .list-summary {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 16px 8px;
+    padding: 16px;
     font-size: 12.5px;
     color: var(--muted);
 }
@@ -995,7 +918,7 @@ body.is-data-unavailable .list-summary {
 .data-error {
     display: grid;
     gap: 10px;
-    margin: 8px 0;
+    margin: 12px 16px;
     padding: 16px;
     border: 1px solid #f0c7c7;
     border-radius: var(--radius-sm);
@@ -1026,11 +949,11 @@ body.is-data-unavailable .list-summary {
 .sidebar-footer {
     flex-shrink: 0;
     margin: 0;
-    padding: 8px 12px 10px;
+    padding: 9px 16px 11px;
     border-top: 1px solid var(--divider);
-    background: #f0f4f7;
+    background: var(--surface);
     font-size: 10.5px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.35;
     letter-spacing: 0.01em;
     color: var(--muted-2);
@@ -1154,14 +1077,14 @@ body.is-sidebar-collapsed .panel-toggle:hover {
    over the header from outside. */
 .panel-toggle {
     position: absolute;
-    top: calc(var(--panel-top) + 18px);
+    top: calc(var(--panel-top) + 17px);
     left: calc(var(--panel-left) + var(--panel-width) - 42px);
     z-index: 23;
     width: 30px;
     height: 30px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 9px 9px 7px 9px;
-    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
     box-shadow: none;
     cursor: pointer;
     transition: top var(--dur-state) var(--ease-out),
@@ -1177,12 +1100,12 @@ body.is-sidebar-collapsed .panel-toggle:hover {
 /* Open state has no chrome — it belongs to the panel header — so its hover
    is a tint, not the chip ladder. */
 .panel-toggle:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.18);
+    background: #f3f7fa;
+    border-color: var(--divider);
 }
 
 .panel-toggle:hover .panel-toggle__chevron {
-    border-color: var(--yellow);
+    border-color: var(--blue);
 }
 
 /* Collapsed: the panel is gone, so the control has nothing to belong to and
@@ -1193,7 +1116,7 @@ body.is-sidebar-collapsed .panel-toggle {
     width: 42px;
     height: 42px;
     border-color: var(--ctl-border);
-    border-radius: 13px 13px 10px 13px;
+    border-radius: 12px;
     background: var(--ctl-surface);
     box-shadow: var(--ctl-shadow);
 }
@@ -1207,8 +1130,8 @@ body.is-sidebar-collapsed .panel-toggle {
     width: 8px;
     height: 8px;
     margin: 0 auto;
-    border-left: 2px solid #ffffff;
-    border-bottom: 2px solid #ffffff;
+    border-left: 2px solid var(--ink-soft);
+    border-bottom: 2px solid var(--ink-soft);
     transform: rotate(45deg) translate(1px, -1px);
     translate: 0;
     transition: transform var(--dur-state) var(--ease-out),
@@ -1866,8 +1789,8 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     /* Peek shows search + grouping + a sliver of the first row, which is more
        use than the stat row that used to sit here. */
     .sidebar-header {
-        gap: 9px;
-        padding: 4px 16px 8px;
+        gap: 10px;
+        padding: 4px 16px 0;
     }
 
     .search-field input {
@@ -1881,7 +1804,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 
     .group-row {
         min-height: 48px;
-        padding: 10px 9px 10px 11px;
+        padding: 10px 16px;
     }
 
     .panel-back {
@@ -1901,7 +1824,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 
     .item {
         min-height: 48px;
-        padding: 11px 10px;
+        padding: 11px 16px 11px 13px;
     }
 
     .masthead {
@@ -1967,7 +1890,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
         background: var(--surface);
         max-height: 85dvh;
         height: 85dvh;
-        border-radius: 24px 24px 0 0;
+        border-radius: 16px 16px 0 0;
         border-left: none;
         border-right: none;
         border-bottom: none;
@@ -2018,7 +1941,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
         width: 100%;
         min-height: 40px;
         padding: 14px 0 8px;
-        background: #f7f9fb;
+        background: var(--surface);
         border: none;
         cursor: pointer;
         /* The drag gesture is ours; without this the browser claims the
@@ -2038,7 +1961,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 
 
     .sidebar-scroll {
-        padding: 3px 12px 10px;
+        padding: 0 0 10px;
         overflow-y: hidden;
     }
 
