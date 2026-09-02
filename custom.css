@@ -39,20 +39,20 @@
        SaaS app, which is what the panel is: a survey register on a map. */
     --font-serif: "Newsreader", "Iowan Old Style", Georgia, serif;
 
-    /* Map control chrome. Shadows are two-layer — a tight contact shadow plus
-       a wide ambient one. A single soft blur (what --shadow-sm is) reads flat
-       at 40px, which is most of why the controls looked like default chrome. */
-    --ctl-surface: rgba(255, 255, 255, 0.84);
-    --ctl-surface-near: rgba(255, 255, 255, 0.93);
+    /* Map control chrome: the sidebar's surface recipe at chip scale — a near
+       solid white, a hairline, one contact shadow plus one soft ambient one.
+       Hover is a border colour change, never a lift. */
+    --ctl-surface: rgba(255, 255, 255, 0.92);
+    --ctl-surface-near: rgba(255, 255, 255, 0.97);
     --ctl-surface-hover: #ffffff;
-    --ctl-border: rgba(41, 61, 80, 0.16);
-    --ctl-border-hover: rgba(0, 114, 188, 0.5);
-    --ctl-shadow: 0 1px 2px rgba(41, 61, 80, 0.12), 0 4px 12px rgba(41, 61, 80, 0.1);
-    --ctl-shadow-near: 0 1px 2px rgba(41, 61, 80, 0.14),
-        0 7px 18px rgba(41, 61, 80, 0.15);
-    --ctl-shadow-hover: 0 2px 4px rgba(41, 61, 80, 0.12),
-        0 10px 26px rgba(0, 114, 188, 0.24);
-    --ctl-shadow-press: 0 1px 2px rgba(41, 61, 80, 0.2);
+    --ctl-border: var(--hairline-strong);
+    --ctl-border-hover: var(--blue);
+    --ctl-shadow: 0 1px 2px rgba(20, 38, 53, 0.1), 0 6px 16px rgba(20, 38, 53, 0.14);
+    --ctl-shadow-near: 0 1px 2px rgba(20, 38, 53, 0.1),
+        0 8px 20px rgba(20, 38, 53, 0.16);
+    --ctl-shadow-hover: 0 1px 2px rgba(20, 38, 53, 0.1),
+        0 8px 20px rgba(20, 38, 53, 0.16);
+    --ctl-shadow-press: 0 1px 2px rgba(20, 38, 53, 0.12);
     --ctl-blur: saturate(170%) blur(10px);
     /* Layer chip footprint. The icon overlay is sized from the same token —
        see .ctl-layers-slot for why the icon cannot live inside the button. */
@@ -980,7 +980,6 @@ body.is-data-unavailable .list-summary {
 body.is-sidebar-collapsed .panel-toggle.is-near {
     background-color: var(--ctl-surface-near);
     box-shadow: var(--ctl-shadow-near);
-    transform: translateY(-0.5px);
 }
 
 .ol-zoom:hover,
@@ -989,14 +988,12 @@ body.is-sidebar-collapsed .panel-toggle:hover {
     background-color: var(--ctl-surface-hover);
     border-color: var(--ctl-border-hover);
     box-shadow: var(--ctl-shadow-hover);
-    transform: translateY(-1.5px);
 }
 
-.ol-zoom:active,
 .layer-switcher > button:active,
 .panel-toggle:active {
+    background-color: var(--hairline);
     box-shadow: var(--ctl-shadow-press);
-    transform: translateY(0) scale(0.965);
     transition-duration: var(--dur-press);
 }
 
@@ -1116,7 +1113,7 @@ body.is-sidebar-collapsed .panel-toggle {
     width: 42px;
     height: 42px;
     border-color: var(--ctl-border);
-    border-radius: 12px;
+    border-radius: 10px;
     background: var(--ctl-surface);
     box-shadow: var(--ctl-shadow);
 }
@@ -1404,7 +1401,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     flex-direction: column;
     align-items: stretch;
     border-radius: var(--radius-xs);
-    box-shadow: 0 1px 3px rgba(41, 61, 80, 0.16);
+    box-shadow: 0 1px 2px rgba(20, 38, 53, 0.1);
 }
 
 .ol-zoom {
@@ -1462,13 +1459,14 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 
 .ol-zoom button:hover,
 .ol-zoom button:focus-visible {
-    background: var(--blue-tint);
+    background: #f3f7fa;
     color: var(--blue);
 }
 
 .ol-zoom button:active {
     background: var(--hairline);
     color: var(--blue-deep);
+    transition-duration: var(--dur-press);
 }
 
 /* custom.js wraps the vendor's bare +/- text nodes so the glyph can be
@@ -1494,7 +1492,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     margin: 0;
     padding: 3px 8px 2px;
     /* qgis2web.css forces background:none !important here */
-    background: rgba(255, 255, 255, 0.75) !important;
+    background: rgba(255, 255, 255, 0.9) !important;
     border: 1px solid var(--ctl-border);
     border-bottom: none;
     border-radius: var(--radius-xs) var(--radius-xs) 0 0;
@@ -1515,7 +1513,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 .bottom-attribution {
     position: static;
     float: none;
-    background: rgba(255, 255, 255, 0.75);
+    background: rgba(255, 255, 255, 0.9);
     border: 1px solid var(--ctl-border);
     border-radius: 0 0 var(--radius-xs) var(--radius-xs);
     padding: 1px 6px;
@@ -1692,11 +1690,12 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     /* Gap below the in-flow chip (see shown-state override above) */
     margin: 8px 0 0 !important;
     border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-md);
+    border-radius: 12px;
     background: var(--surface);
-    box-shadow: var(--shadow-lg);
-    padding: 14px 16px;
-    font: 14px var(--font-ui);
+    box-shadow: 0 1px 2px rgba(20, 38, 53, 0.1),
+        0 14px 36px rgba(20, 38, 53, 0.18);
+    padding: 12px 16px 10px;
+    font: 500 13px var(--font-ui);
     color: var(--ink);
     min-width: 200px;
 }
@@ -1717,9 +1716,9 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     position: static;
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 10px;
     margin: 0;
-    padding: 6px 0;
+    padding: 7px 0;
 }
 
 .layer-switcher .panel li input {
@@ -1737,7 +1736,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    color: var(--ink-soft);
+    color: var(--ink);
     cursor: pointer;
 }
 
@@ -1761,11 +1760,11 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 
 .layer-switcher .panel li.group > label {
     display: block;
-    padding: 0;
-    font: 600 11px var(--font-display);
+    padding: 0 0 2px;
+    font: 600 10px var(--font-ui);
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--blue-deep);
+    color: var(--muted-2);
 }
 
 /* ---------- Mobile (<960px): bottom sheet + docked popup ---------- */
