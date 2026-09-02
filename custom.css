@@ -1164,12 +1164,11 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     width: 312px;
     padding: 0;
     background: var(--surface);
-    border: 1px solid var(--ctl-border);
-    border-radius: var(--radius-lg);
-    /* Same two-layer contact + ambient recipe as the map controls, scaled up
-       for a card this size. */
-    box-shadow: 0 2px 6px rgba(41, 61, 80, 0.1),
-        0 22px 48px rgba(41, 61, 80, 0.26);
+    border: 1px solid var(--hairline-strong);
+    border-radius: 12px;
+    /* Same surface recipe as the sidebar: hairline plus one soft shadow. */
+    box-shadow: 0 1px 2px rgba(20, 38, 53, 0.1),
+        0 14px 36px rgba(20, 38, 53, 0.18);
     display: none;
 }
 
@@ -1182,42 +1181,36 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     display: none;
 }
 
-/* Squared off and given the same glass/hairline/shadow recipe as the map
-   controls — a lone white circle read as a different design language. */
+/* Sits over the photo, so it keeps a white surface for contrast — but flat,
+   like the panel's own collapse toggle, not a floating chip. */
 .ol-popup-closer {
     position: absolute;
     top: 10px;
     right: 10px;
     z-index: 2;
-    width: 30px;
-    height: 30px;
-    border: 1px solid var(--ctl-border);
-    border-radius: 9px;
-    background: var(--ctl-surface);
-    box-shadow: var(--ctl-shadow);
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.94);
     text-align: center;
-    line-height: 28px;
+    line-height: 26px;
     text-decoration: none;
-    color: var(--ink);
-    font-size: 13px;
+    color: var(--ink-soft);
+    font-size: 12px;
     transition: background-color var(--dur) var(--ease-out),
         border-color var(--dur) var(--ease-out),
-        box-shadow var(--dur) var(--ease-out),
-        transform var(--dur) var(--ease-out);
+        color var(--dur) var(--ease-out);
 }
 
 .ol-popup-closer:hover {
-    background: var(--ctl-surface-hover);
-    border-color: var(--ctl-border-hover);
-    box-shadow: var(--ctl-shadow-hover);
+    background: #ffffff;
+    border-color: var(--blue);
     color: var(--blue);
-    transform: translateY(-1.5px);
 }
 
 .ol-popup-closer:active {
-    box-shadow: var(--ctl-shadow-press);
-    transform: translateY(0) scale(0.94);
-    transition-duration: var(--dur-press);
+    background: var(--hairline);
 }
 
 .ol-popup-closer::after {
@@ -1234,7 +1227,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 .feature-popup {
     /* Inner radius = card radius minus its 1px border, or the media corners
        sit a hair proud of the card's. */
-    border-radius: calc(var(--radius-lg) - 1px);
+    border-radius: 11px;
     overflow: hidden;
 }
 
@@ -1275,7 +1268,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     background: none;
     border-radius: 0;
     color: rgba(255, 255, 255, 0.94);
-    font: 600 11px var(--font-display);
+    font: 600 10px var(--font-ui);
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
@@ -1283,34 +1276,40 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 .feature-popup__body {
     display: flex;
     flex-direction: column;
-    padding: 14px 16px 16px;
+    padding: 14px 16px 14px;
 }
 
-/* The yellow rule shipped last in the DOM and floated unattached at the
-   bottom-left. Reordered to lead the card, it becomes the header's anchor
-   and the only accent the eye has to account for. */
+/* The yellow accent now lives on the eyebrow as the same marker disc the
+   sidebar's legend and active row use, so the separate rule is retired. */
 .feature-popup__rule {
-    order: -1;
-    width: 26px;
-    border-top: 3px solid var(--yellow);
-    border-radius: 2px;
-    margin: 0 0 10px;
+    display: none;
 }
 
-/* Demoted from --blue-deep: with blue meta icons and the yellow rule, three
-   accents were competing inside a 312px card. This line is locator text. */
+/* Same kicker as the panel brand block: small, tracked, muted. */
 .feature-popup__eyebrow {
     margin: 0;
-    font: 600 11px var(--font-display);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font: 600 10px var(--font-ui);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted-2);
 }
 
+.feature-popup__eyebrow::before {
+    content: "";
+    flex: 0 0 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--yellow);
+    box-shadow: 0 0 0 1px rgba(41, 61, 80, 0.36);
+}
+
 .feature-popup__title {
     margin: 4px 0 0;
-    font: 700 20px var(--font-display);
-    line-height: 1.18;
+    font: 500 21px/1.15 var(--font-serif);
     letter-spacing: -0.01em;
     color: var(--ink);
     display: -webkit-box;
@@ -1320,48 +1319,51 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     overflow-wrap: anywhere;
 }
 
-/* One rule between header and detail instead of a hairline on every row —
-   four full-width borders read as a receipt, not a card. Spacing carries
-   the separation now. */
+/* A two-column register — label left, value right, hairline between rows —
+   the same grammar as the sidebar's list. The blue icons went with the
+   badges: one accent (the yellow disc) per card. */
 .feature-popup__meta {
-    margin: 13px 0 0;
-    padding-top: 13px;
+    margin: 12px 0 0;
     border-top: 1px solid var(--divider);
     display: grid;
-    gap: 11px;
 }
 
 .feature-popup__meta-row {
-    display: grid;
-    grid-template-columns: 16px 1fr;
-    gap: 10px;
-    align-items: start;
-    padding: 0;
+    padding: 8px 0;
     border-top: none;
 }
 
-.meta-icon {
-    width: 16px;
-    padding-top: 2px;
-    text-align: center;
-    color: var(--blue);
-    font-size: 13px;
+.feature-popup__meta-row + .feature-popup__meta-row {
+    border-top: 1px solid var(--divider);
+}
+
+/* Higher specificity than the label/value grid below, which also matches
+   this div. */
+.feature-popup__meta-row > .meta-icon {
+    display: none;
+}
+
+.feature-popup__meta-row > div {
+    display: grid;
+    grid-template-columns: 84px 1fr;
+    gap: 12px;
+    align-items: baseline;
 }
 
 .feature-popup__meta-row dt {
-    margin: 0 0 1px;
-    font: 600 11px var(--font-display);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    margin: 0;
+    font: 500 12px var(--font-ui);
+    line-height: 1.5;
     color: var(--muted-2);
 }
 
 .feature-popup__meta-row dd {
     margin: 0;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
-    line-height: 1.55;
+    line-height: 1.5;
     color: var(--ink);
+    overflow-wrap: anywhere;
     /* Coordinates and dates line up column-wise instead of shimmying. */
     font-variant-numeric: tabular-nums;
 }
