@@ -146,46 +146,39 @@ body {
     z-index: 20;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 9px 16px 9px 12px;
-    background: var(--surface-glass);
+    gap: 10px;
+    padding: 8px 16px 8px 12px;
+    /* Same surface as the panel's brand block, which this replaces on
+       mobile: white, hairline, the control-scale shadow. */
+    background: var(--ctl-surface);
     border: 1px solid var(--hairline-strong);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
+    border-radius: 12px;
+    box-shadow: var(--ctl-shadow);
 }
 
 .masthead-lambang {
-    width: 34px;
+    width: 30px;
     height: auto;
     display: block;
 }
 
 .masthead-copy {
-    border-left: 1px solid var(--hairline);
-    padding-left: 12px;
     display: grid;
-    gap: 2px;
+    gap: 1px;
 }
 
 .masthead-kicker {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: 11px;
-    font-weight: 600;
-    /* Tracking this wide stops reading as a word and starts reading as loose
-       letters — the opposite of what an eyebrow at 11px needs. */
+    font: 600 10px var(--font-ui);
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--blue-deep);
+    color: var(--muted-2);
 }
 
 .masthead-title {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 700;
+    font: 500 20px/1.15 var(--font-serif);
     letter-spacing: -0.01em;
-    line-height: 1.1;
     color: var(--ink);
 }
 
@@ -1833,7 +1826,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
         left: 12px;
         right: 68px;
         min-height: 48px;
-        padding: 7px 12px 7px 10px;
+        padding: 6px 14px 6px 10px;
         gap: 10px;
     }
 
@@ -1853,7 +1846,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     }
 
     .masthead-kicker {
-        font-size: 11px;
+        font-size: 10px;
         letter-spacing: 0.08em;
         /* Ellipsis, not wrap. Below ~340px this line outruns its box, and a
            second line grows the masthead into the layer chip's row. The title
@@ -1868,7 +1861,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     }
 
     .masthead-title {
-        font-size: 16px;
+        font-size: 18px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
