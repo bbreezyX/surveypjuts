@@ -111,8 +111,9 @@
     spt: "S.Pt", sag: "S.Ag", spsi: "S.Psi", sfili: "S.Fil.I", amd: "A.Md",
     mm: "MM", mh: "MH", me: "ME", mt: "MT", map: "MAP", ey: "EY",
     msi: "M.Si", mpd: "M.Pd", mkes: "M.Kes", mkom: "M.Kom", msos: "M.Sos",
-    // Office abbreviations that lead a name, e.g. "GM Geopark Merangin".
-    gm: "GM"
+    // Office abbreviations inside a pengusul label, e.g. "GM Geopark
+    // Merangin", "Ketua RT 21", "Amin ADC".
+    gm: "GM", rt: "RT", adc: "ADC"
   };
 
   function toDisplayName(value) {
