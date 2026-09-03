@@ -3,6 +3,66 @@
     return String(value || "").trim().toLowerCase();
   }
 
+  // Surveyors paste GPS or Google Maps pairs. Accept "lat, lon" or "lon, lat"
+  // (Jambi bujur is ~102, lintang ~-1.5) and comma, semicolon, or whitespace
+  // as the separator. Decimal commas are left alone — a lone "3, 102" is a
+  // pair, not the number 3.102.
+  var COORD_PAIR = /^\s*(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)\s*$/;
+
+  function parseCoordinateQuery(value) {
+    var match = String(value || "").trim().match(COORD_PAIR);
+    if (!match) {
+      return null;
+    }
+    var a = parseFloat(match[1]);
+    var b = parseFloat(match[2]);
+    if (!isFinite(a) || !isFinite(b)) {
+      return null;
+    }
+    // Longitude in Jambi is 101–104; latitude sits between -3 and 0. If the
+    // first number looks like a bujur, treat the pair as lon, lat.
+    if (Math.abs(a) > 20 && Math.abs(b) <= 20) {
+      return { lat: b, lon: a };
+    }
+    if (Math.abs(a) <= 90 && Math.abs(b) <= 180) {
+      return { lat: a, lon: b };
+    }
+    return null;
+  }
+
+  function decimalPlaces(n) {
+    var text = String(Math.abs(n));
+    var dot = text.indexOf(".");
+    return dot === -1 ? 0 : text.length - dot - 1;
+  }
+
+  // Floor at ~17 m so a 7-decimal Google paste still hits a 4-decimal survey
+  // row. Widen with the query's own precision so "-1.49, 102.46" covers the
+  // neighbourhood instead of demanding an exact pin.
+  function coordinateTolerance(n) {
+    return Math.max(0.00015, Math.pow(10, -decimalPlaces(n)) * 0.51);
+  }
+
+  function coordinatesMatch(item, coord) {
+    if (!coord || !isFinite(item.latNum) || !isFinite(item.lonNum)) {
+      return false;
+    }
+    return (
+      Math.abs(item.latNum - coord.lat) <= coordinateTolerance(coord.lat) &&
+      Math.abs(item.lonNum - coord.lon) <= coordinateTolerance(coord.lon)
+    );
+  }
+
+  function itemMatchesQuery(item, normalizedQuery, coordQuery) {
+    if (!normalizedQuery) {
+      return true;
+    }
+    if (coordQuery && coordinatesMatch(item, coordQuery)) {
+      return true;
+    }
+    return item.searchText.indexOf(normalizedQuery) !== -1;
+  }
+
   function escapeHtml(value) {
     return String(value || "")
       .replace(/&/g, "&amp;")
@@ -69,6 +129,22 @@
 
   function sanitizeMediaPath(value) {
     return String(value || "").replace(/[\\/:]/g, "_").trim();
+  }
+
+  // Surplus survey rows stay in the geojson with their photos, tagged Status
+  // "Cadangan". They still appear on the map and in the list — just quieter
+  // than an SK point — and they stay out of every official count.
+  function isCadangan(feature) {
+    return (
+      String(feature.get("Status") || "").trim().toLowerCase() === "cadangan"
+    );
+  }
+
+  // The hatch control writes the geojson. That path only exists on the
+  // local dev server; production is a static host and must not show it.
+  function isLocalEditor() {
+    var host = window.location.hostname;
+    return host === "localhost" || host === "127.0.0.1";
   }
 
   function getCollator() {
@@ -229,7 +305,7 @@
       (item.kabupaten ? " · " + escapeHtml(item.kabupaten) : "");
 
     return (
-      '<div class="feature-popup">' +
+      '<div class="feature-popup' + (item.cadangan ? " is-cadangan" : "") + '">' +
       // No loading="lazy" here: the card is only built at the moment it opens,
       // so the photo is always already in view and lazy only defers the fetch
       // behind a visibility check it is guaranteed to pass. decoding="async"
@@ -663,7 +739,8 @@
 
     function init() {
     var collator = getCollator();
-    var allFeatures = pointSource.getFeatures().slice();
+    var loadedFeatures = pointSource.getFeatures().slice();
+    var allFeatures = loadedFeatures;
     var listContainer = document.getElementById("list-data");
     var searchInput = document.getElementById("list-search");
     var fitButton = document.getElementById("fit-map");
@@ -685,6 +762,54 @@
     var pinStyle = new ol.style.Style({
       image: new ol.style.Icon({
         src: "data:image/svg+xml," + selectedPinSvg,
+        anchor: [0.5, 1],
+        anchorXUnits: "fraction",
+        anchorYUnits: "fraction",
+        scale: 1
+      }),
+      zIndex: 10
+    });
+
+    // Cadangan pins: same silhouette, hatched slate instead of solid yellow,
+    // a touch smaller so the SK set still reads as the live layer.
+    var cadanganHatch =
+      '<defs><pattern id="h" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
+        '<rect width="4" height="4" fill="%23e3e8ed"/>' +
+        '<rect width="1.6" height="4" fill="%23293d50" fill-opacity="0.45"/>' +
+      "</pattern></defs>";
+    var cadanganPinSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 36 48">' +
+        cadanganHatch +
+        '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="url(%23h)" stroke="%23293d50" stroke-width="2"/>' +
+        '<circle cx="18" cy="18" r="6.5" fill="%23ffffff" stroke="%23293d50" stroke-width="1.2"/>' +
+      "</svg>";
+    var cadanganPinStyle = [new ol.style.Style({
+      image: new ol.style.Icon({
+        src: "data:image/svg+xml," + cadanganPinSvg,
+        anchor: [0.5, 1],
+        anchorXUnits: "fraction",
+        anchorYUnits: "fraction",
+        scale: 0.86
+      }),
+      zIndex: 1
+    })];
+    var cadanganDotStyle = [new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: 3.6,
+        fill: new ol.style.Fill({ color: "#c5cdd6" }),
+        stroke: new ol.style.Stroke({ color: "#293d50", width: 1.4 })
+      }),
+      zIndex: 1
+    })];
+    var cadanganSelectedSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="43" viewBox="-2 -4 40 52">' +
+        cadanganHatch +
+        '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="url(%23h)" stroke="%23ffffff" stroke-width="3"/>' +
+        '<circle cx="18" cy="18" r="6.5" fill="%23293d50"/>' +
+      "</svg>";
+    var cadanganPinSelected = new ol.style.Style({
+      image: new ol.style.Icon({
+        src: "data:image/svg+xml," + cadanganSelectedSvg,
         anchor: [0.5, 1],
         anchorXUnits: "fraction",
         anchorYUnits: "fraction",
@@ -738,7 +863,7 @@
       return prefix ? toDisplayCase(prefix) : "Lainnya";
     }
 
-    var items = allFeatures
+    var mappedItems = allFeatures
       .map(function (feature, index) {
         var nomor = String(feature.get("Nomor") || "-").trim();
         var nama = toPengusulName(feature.get("Nama Anggota")) || "Tanpa Nama";
@@ -751,6 +876,7 @@
         var tanggal = String(feature.get("Tanggal Dokumentasi") || "").trim();
         var photo = String(feature.get("Foto Survey Awal") || "").trim();
         var kabupaten = resolveKabupaten(feature);
+        var cadangan = isCadangan(feature);
         feature.set("kabupaten", kabupaten);
 
         // Koordinat: pakai field survey; kalau kosong, turunkan dari geometri
@@ -763,9 +889,11 @@
           lon = ll[0].toFixed(5);
           lat = ll[1].toFixed(5);
         }
+        var latNum = Number(lat);
+        var lonNum = Number(lon);
         var koordinat = lat + ", " + lon;
         var koordinatSingkat =
-          Number(lat).toFixed(4) + ", " + Number(lon).toFixed(4);
+          latNum.toFixed(4) + ", " + lonNum.toFixed(4);
 
         return {
           id: String(index),
@@ -777,11 +905,23 @@
           tanggal: tanggal,
           photo: photo,
           kabupaten: kabupaten,
+          cadangan: cadangan,
           koordinat: koordinat,
           koordinatSingkat: koordinatSingkat,
+          latNum: latNum,
+          lonNum: lonNum,
           display: buildDisplayParts(nomor, keterangan),
           searchText: getNormalizedText(
-            [nomor, nama, alamat, keterangan, tanggal].join(" ")
+            [
+              nomor,
+              nama,
+              alamat,
+              keterangan,
+              tanggal,
+              koordinat,
+              lat + "," + lon,
+              cadangan ? "cadangan" : ""
+            ].join(" ")
           ),
         };
       })
@@ -789,10 +929,26 @@
         return collator.compare(left.nomor, right.nomor);
       });
 
+    var items = mappedItems.filter(function (item) {
+      return !item.cadangan;
+    });
+    var cadanganItems = mappedItems.filter(function (item) {
+      return item.cadangan;
+    });
+
     var featureLookup = new Map();
-    items.forEach(function (item) {
+    mappedItems.forEach(function (item) {
       featureLookup.set(item.feature, item);
     });
+
+    function allGroupItems(group) {
+      if (!group.cadangan.length) {
+        return group.items;
+      }
+      return group.items.concat(group.cadangan).sort(function (left, right) {
+        return collator.compare(left.nomor, right.nomor);
+      });
+    }
 
     function buildGroupedItems(mode) {
       var keyFn =
@@ -807,12 +963,24 @@
         result[key].push(item);
         return result;
       }, {});
+      var reserve = cadanganItems.reduce(function (result, item) {
+        var key = keyFn(item) || "Lainnya";
+        if (!result[key]) {
+          result[key] = [];
+        }
+        result[key].push(item);
+        return result;
+      }, {});
       return Object.keys(groups)
         .sort(function (left, right) {
           return collator.compare(left, right);
         })
         .map(function (name) {
-          return { name: name, items: groups[name] };
+          return {
+            name: name,
+            items: groups[name],
+            cadangan: reserve[name] || []
+          };
         });
     }
 
@@ -932,8 +1100,9 @@
     function countMatchedGroups() {
       var seen = 0;
       groupedItems.forEach(function (group) {
-        for (var i = 0; i < group.items.length; i++) {
-          if (visibleIds.has(group.items[i].id)) {
+        var rows = allGroupItems(group);
+        for (var i = 0; i < rows.length; i++) {
+          if (visibleIds.has(rows[i].id)) {
             seen += 1;
             return;
           }
@@ -948,7 +1117,7 @@
     // group when there is one. The map layer, the list and the "tampil" counter
     // all read from visibleIds, so they can never disagree.
     var activeGroup = null;
-    var visibleIds = new Set(items.map(function (item) { return item.id; }));
+    var visibleIds = new Set(mappedItems.map(function (item) { return item.id; }));
     var restoreFocusGroup = null;
 
     function updateHighlight(itemId) {
@@ -996,6 +1165,7 @@
       var coord = coordinate || defaultCoord;
 
       popupContent.innerHTML = buildPopupHtml(item);
+      attachHatchControl(item);
       popup.style.display = "block";
 
       // Position before measuring. OpenLayers owns the wrapper it puts around
@@ -1028,6 +1198,115 @@
       document.body.classList.add("is-popup-open");
 
       return popupHeight;
+    }
+
+    var suppressMapClickUntil = 0;
+    var hatchInFlight = false;
+
+    function attachHatchControl(item) {
+      if (!isLocalEditor() || !popupContent) {
+        return;
+      }
+      var body = popupContent.querySelector(".feature-popup__body");
+      if (!body) {
+        return;
+      }
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "feature-popup__hatch";
+      btn.textContent = item.cadangan ? "Batal arsir" : "Arsir";
+      btn.addEventListener("mousedown", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        suppressMapClickUntil = Date.now() + 500;
+      });
+      btn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        suppressMapClickUntil = Date.now() + 500;
+        toggleCadangan(item, btn);
+      });
+      body.appendChild(btn);
+    }
+
+    function cadanganSearchText(item) {
+      return getNormalizedText(
+        [
+          item.nomor,
+          item.nama,
+          item.alamat,
+          item.keterangan,
+          item.tanggal,
+          item.koordinat,
+          item.latNum + "," + item.lonNum,
+          item.cadangan ? "cadangan" : ""
+        ].join(" ")
+      );
+    }
+
+    function applyCadanganLocally(item, next) {
+      item.cadangan = next;
+      if (next) {
+        item.feature.set("Status", "Cadangan");
+      } else {
+        item.feature.unset("Status");
+      }
+      item.searchText = cadanganSearchText(item);
+
+      items = mappedItems.filter(function (row) {
+        return !row.cadangan;
+      });
+      cadanganItems = mappedItems.filter(function (row) {
+        return row.cadangan;
+      });
+      groupedItems = buildGroupedItems(groupMode);
+
+      renderList(searchInput.value);
+      if (window.featureOverlay) {
+        window.featureOverlay.setStyle(
+          item.cadangan ? cadanganPinSelected : pinStyle
+        );
+      }
+      // Rebuild the card on the next tick so the same pointer-up cannot
+      // land on the new button and hatch a neighbouring pin.
+      window.setTimeout(function () {
+        openPopupForItem(item);
+      }, 0);
+    }
+
+    function toggleCadangan(item, btn) {
+      if (hatchInFlight) {
+        return;
+      }
+      var next = !item.cadangan;
+      hatchInFlight = true;
+      btn.disabled = true;
+      btn.classList.remove("is-error");
+      fetch("/api/cadangan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nomor: item.nomor, cadangan: next })
+      })
+        .then(function (res) {
+          if (!res.ok) {
+            throw new Error("write failed");
+          }
+          return res.json();
+        })
+        .then(function (payload) {
+          if (!payload || !payload.ok) {
+            throw new Error("write failed");
+          }
+          applyCadanganLocally(item, next);
+        })
+        .catch(function () {
+          btn.disabled = false;
+          btn.classList.add("is-error");
+          btn.textContent = "Gagal — jalankan scripts/dev-server.py";
+        })
+        .then(function () {
+          hatchInFlight = false;
+        });
     }
 
     function clearSelection() {
@@ -1204,7 +1483,7 @@
       }
 
       if (window.featureOverlay) {
-        window.featureOverlay.setStyle(pinStyle);
+        window.featureOverlay.setStyle(item.cadangan ? cadanganPinSelected : pinStyle);
       }
 
       if (isMobileViewport()) {
@@ -1229,19 +1508,20 @@
 
     function renderList(query) {
       var normalizedQuery = getNormalizedText(query);
+      var coordQuery = parseCoordinateQuery(query);
       var fragment = document.createDocumentFragment();
 
       visibleIds.clear();
       listContainer.innerHTML = "";
 
       var visibleCount = activeGroup
-        ? renderItemScreen(fragment, normalizedQuery)
-        : renderGroupScreen(fragment, normalizedQuery);
+        ? renderItemScreen(fragment, normalizedQuery, coordQuery)
+        : renderGroupScreen(fragment, normalizedQuery, coordQuery);
 
       renderPanelNav();
       searchInput.placeholder = activeGroup
         ? "Cari dalam kelompok"
-        : "Cari titik, lokasi, pengusul";
+        : "Cari titik, lokasi, pengusul, koordinat";
 
       listContainer.appendChild(fragment);
       renderSummary(visibleCount, Boolean(normalizedQuery));
@@ -1252,18 +1532,20 @@
     // Screen 1. With no query: one row per group, no points. With a query:
     // matching points across every group, flat — search is the shortcut past
     // the drill-down, so it must not make you pick a group first.
-    function renderGroupScreen(fragment, normalizedQuery) {
+    function renderGroupScreen(fragment, normalizedQuery, coordQuery) {
       var visibleCount = 0;
 
       if (normalizedQuery) {
         var matched = [];
         groupedItems.forEach(function (group) {
-          group.items.forEach(function (item) {
-            if (item.searchText.indexOf(normalizedQuery) === -1) {
+          allGroupItems(group).forEach(function (item) {
+            if (!itemMatchesQuery(item, normalizedQuery, coordQuery)) {
               return;
             }
             visibleIds.add(item.id);
-            visibleCount += 1;
+            if (!item.cadangan) {
+              visibleCount += 1;
+            }
             matched.push({ item: item, groupName: group.name });
           });
         });
@@ -1285,9 +1567,11 @@
       }
 
       groupedItems.forEach(function (group) {
-        group.items.forEach(function (item) {
+        allGroupItems(group).forEach(function (item) {
           visibleIds.add(item.id);
-          visibleCount += 1;
+          if (!item.cadangan) {
+            visibleCount += 1;
+          }
         });
         fragment.appendChild(buildGroupRow(group));
       });
@@ -1299,7 +1583,7 @@
     }
 
     // Screen 2. Only the active group contributes rows.
-    function renderItemScreen(fragment, normalizedQuery) {
+    function renderItemScreen(fragment, normalizedQuery, coordQuery) {
       var group = null;
       for (var i = 0; i < groupedItems.length; i++) {
         if (groupedItems[i].name === activeGroup) {
@@ -1309,11 +1593,11 @@
       }
       if (!group) {
         activeGroup = null;
-        return renderGroupScreen(fragment, normalizedQuery);
+        return renderGroupScreen(fragment, normalizedQuery, coordQuery);
       }
 
-      var matchedItems = group.items.filter(function (item) {
-        return !normalizedQuery || item.searchText.indexOf(normalizedQuery) !== -1;
+      var matchedItems = allGroupItems(group).filter(function (item) {
+        return itemMatchesQuery(item, normalizedQuery, coordQuery);
       });
 
       matchedItems.forEach(function (item) {
@@ -1331,7 +1615,13 @@
       if (!matchedItems.length) {
         fragment.appendChild(buildEmptyState(Boolean(normalizedQuery)));
       }
-      return matchedItems.length;
+      var skCount = 0;
+      matchedItems.forEach(function (item) {
+        if (!item.cadangan) {
+          skCount += 1;
+        }
+      });
+      return skCount;
     }
 
     function buildGroupRow(group) {
@@ -1382,13 +1672,14 @@
       var subline = document.createElement("span");
 
       button.type = "button";
-      button.className = "item";
+      button.className = item.cadangan ? "item is-cadangan" : "item";
       button.dataset.itemId = item.id;
       button.title = item.nomor;
       button.setAttribute(
         "aria-label",
         [
           "Titik " + item.display.code,
+          item.cadangan ? "cadangan" : "",
           item.display.primary,
           item.display.secondary,
           item.kabupaten,
@@ -1535,7 +1826,7 @@
         wrap.appendChild(widen);
       } else if (hasQuery) {
         copy.textContent =
-          "Tidak ada titik yang cocok dengan pencarian. Coba nomor titik, nama pengusul, patokan lokasi, atau nama desa.";
+          "Tidak ada titik yang cocok dengan pencarian. Coba nomor titik, nama pengusul, patokan lokasi, nama desa, atau koordinat.";
       } else {
         copy.textContent = "Belum ada titik untuk ditampilkan.";
       }
@@ -1545,11 +1836,17 @@
 
     // ---- Map <-> list synchronisation --------------------------------------
     // The layer renders exactly the ids the list is showing, so the "tampil"
-    // counter is true by construction.
+    // counter is true by construction. Cadangan pins use a quieter style so
+    // they stay visible without reading as SK units.
     window.lyr_260331_4.setStyle(function (feature, resolution) {
       var item = featureLookup.get(feature);
-      if (item && !visibleIds.has(item.id)) {
+      if (!item || !visibleIds.has(item.id)) {
         return null;
+      }
+      if (item.cadangan) {
+        return resolution > PIN_MAX_RESOLUTION_260331_4
+          ? cadanganDotStyle
+          : cadanganPinStyle;
       }
       return style_260331_4(feature, resolution);
     });
@@ -1558,7 +1855,7 @@
       var config = options || {};
       var extent = null;
 
-      items.forEach(function (item) {
+      mappedItems.forEach(function (item) {
         if (!visibleIds.has(item.id)) {
           return;
         }
@@ -1661,12 +1958,36 @@
       fitToVisible({ maxZoom: 15 });
     }
 
+    function clickHitsPopup(event) {
+      var el = document.getElementById("popup");
+      if (!el || el.style.display === "none") {
+        return false;
+      }
+      var oe = event.originalEvent;
+      if (!oe) {
+        return false;
+      }
+      var rect = el.getBoundingClientRect();
+      var x = oe.clientX;
+      var y = oe.clientY;
+      return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+    }
+
     function handleMapClick(event) {
+      if (Date.now() < suppressMapClickUntil || clickHitsPopup(event)) {
+        return;
+      }
       // The switcher lives inside the map viewport, so its own clicks also
       // arrive here — don't treat them as map clicks (it would re-close the
       // panel the button just opened, and clear the selection).
       var domTarget = event.originalEvent && event.originalEvent.target;
-      if (domTarget && domTarget.closest && domTarget.closest(".layer-switcher")) {
+      if (
+        domTarget &&
+        domTarget.closest &&
+        (domTarget.closest(".layer-switcher") ||
+          domTarget.closest(".ol-popup") ||
+          domTarget.closest("#popup"))
+      ) {
         return;
       }
       // Click-activated layer panel has no auto-close of its own.

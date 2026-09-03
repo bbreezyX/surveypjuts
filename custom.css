@@ -781,6 +781,45 @@ body.is-sidebar-collapsed #sidebar {
     box-shadow: inset 3px 0 var(--yellow);
 }
 
+/* Reserve rows stay in the list so the survey is complete, but they must
+   not read as SK units: hatched background, everything a step quieter, and
+   the kabupaten chip drops its blue so the eye lands on the SK rows first. */
+.item.is-cadangan {
+    background-color: #f6f8fa;
+    background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(41, 61, 80, 0.085) 0 1px,
+        transparent 1px 7px
+    );
+    box-shadow: inset 3px 0 #c5cdd6;
+}
+
+.item.is-cadangan:hover {
+    background-color: #eef2f5;
+}
+
+.item.is-cadangan .item-code,
+.item.is-cadangan .item-coord,
+.item.is-cadangan .item-subline {
+    color: var(--disabled-ink);
+}
+
+.item.is-cadangan .item-label {
+    color: var(--muted-2);
+    font-weight: 400;
+}
+
+.item.is-cadangan .kab-tag {
+    background: #eceff2;
+    box-shadow: inset 0 0 0 1px #d8dee4;
+    color: var(--muted-2);
+}
+
+.item.is-cadangan.is-active {
+    background-color: #e9edf1;
+    box-shadow: inset 3px 0 var(--muted-2);
+}
+
 /* The sequence number is the row's identity: a fixed column so the digits
    line up, set quiet so the landmark still leads. */
 .item-code {
@@ -1340,6 +1379,44 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     border-radius: 50%;
     background: var(--yellow);
     box-shadow: 0 0 0 1px rgba(41, 61, 80, 0.36);
+}
+
+.feature-popup.is-cadangan .feature-popup__eyebrow::before {
+    background-color: #e3e8ed;
+    background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(41, 61, 80, 0.45) 0 1px,
+        transparent 1px 3px
+    );
+}
+
+/* Localhost-only hatch control. Quiet so it does not compete with the
+   survey fields; the hatched pin is still the status. */
+.feature-popup__hatch {
+    margin-top: 12px;
+    width: 100%;
+    height: 36px;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--muted);
+    font: 600 12.5px var(--font-ui);
+    cursor: pointer;
+}
+
+.feature-popup__hatch:not(:disabled):hover {
+    background: #f3f5f7;
+    color: var(--ink);
+}
+
+.feature-popup__hatch:disabled {
+    color: var(--disabled-ink);
+    cursor: wait;
+}
+
+.feature-popup__hatch.is-error {
+    color: #8a3b2a;
+    cursor: pointer;
 }
 
 .feature-popup__title {
