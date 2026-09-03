@@ -91,6 +91,12 @@ for _n in ("001", "002"):
     NOMOR_FIXES[_PAMENANG + "TANJUNG GEDANG-" + _n] = (
         "MERANGIN-PAMENANG BARAT-TANJUNG GEDANG-" + _n)
 
+# The lone Sungai Gedang pin (fid 357, -2.52513, 102.72566) is a Siliwangi
+# point that kept the neighbouring desa in Nomor. Siliwangi already holds
+# 001-009, so this lands as 010.
+NOMOR_FIXES["SAROLANGUN-SINGKUT-SUNGAI GEDANG-001"] = (
+    "SAROLANGUN-SINGKUT-SILIWANGI-010")
+
 # Nama Anggota. The export writes academic titles four different ways -- "SE",
 # "SH", "S.Kom" with dots but "ME" without -- so they are spelled per PUEBI
 # here. Casing is left to toDisplayName in custom.js; these are stored values.
@@ -108,11 +114,27 @@ NAMA_FIXES = {
     "Gubernur": "Gubernur Jambi",
     "Bupati": "Bupati Kerinci",
 
-    # ASSUMPTION, not a verified fact: NasDem is a party, not a surname, so it
-    # is bracketed as an affiliation rather than left looking like part of the
-    # name. The underlying question -- who "Yudhi" is -- still needs the source
-    # data to answer. Six records, all Tanjung Jabung Timur, all 03/08/2026.
-    "Yudhi Nasdem": "Yudhi (NasDem)",
+    # The export shortened this proposer to "Ridwan". All 30 rows are the
+    # Singkut allocation -- Payo Lebar 20, Siliwangi 10 -- and the source
+    # sheet names him Samsul Riduan, S.T.
+    "Ridwan": "Samsul Riduan, S.T.",
+
+    "Ririn Novianty": "Ririn Novianty, S.E.",
+    "Muthsaharudin": "Muthsaharudin, S.E.",
+
+    # Export wrote "Yudhi Nasdem"; an earlier pass stored "Yudhi (NasDem)".
+    # The source sheet is Yudi Hariyanto, EY -- six Tanjab Timur rows.
+    "Yudhi Nasdem": "Yudi Hariyanto, EY",
+    "Yudhi (NasDem)": "Yudi Hariyanto, EY",
+    "Yudhi": "Yudi Hariyanto, EY",
+
+    "Yuli Yuliarti": "Hj. Yuli Yuliarti, S.E., M.M.",
+
+    "Fauzi Ansori": "Dr. Ir. H. Ahmad Fauzi Ansori, M.T.",
+
+    # Export spelled the surname Jahfar. The source sheet is Jafar, S.H.
+    "Ahmad Jahfar": "Ahmad Jafar, S.H.",
+    "Ahmad Jafar": "Ahmad Jafar, S.H.",
 }
 
 PHOTO_DIR = "images"
