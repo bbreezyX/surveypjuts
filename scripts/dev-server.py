@@ -31,11 +31,13 @@ class Handler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=str(ROOT), **kwargs)
 
     def end_headers(self):
-        path = self.path.split("?", 1)[0]
-        if path.startswith("/api/") or path.startswith("/data/") or path.startswith(
-            "/custom."
-        ):
-            self.send_header("Cache-Control", "no-store")
+        # Never cache anything on the dev server. It used to exempt only
+        # /api/, /data/ and custom.*, which left layers/layers.js, styles/*
+        # and resources/* to the browser's heuristic cache: an edit to
+        # layers.js then failed to show up in the preview until the ?v= token
+        # moved, and looked like a bug in the feature. Production caching is
+        # the Caddyfile's job; here the file on disk is always the truth.
+        self.send_header("Cache-Control", "no-store")
         super().end_headers()
 
     def do_GET(self):
