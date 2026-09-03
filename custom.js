@@ -108,7 +108,7 @@
     ir: "Ir.", drs: "Drs.", dra: "Dra.", hj: "Hj.",
     sh: "SH", se: "SE", st: "ST", sp: "SP", sipl: "S.IP",
     spd: "S.Pd", skom: "S.Kom", ssos: "S.Sos", shut: "S.Hut",
-    spt: "S.Pt", sag: "S.Ag", spsi: "S.Psi", amd: "A.Md",
+    spt: "S.Pt", sag: "S.Ag", spsi: "S.Psi", sfili: "S.Fil.I", amd: "A.Md",
     mm: "MM", mh: "MH", me: "ME", mt: "MT", map: "MAP", ey: "EY",
     msi: "M.Si", mpd: "M.Pd", mkes: "M.Kes", mkom: "M.Kom", msos: "M.Sos",
     // Office abbreviations that lead a name, e.g. "GM Geopark Merangin".
