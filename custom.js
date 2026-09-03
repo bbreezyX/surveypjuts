@@ -155,8 +155,9 @@
   }
 
   // Surplus survey rows stay in the geojson with their photos, tagged Status
-  // "Cadangan". They still appear on the map and in the list — just quieter
-  // than an SK point — and they stay out of every official count.
+  // "Cadangan". They stay in the list (quieter than an SK point) and out of
+  // every official count. On the map they draw on their own layer, off by
+  // default; the "Titik Cadangan" checkbox in the layer switcher shows them.
   function isCadangan(feature) {
     return (
       String(feature.get("Status") || "").trim().toLowerCase() === "cadangan"
@@ -283,6 +284,43 @@
     };
   }
 
+  // Google Maps Directions URL (Maps URLs API, /maps/dir/?api=1). No origin
+  // on purpose: Google Maps then starts the route from the device's current
+  // position, which is exactly what an installer driving out to the pole
+  // needs. Opens the Maps app on Android/iOS and the web map on desktop. No
+  // travelmode either — the installer's own default (car, motorbike) wins.
+  function buildDirectionsUrl(item) {
+    if (!isFinite(item.latNum) || !isFinite(item.lonNum)) {
+      return "";
+    }
+    var destination = item.latNum.toFixed(6) + "," + item.lonNum.toFixed(6);
+    return (
+      "https://www.google.com/maps/dir/?api=1&destination=" +
+      encodeURIComponent(destination)
+    );
+  }
+
+  var ROUTE_ICON =
+    '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">' +
+      '<path d="M21.4 2.6a1 1 0 0 0-1.06-.23L3.3 8.87a1 1 0 0 0 .06 1.88l6.86 2.29 2.29 6.86a1 1 0 0 0 .93.68h.03a1 1 0 0 0 .92-.62l6.5-17.04a1 1 0 0 0-.49-1.32z" fill="currentColor"/>' +
+    "</svg>";
+
+  function buildRouteAction(item) {
+    var url = buildDirectionsUrl(item);
+    if (!url) {
+      return "";
+    }
+    return (
+      '<div class="feature-popup__actions">' +
+        '<a class="feature-popup__route" href="' + escapeHtml(url) + '" target="_blank" rel="noopener noreferrer"' +
+          ' title="Buka Google Maps: rute dari posisi Anda ke titik ini">' +
+          ROUTE_ICON +
+          "<span>Rute ke titik ini</span>" +
+        "</a>" +
+      "</div>"
+    );
+  }
+
   function buildPopupHtml(item) {
     var rows = [];
     var photoPath = item.photo ? sanitizeMediaPath(item.photo) : "";
@@ -357,6 +395,7 @@
       '<h3 class="feature-popup__title">' + escapeHtml(item.display.primary) + "</h3>" +
       (rows.length ? '<dl class="feature-popup__meta">' + rows.join("") + "</dl>" : "") +
       '<div class="feature-popup__rule"></div>' +
+      buildRouteAction(item) +
       "</div>" +
       "</div>"
     );
@@ -710,6 +749,17 @@
     enhanceMapControls();
 
     var pointSource = window.lyr_260331_4.getSource();
+    // Reserve pins draw on their own layer (same source) so the layer switcher
+    // can hide them independently. Optional: an older layers.js without it
+    // just keeps everything on the SK layer.
+    var cadanganLayer = window.lyr_Cadangan_5 || null;
+
+    function redrawPoints() {
+      window.lyr_260331_4.changed();
+      if (cadanganLayer) {
+        cadanganLayer.changed();
+      }
+    }
 
     function retryDataLoad() {
       showDataLoading();
@@ -1674,7 +1724,7 @@
 
       listContainer.appendChild(fragment);
       renderSummary(visibleCount, Boolean(normalizedQuery));
-      window.lyr_260331_4.changed();
+      redrawPoints();
       updateHighlight(activeItemId);
     }
 
@@ -2001,15 +2051,19 @@
     }
 
     // ---- Map <-> list synchronisation --------------------------------------
-    // The layer renders exactly the ids the list is showing, so the "tampil"
-    // counter is true by construction. Cadangan pins use a quieter style so
-    // they stay visible without reading as SK units.
+    // The layers render exactly the ids the list is showing, so the "tampil"
+    // counter is true by construction. SK and cadangan share one source but
+    // draw on two layers, each taking only its own half, so the switcher can
+    // hide the reserve pins (the default) without touching the SK set.
     window.lyr_260331_4.setStyle(function (feature, resolution) {
       var item = featureLookup.get(feature);
       if (!item || !visibleIds.has(item.id)) {
         return null;
       }
       if (item.cadangan) {
+        if (cadanganLayer) {
+          return null;
+        }
         return resolution > PIN_MAX_RESOLUTION_260331_4
           ? cadanganDotStyle
           : cadanganPinStyle;
@@ -2021,6 +2075,17 @@
       }
       return style_260331_4(feature, resolution);
     });
+    if (cadanganLayer) {
+      cadanganLayer.setStyle(function (feature, resolution) {
+        var item = featureLookup.get(feature);
+        if (!item || !item.cadangan || !visibleIds.has(item.id)) {
+          return null;
+        }
+        return resolution > PIN_MAX_RESOLUTION_260331_4
+          ? cadanganDotStyle
+          : cadanganPinStyle;
+      });
+    }
 
     function fitToVisible(options) {
       var config = options || {};
@@ -2168,7 +2233,7 @@
       var clickedFeature = window.map.forEachFeatureAtPixel(
         event.pixel,
         function (feature, layer) {
-          if (layer === window.lyr_260331_4) {
+          if (layer === window.lyr_260331_4 || layer === cadanganLayer) {
             return feature;
           }
           return null;

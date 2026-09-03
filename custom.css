@@ -1445,6 +1445,117 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     outline-offset: 2px;
 }
 
+/* Route hand-off for the installers: opens Google Maps directions from
+   wherever they are to this pin. Same quiet outline grammar as the sidebar's
+   .secondary-action so the card keeps one accent (the yellow disc); the
+   press is where the feedback lives — a short scale-down plus a ripple that
+   spreads from the centre while the finger is down. */
+.feature-popup__actions {
+    margin-top: 14px;
+}
+
+.feature-popup__route {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 9px;
+    background: var(--surface);
+    color: var(--blue-deep);
+    font: 600 13.5px var(--font-ui);
+    text-decoration: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+        background-color 0.16s ease,
+        border-color 0.16s ease,
+        transform 0.16s cubic-bezier(0.2, 0.8, 0.2, 1),
+        box-shadow 0.16s ease;
+}
+
+.feature-popup__route > * {
+    position: relative;
+    z-index: 1;
+}
+
+.feature-popup__route svg {
+    flex: 0 0 16px;
+    width: 16px;
+    height: 16px;
+    transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.feature-popup__route:hover {
+    background: var(--blue-tint);
+    border-color: var(--blue);
+    color: var(--blue-deep);
+}
+
+/* The arrow nudges the way the route will go. */
+.feature-popup__route:hover svg {
+    transform: translate(1px, -1px);
+}
+
+.feature-popup__route:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+}
+
+/* Ripple: idle it sits at the centre, scaled to nothing. Pressing swaps the
+   transitions on, so it grows and fades over ~450ms; letting go snaps it
+   back instantly and it is ready for the next press. */
+.feature-popup__route::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border-radius: 50%;
+    background: rgba(0, 114, 188, 0.28);
+    transform: scale(0);
+    opacity: 0.7;
+    pointer-events: none;
+    transition: transform 0s, opacity 0s;
+}
+
+.feature-popup__route:active {
+    transform: scale(0.97);
+    border-color: var(--blue);
+    background: var(--blue-tint);
+    box-shadow: inset 0 1px 3px rgba(0, 69, 143, 0.18);
+    transition-duration: 0.07s;
+}
+
+.feature-popup__route:active::after {
+    transform: scale(26);
+    opacity: 0;
+    transition: transform 0.45s ease-out, opacity 0.5s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .feature-popup__route,
+    .feature-popup__route svg,
+    .feature-popup__route::after {
+        transition: none;
+    }
+
+    .feature-popup__route:active {
+        transform: none;
+    }
+
+    .feature-popup__route:active::after {
+        display: none;
+    }
+}
+
 /* Localhost-only flag controls. Quiet so they do not compete with the
    survey fields; the pin styling is still the status. */
 .feature-popup__tools {
@@ -1926,8 +2037,9 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     display: block;
 }
 
-/* "Data Lapangan" group: one child, so folding and a group checkbox are
-   noise — render it as a plain section with a heading and a divider. */
+/* "Data Lapangan" group: two point layers (SK + Cadangan) that are toggled
+   one by one, so folding and a group checkbox are noise — render it as a
+   plain section with a heading and a divider. */
 .layer-switcher .panel li.group {
     display: block;
     padding: 0 0 10px;
