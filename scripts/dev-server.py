@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Local atlas server: static files plus a write path for Cadangan status.
+"""Local atlas server: static files plus a write path for point flags.
+
+Flags: "cadangan" (Status Cadangan, not counted) and "duplikat" (Duplikat
+true, still counted, pin needs a field check).
 
 Binds 127.0.0.1 only. Production stays a static Caddy host — this endpoint
 does not exist there. After you commit and push data/points.geojson, the
-hatched points go live; the Arsir button does not.
+flagged points go live; the buttons do not.
 
     python3 scripts/dev-server.py
 """
@@ -36,13 +39,13 @@ class Handler(SimpleHTTPRequestHandler):
         super().end_headers()
 
     def do_GET(self):
-        if self.path.split("?", 1)[0] == "/api/cadangan":
-            self._json(200, {"ok": True})
+        if self.path.split("?", 1)[0] == "/api/flag":
+            self._json(200, {"ok": True, "flags": sorted(FLAGS)})
             return
         super().do_GET()
 
     def do_POST(self):
-        if self.path.split("?", 1)[0] != "/api/cadangan":
+        if self.path.split("?", 1)[0] != "/api/flag":
             self.send_error(404)
             return
         if self.client_address[0] not in ("127.0.0.1", "::1"):
@@ -58,20 +61,21 @@ class Handler(SimpleHTTPRequestHandler):
             self._json(400, {"ok": False, "error": "json"})
             return
         nomor = str(payload.get("nomor") or "").strip()
-        cadangan = payload.get("cadangan")
-        if not nomor or not isinstance(cadangan, bool):
+        flag = str(payload.get("flag") or "").strip().lower()
+        value = payload.get("value")
+        if not nomor or flag not in FLAGS or not isinstance(value, bool):
             self._json(400, {"ok": False, "error": "payload"})
             return
         try:
             with WRITE_LOCK:
-                set_cadangan(nomor, cadangan)
+                set_flag(nomor, flag, value)
         except KeyError:
             self._json(404, {"ok": False, "error": "nomor"})
             return
         except OSError as exc:
             self._json(500, {"ok": False, "error": str(exc)})
             return
-        self._json(200, {"ok": True, "nomor": nomor, "cadangan": cadangan})
+        self._json(200, {"ok": True, "nomor": nomor, "flag": flag, "value": value})
 
     def _json(self, code, obj):
         body = json.dumps(obj).encode("utf-8")
@@ -85,7 +89,10 @@ class Handler(SimpleHTTPRequestHandler):
         sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
 
 
-def set_cadangan(nomor, cadangan):
+FLAGS = ("cadangan", "duplikat")
+
+
+def set_flag(nomor, flag, value):
     data = json.loads(GEOJSON.read_text(encoding="utf-8"))
     found = None
     for feat in data.get("features") or []:
@@ -96,10 +103,19 @@ def set_cadangan(nomor, cadangan):
     if found is None:
         raise KeyError(nomor)
     props = found["properties"]
-    if cadangan:
-        props["Status"] = "Cadangan"
-    else:
-        props.pop("Status", None)
+    if flag == "cadangan":
+        # Reserve = not an SK unit: excluded from every count.
+        if value:
+            props["Status"] = "Cadangan"
+        else:
+            props.pop("Status", None)
+    elif flag == "duplikat":
+        # Duplicate = the phone GPS did not move between two real units.
+        # Both still count; the flag only says the pin needs a field check.
+        if value:
+            props["Duplikat"] = True
+        else:
+            props.pop("Duplikat", None)
     tmp = GEOJSON.with_name(GEOJSON.name + ".tmp")
     tmp.write_text(
         json.dumps(data, ensure_ascii=False, separators=(",", ":")),

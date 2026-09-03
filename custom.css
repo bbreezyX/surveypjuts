@@ -4,6 +4,10 @@
     --blue: #0072bc;
     --blue-deep: #00458f;
     --yellow: #fee50f;
+    /* Duplikat accent: warm so it reads as "check this", not as an error. */
+    --orange: #e8731a;
+    --orange-deep: #8f4200;
+    --orange-tint: #fff3e8;
     --blue-tint: #ecf5ff;
     --hairline: #d6eaff;
     --hairline-strong: #c9d6e2;
@@ -820,6 +824,22 @@ body.is-sidebar-collapsed #sidebar {
     box-shadow: inset 3px 0 var(--muted-2);
 }
 
+/* Duplikat rows keep the SK look — they still count — and add one small
+   orange tag so the crew knows the pin is provisional. */
+.item-flag {
+    flex-shrink: 0;
+    align-self: center;
+    padding: 1px 6px;
+    border: 1px dashed var(--orange);
+    border-radius: 999px;
+    background: var(--orange-tint);
+    font: 700 9.5px/1.5 var(--font-ui);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--orange-deep);
+    white-space: nowrap;
+}
+
 /* The sequence number is the row's identity: a fixed column so the digits
    line up, set quiet so the landmark still leads. */
 .item-code {
@@ -1390,11 +1410,24 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     );
 }
 
-/* Localhost-only hatch control. Quiet so it does not compete with the
-   survey fields; the hatched pin is still the status. */
-.feature-popup__hatch {
+/* Duplikat: the eyebrow disc keeps its yellow but gains the dashed orange
+   ring the pin wears on the map. */
+.feature-popup.is-duplikat .feature-popup__eyebrow::before {
+    outline: 2px dashed var(--orange);
+    outline-offset: 2px;
+}
+
+/* Localhost-only flag controls. Quiet so they do not compete with the
+   survey fields; the pin styling is still the status. */
+.feature-popup__tools {
     margin-top: 12px;
-    width: 100%;
+    display: flex;
+    gap: 8px;
+}
+
+.feature-popup__hatch {
+    flex: 1;
+    min-width: 0;
     height: 36px;
     border: 1px solid var(--hairline-strong);
     border-radius: 8px;
@@ -1417,6 +1450,12 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 .feature-popup__hatch.is-error {
     color: #8a3b2a;
     cursor: pointer;
+    font-size: 11px;
+}
+
+.feature-popup__hatch--duplikat:not(:disabled):hover {
+    border-color: var(--orange);
+    color: var(--orange-deep);
 }
 
 .feature-popup__title {

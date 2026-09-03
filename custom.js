@@ -140,6 +140,18 @@
     );
   }
 
+  // Duplikat: the phone GPS did not move between two real units, so two rows
+  // share one coordinate. Both still count — the flag only says the pin is
+  // provisional until the crew confirms which pole is which on site.
+  function isDuplikat(feature) {
+    var v = feature.get("Duplikat");
+    if (v === true) {
+      return true;
+    }
+    var s = String(v || "").trim().toLowerCase();
+    return s === "true" || s === "ya" || s === "1";
+  }
+
   // The hatch control writes the geojson. That path only exists on the
   // local dev server; production is a static host and must not show it.
   function isLocalEditor() {
@@ -302,10 +314,19 @@
 
     var kicker =
       "Titik " + escapeHtml(item.display.code) +
-      (item.kabupaten ? " · " + escapeHtml(item.kabupaten) : "");
+      (item.kabupaten ? " · " + escapeHtml(item.kabupaten) : "") +
+      (item.duplikat ? " · Duplikat" : "");
+
+    var popupClass = "feature-popup";
+    if (item.cadangan) {
+      popupClass += " is-cadangan";
+    }
+    if (item.duplikat) {
+      popupClass += " is-duplikat";
+    }
 
     return (
-      '<div class="feature-popup' + (item.cadangan ? " is-cadangan" : "") + '">' +
+      '<div class="' + popupClass + '">' +
       // No loading="lazy" here: the card is only built at the moment it opens,
       // so the photo is always already in view and lazy only defers the fetch
       // behind a visibility check it is guaranteed to pass. decoding="async"
@@ -818,6 +839,61 @@
       zIndex: 10
     });
 
+    // Duplikat pins: the normal yellow pin with a dashed orange ring around
+    // the head. Still counts as SK; the ring says "position to be confirmed".
+    var duplikatRing =
+      '<circle cx="18" cy="18" r="15" fill="none" stroke="%23e8731a" stroke-width="2.4" stroke-dasharray="4 3"/>';
+    var duplikatPinSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="34" viewBox="-3 -3 42 51">' +
+        '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23fee50f" stroke="%23293d50" stroke-width="2"/>' +
+        '<circle cx="18" cy="18" r="6.5" fill="%23293d50"/>' +
+        duplikatRing +
+      "</svg>";
+    var duplikatPinStyle = [new ol.style.Style({
+      image: new ol.style.Icon({
+        src: "data:image/svg+xml," + duplikatPinSvg,
+        anchor: [0.5, 1],
+        anchorXUnits: "fraction",
+        anchorYUnits: "fraction",
+        scale: 1
+      }),
+      zIndex: 2
+    })];
+    var duplikatDotStyle = [new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: 4.5,
+        fill: new ol.style.Fill({ color: "#fee50f" }),
+        stroke: new ol.style.Stroke({ color: "#e8731a", width: 2, lineDash: [3, 2] })
+      }),
+      zIndex: 2
+    })];
+    var duplikatSelectedSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="45" viewBox="-4 -6 44 56">' +
+        '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23fee50f" stroke="%23ffffff" stroke-width="3"/>' +
+        '<circle cx="18" cy="18" r="6.5" fill="%23293d50"/>' +
+        duplikatRing +
+      "</svg>";
+    var duplikatPinSelected = new ol.style.Style({
+      image: new ol.style.Icon({
+        src: "data:image/svg+xml," + duplikatSelectedSvg,
+        anchor: [0.5, 1],
+        anchorXUnits: "fraction",
+        anchorYUnits: "fraction",
+        scale: 1
+      }),
+      zIndex: 10
+    });
+
+    function selectedStyleFor(item) {
+      if (item.cadangan) {
+        return cadanganPinSelected;
+      }
+      if (item.duplikat) {
+        return duplikatPinSelected;
+      }
+      return pinStyle;
+    }
+
     // Resolve each point's kabupaten/kota by which boundary polygon contains it
     // (authoritative — avoids the messy Nomor prefix). Falls back to the Nomor
     // prefix, then "Lainnya".
@@ -877,6 +953,7 @@
         var photo = String(feature.get("Foto Survey Awal") || "").trim();
         var kabupaten = resolveKabupaten(feature);
         var cadangan = isCadangan(feature);
+        var duplikat = isDuplikat(feature);
         feature.set("kabupaten", kabupaten);
 
         // Koordinat: pakai field survey; kalau kosong, turunkan dari geometri
@@ -906,6 +983,7 @@
           photo: photo,
           kabupaten: kabupaten,
           cadangan: cadangan,
+          duplikat: duplikat,
           koordinat: koordinat,
           koordinatSingkat: koordinatSingkat,
           latNum: latNum,
@@ -920,7 +998,8 @@
               tanggal,
               koordinat,
               lat + "," + lon,
-              cadangan ? "cadangan" : ""
+              cadangan ? "cadangan" : "",
+              duplikat ? "duplikat" : ""
             ].join(" ")
           ),
         };
@@ -1201,8 +1280,10 @@
     }
 
     var suppressMapClickUntil = 0;
-    var hatchInFlight = false;
+    var flagInFlight = false;
 
+    // Localhost-only controls under the survey fields: Arsir (reserve, not
+    // counted) and Duplikat (still counted, pin to be confirmed on site).
     function attachHatchControl(item) {
       if (!isLocalEditor() || !popupContent) {
         return;
@@ -1211,10 +1292,26 @@
       if (!body) {
         return;
       }
+      var tools = document.createElement("div");
+      tools.className = "feature-popup__tools";
+      tools.appendChild(
+        buildFlagButton(item, "cadangan", item.cadangan ? "Batal arsir" : "Arsir")
+      );
+      tools.appendChild(
+        buildFlagButton(
+          item,
+          "duplikat",
+          item.duplikat ? "Batal duplikat" : "Duplikat"
+        )
+      );
+      body.appendChild(tools);
+    }
+
+    function buildFlagButton(item, flag, label) {
       var btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "feature-popup__hatch";
-      btn.textContent = item.cadangan ? "Batal arsir" : "Arsir";
+      btn.className = "feature-popup__hatch feature-popup__hatch--" + flag;
+      btn.textContent = label;
       btn.addEventListener("mousedown", function (event) {
         event.preventDefault();
         event.stopPropagation();
@@ -1224,12 +1321,12 @@
         event.preventDefault();
         event.stopPropagation();
         suppressMapClickUntil = Date.now() + 500;
-        toggleCadangan(item, btn);
+        toggleFlag(item, flag, btn);
       });
-      body.appendChild(btn);
+      return btn;
     }
 
-    function cadanganSearchText(item) {
+    function rebuildSearchText(item) {
       return getNormalizedText(
         [
           item.nomor,
@@ -1239,53 +1336,65 @@
           item.tanggal,
           item.koordinat,
           item.latNum + "," + item.lonNum,
-          item.cadangan ? "cadangan" : ""
+          item.cadangan ? "cadangan" : "",
+          item.duplikat ? "duplikat" : ""
         ].join(" ")
       );
     }
 
-    function applyCadanganLocally(item, next) {
-      item.cadangan = next;
-      if (next) {
-        item.feature.set("Status", "Cadangan");
+    function applyFlagLocally(item, flag, next) {
+      if (flag === "cadangan") {
+        item.cadangan = next;
+        if (next) {
+          item.feature.set("Status", "Cadangan");
+        } else {
+          item.feature.unset("Status");
+        }
       } else {
-        item.feature.unset("Status");
+        item.duplikat = next;
+        if (next) {
+          item.feature.set("Duplikat", true);
+        } else {
+          item.feature.unset("Duplikat");
+        }
       }
-      item.searchText = cadanganSearchText(item);
+      item.searchText = rebuildSearchText(item);
 
-      items = mappedItems.filter(function (row) {
-        return !row.cadangan;
-      });
-      cadanganItems = mappedItems.filter(function (row) {
-        return row.cadangan;
-      });
-      groupedItems = buildGroupedItems(groupMode);
+      // Only the reserve flag moves a row between the counted and uncounted
+      // sets; a duplicate stays exactly where it was.
+      if (flag === "cadangan") {
+        items = mappedItems.filter(function (row) {
+          return !row.cadangan;
+        });
+        cadanganItems = mappedItems.filter(function (row) {
+          return row.cadangan;
+        });
+        groupedItems = buildGroupedItems(groupMode);
+      }
 
       renderList(searchInput.value);
       if (window.featureOverlay) {
-        window.featureOverlay.setStyle(
-          item.cadangan ? cadanganPinSelected : pinStyle
-        );
+        window.featureOverlay.setStyle(selectedStyleFor(item));
       }
       // Rebuild the card on the next tick so the same pointer-up cannot
-      // land on the new button and hatch a neighbouring pin.
+      // land on the new button and flag a neighbouring pin.
       window.setTimeout(function () {
         openPopupForItem(item);
       }, 0);
     }
 
-    function toggleCadangan(item, btn) {
-      if (hatchInFlight) {
+    function toggleFlag(item, flag, btn) {
+      if (flagInFlight) {
         return;
       }
-      var next = !item.cadangan;
-      hatchInFlight = true;
+      var next = flag === "cadangan" ? !item.cadangan : !item.duplikat;
+      flagInFlight = true;
       btn.disabled = true;
       btn.classList.remove("is-error");
-      fetch("/api/cadangan", {
+      fetch("/api/flag", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nomor: item.nomor, cadangan: next })
+        body: JSON.stringify({ nomor: item.nomor, flag: flag, value: next })
       })
         .then(function (res) {
           if (!res.ok) {
@@ -1297,7 +1406,7 @@
           if (!payload || !payload.ok) {
             throw new Error("write failed");
           }
-          applyCadanganLocally(item, next);
+          applyFlagLocally(item, flag, next);
         })
         .catch(function () {
           btn.disabled = false;
@@ -1305,7 +1414,7 @@
           btn.textContent = "Gagal — jalankan scripts/dev-server.py";
         })
         .then(function () {
-          hatchInFlight = false;
+          flagInFlight = false;
         });
     }
 
@@ -1483,7 +1592,7 @@
       }
 
       if (window.featureOverlay) {
-        window.featureOverlay.setStyle(item.cadangan ? cadanganPinSelected : pinStyle);
+        window.featureOverlay.setStyle(selectedStyleFor(item));
       }
 
       if (isMobileViewport()) {
@@ -1672,7 +1781,13 @@
       var subline = document.createElement("span");
 
       button.type = "button";
-      button.className = item.cadangan ? "item is-cadangan" : "item";
+      button.className = "item";
+      if (item.cadangan) {
+        button.classList.add("is-cadangan");
+      }
+      if (item.duplikat) {
+        button.classList.add("is-duplikat");
+      }
       button.dataset.itemId = item.id;
       button.title = item.nomor;
       button.setAttribute(
@@ -1680,6 +1795,7 @@
         [
           "Titik " + item.display.code,
           item.cadangan ? "cadangan" : "",
+          item.duplikat ? "duplikat" : "",
           item.display.primary,
           item.display.secondary,
           item.kabupaten,
@@ -1698,6 +1814,13 @@
       label.className = "item-label";
       label.textContent = item.display.primary;
       headline.appendChild(label);
+
+      if (item.duplikat) {
+        var flag = document.createElement("span");
+        flag.className = "item-flag";
+        flag.textContent = "Duplikat";
+        headline.appendChild(flag);
+      }
 
       if (needsCoordHint(item)) {
         var coord = document.createElement("span");
@@ -1847,6 +1970,11 @@
         return resolution > PIN_MAX_RESOLUTION_260331_4
           ? cadanganDotStyle
           : cadanganPinStyle;
+      }
+      if (item.duplikat) {
+        return resolution > PIN_MAX_RESOLUTION_260331_4
+          ? duplikatDotStyle
+          : duplikatPinStyle;
       }
       return style_260331_4(feature, resolution);
     });
