@@ -667,6 +667,51 @@ body.is-sidebar-collapsed #sidebar {
     color: var(--ink);
 }
 
+/* Kabupaten chips under the pengusul name. */
+.panel-context__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 5px;
+    margin: 5px 0 0;
+}
+
+/* ---------- Kabupaten chip ----------
+   The kabupaten is the one fact the desa/kecamatan text cannot carry, so it
+   gets a shape of its own: a small tinted capsule with small caps, the same
+   everywhere it appears (context header, item sublines). Blue-deep on
+   blue-tint measures 8.6:1, comfortably past AAA for the tiny size. */
+.kab-tag {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    padding: 1px 7px 1px 6px;
+    border-radius: 999px;
+    background: var(--blue-tint);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+    font: 700 10px/1.5 var(--font-ui);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--blue-deep);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.kab-tag__count {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    color: var(--blue);
+}
+
+/* In a subline the chip trails the desa/kecamatan text; when the text is
+   long the chip drops to its own line, flush left, instead of indenting. */
+.item-subline:has(.kab-tag) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 7px;
+}
+
 /* Screen 2 reorders its zones: context header, then the summary that explains
    the filter, then a search box now scoped to this group. The grouping toggle
    has no coherent meaning from inside a single group, so it steps out. */

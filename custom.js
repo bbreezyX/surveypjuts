@@ -823,6 +823,53 @@
       return groupMode === "kabupaten" ? "kabupaten" : "pengusul";
     }
 
+    // Every row on a pengusul's screen carries the kabupaten chip, even when
+    // the whole group sits in one kabupaten and the header already says so.
+    // An earlier version showed it only for groups spanning several
+    // kabupaten; users read the rows without the chip as missing data. In
+    // kabupaten mode the group name already is the kabupaten, so no chip.
+    function showsKabupatenPerRow() {
+      return groupMode !== "kabupaten";
+    }
+
+    // The kabupaten always wears the same chip wherever it appears, so the eye
+    // learns one shape and finds it instantly among the desa/kecamatan text.
+    function buildKabupatenTag(name, count) {
+      var tag = document.createElement("span");
+      tag.className = "kab-tag";
+      var label = document.createElement("span");
+      label.className = "kab-tag__name";
+      label.textContent = name;
+      tag.appendChild(label);
+      if (count !== undefined) {
+        var num = document.createElement("span");
+        num.className = "kab-tag__count";
+        num.textContent = formatCount(count);
+        tag.appendChild(num);
+      }
+      return tag;
+    }
+
+    // One chip per kabupaten, biggest share first; the count only shows when
+    // the group actually spans more than one kabupaten.
+    function buildGroupKabupatenTags(group) {
+      var counts = {};
+      group.items.forEach(function (item) {
+        var key = item.kabupaten || "Lainnya";
+        counts[key] = (counts[key] || 0) + 1;
+      });
+      var names = Object.keys(counts).sort(function (left, right) {
+        return counts[right] - counts[left] || collator.compare(left, right);
+      });
+      var fragment = document.createDocumentFragment();
+      names.forEach(function (name) {
+        fragment.appendChild(
+          buildKabupatenTag(name, names.length > 1 ? counts[name] : undefined)
+        );
+      });
+      return fragment;
+    }
+
     function formatCount(value) {
       return value.toLocaleString("id-ID");
     }
@@ -896,18 +943,23 @@
       var next = listContainer.querySelector('[data-item-id="' + itemId + '"]');
       if (next) {
         next.classList.add("is-active");
-        // block:"nearest" scoped to the list pane — scrollIntoView would
-        // also scroll body/html and shift the fixed shell upward.
-        var scroller = document.querySelector(".sidebar-scroll");
-        if (scroller) {
-          var scrollerRect = scroller.getBoundingClientRect();
-          var itemRect = next.getBoundingClientRect();
-          if (itemRect.top < scrollerRect.top) {
-            scroller.scrollTop += itemRect.top - scrollerRect.top;
-          } else if (itemRect.bottom > scrollerRect.bottom) {
-            scroller.scrollTop += itemRect.bottom - scrollerRect.bottom;
-          }
-        }
+        scrollRowIntoPane(next);
+      }
+    }
+
+    // block:"nearest" scoped to the list pane — scrollIntoView would also
+    // scroll body/html and shift the fixed shell upward.
+    function scrollRowIntoPane(row) {
+      var scroller = document.querySelector(".sidebar-scroll");
+      if (!scroller || !row) {
+        return;
+      }
+      var scrollerRect = scroller.getBoundingClientRect();
+      var rowRect = row.getBoundingClientRect();
+      if (rowRect.top < scrollerRect.top) {
+        scroller.scrollTop += rowRect.top - scrollerRect.top;
+      } else if (rowRect.bottom > scrollerRect.bottom) {
+        scroller.scrollTop += rowRect.bottom - scrollerRect.bottom;
       }
     }
 
@@ -1248,8 +1300,11 @@
       });
 
       var needsCoordHint = markDuplicates(matchedItems);
+      var showKabupaten = showsKabupatenPerRow();
       matchedItems.forEach(function (item) {
-        fragment.appendChild(buildItemRow(item, needsCoordHint, null));
+        fragment.appendChild(
+          buildItemRow(item, needsCoordHint, null, showKabupaten)
+        );
       });
 
       if (!matchedItems.length) {
@@ -1294,9 +1349,10 @@
       return row;
     }
 
-    // groupName is passed only on screen 1 search results, where the row has
-    // to say which group it came from.
-    function buildItemRow(item, needsCoordHint, groupName) {
+    // groupName closes the subline on screen 1 search results, where the row
+    // has to say which group it came from. withKabupaten adds the kabupaten
+    // chip on a pengusul's screen 2.
+    function buildItemRow(item, needsCoordHint, groupName, withKabupaten) {
       var button = document.createElement("button");
       var code = document.createElement("span");
       var copy = document.createElement("span");
@@ -1314,6 +1370,7 @@
           "Titik " + item.display.code,
           item.display.primary,
           item.display.secondary,
+          item.kabupaten,
           item.nama
         ]
           .filter(Boolean)
@@ -1338,9 +1395,15 @@
       }
 
       subline.className = "item-subline";
-      subline.textContent = groupName
-        ? item.display.secondary + " · " + groupName
-        : item.display.secondary;
+      var sublineText = [item.display.secondary, groupName]
+        .filter(Boolean)
+        .join(" · ");
+      if (sublineText) {
+        subline.appendChild(document.createTextNode(sublineText));
+      }
+      if (withKabupaten && item.kabupaten) {
+        subline.appendChild(buildKabupatenTag(item.kabupaten));
+      }
 
       copy.appendChild(headline);
       copy.appendChild(subline);
@@ -1399,6 +1462,26 @@
 
       wrap.appendChild(back);
       wrap.appendChild(title);
+
+      // Where this pengusul's points sit. The title alone answers "who";
+      // this line answers "where", which is the question the list of desa
+      // names underneath cannot settle by itself.
+      if (groupMode !== "kabupaten") {
+        var group = null;
+        for (var i = 0; i < groupedItems.length; i++) {
+          if (groupedItems[i].name === activeGroup) {
+            group = groupedItems[i];
+            break;
+          }
+        }
+        if (group) {
+          var meta = document.createElement("p");
+          meta.className = "panel-context__meta";
+          meta.appendChild(buildGroupKabupatenTags(group));
+          wrap.appendChild(meta);
+        }
+      }
+
       header.insertBefore(wrap, header.firstChild);
     }
 
@@ -1505,6 +1588,13 @@
       searchInput.value = "";
       clearSelection();
       renderList("");
+      // The scroller is shared by both screens, so a list scrolled to reach a
+      // pengusul near the bottom would otherwise open that group mid-list.
+      // Going back, moveFocusForScreen brings the row we left back into view.
+      var scroller = document.querySelector(".sidebar-scroll");
+      if (scroller && activeGroup) {
+        scroller.scrollTop = 0;
+      }
       moveFocusForScreen();
       if (config.fit !== false) {
         fitToVisible({ maxZoom: activeGroup ? 14 : 15 });
@@ -1538,6 +1628,7 @@
       for (var i = 0; i < rows.length; i++) {
         if (rows[i].dataset.groupName === restoreFocusGroup) {
           focusWithoutScroll(rows[i]);
+          scrollRowIntoPane(rows[i]);
           break;
         }
       }
