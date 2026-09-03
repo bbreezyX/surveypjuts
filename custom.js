@@ -289,6 +289,7 @@
 
     var fieldIcons = {
       nama: '<i class="fas fa-user-check"></i>',
+      jalur: '<i class="fas fa-sitemap"></i>',
       alamat: '<i class="fas fa-map-marker-alt"></i>',
       koordinat: '<i class="fas fa-crosshairs"></i>',
       tanggal: '<i class="fas fa-calendar-alt"></i>',
@@ -306,6 +307,9 @@
 
     if (item.nama) {
       rows.push(metaRow(fieldIcons.nama, "Pengusul", item.nama));
+    }
+    if (item.jalur) {
+      rows.push(metaRow(fieldIcons.jalur, "Jalur", item.jalur));
     }
     if (item.alamat) {
       rows.push(metaRow(fieldIcons.alamat, "Alamat", item.alamat));
@@ -953,6 +957,10 @@
       .map(function (feature, index) {
         var nomor = String(feature.get("Nomor") || "-").trim();
         var nama = toPengusulName(feature.get("Nama Anggota")) || "Tanpa Nama";
+        // Jalur: which section of the allocation sheet the point came through
+        // (Ketua DPRD, Komisi III, Gubernur). The pengusul stays the person;
+        // this is the channel the sheet files them under.
+        var jalur = String(feature.get("Jalur") || "").trim();
         var alamat = String(feature.get("Alamat") || "").trim();
         // Cleaned at the source, not just at the title: buildPopupHtml shows
         // Keterangan as its own meta row whenever it differs from the title,
@@ -985,6 +993,7 @@
           feature: feature,
           nomor: nomor,
           nama: nama,
+          jalur: jalur,
           alamat: alamat,
           keterangan: keterangan,
           tanggal: tanggal,
@@ -1001,6 +1010,7 @@
             [
               nomor,
               nama,
+              jalur,
               alamat,
               keterangan,
               tanggal,
@@ -1128,6 +1138,28 @@
 
     // One chip per kabupaten, biggest share first; the count only shows when
     // the group actually spans more than one kabupaten.
+    // Jalur badge. Every pengusul sits in exactly one section of the sheet,
+    // so the badge belongs to the pengusul row, not to each point. Neutral
+    // grey on purpose: the blue capsule already means "kabupaten".
+    function buildJalurTag(jalur) {
+      var tag = document.createElement("span");
+      tag.className = "jalur-tag";
+      tag.textContent = jalur;
+      tag.title = "Jalur rekapan: " + jalur;
+      return tag;
+    }
+
+    // A group's jalur is its members' jalur; pick the first that carries one.
+    function groupJalur(group) {
+      var all = group.items.concat(group.cadangan);
+      for (var i = 0; i < all.length; i++) {
+        if (all[i].jalur) {
+          return all[i].jalur;
+        }
+      }
+      return "";
+    }
+
     function buildGroupKabupatenTags(group) {
       var counts = {};
       group.items.forEach(function (item) {
@@ -1743,9 +1775,14 @@
       row.dataset.groupName = group.name;
       // The visible count is a bare number so the column lines up; the
       // accessible name still spells out what it counts.
+      // Only pengusul rows carry a jalur; a kabupaten spans several.
+      var jalur = groupMode === "kabupaten" ? "" : groupJalur(group);
+
       row.setAttribute(
         "aria-label",
-        group.name + ", " + group.items.length + " titik, buka daftar"
+        group.name +
+          (jalur ? ", jalur " + jalur : "") +
+          ", " + group.items.length + " titik, buka daftar"
       );
 
       title.className = "group-row__title";
@@ -1758,6 +1795,9 @@
       chevron.setAttribute("aria-hidden", "true");
 
       row.appendChild(title);
+      if (jalur) {
+        row.appendChild(buildJalurTag(jalur));
+      }
       row.appendChild(count);
       row.appendChild(chevron);
 
@@ -1911,6 +1951,10 @@
         if (group) {
           var meta = document.createElement("p");
           meta.className = "panel-context__meta";
+          var jalur = groupJalur(group);
+          if (jalur) {
+            meta.appendChild(buildJalurTag(jalur));
+          }
           meta.appendChild(buildGroupKabupatenTags(group));
           wrap.appendChild(meta);
         }

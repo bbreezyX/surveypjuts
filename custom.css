@@ -707,6 +707,35 @@ body.is-sidebar-collapsed #sidebar {
     color: var(--blue);
 }
 
+/* ---------- Jalur badge ----------
+   Which section of the allocation sheet the pengusul is filed under (Ketua
+   DPRD, Komisi III, Gubernur). Same capsule as the kabupaten chip so it reads
+   as metadata, but grey: blue is already taken by the kabupaten. */
+.jalur-tag {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: #f0f4f8;
+    box-shadow: inset 0 0 0 1px var(--divider);
+    font: 700 10px/1.5 var(--font-ui);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    white-space: nowrap;
+    vertical-align: middle;
+}
+
+.group-row .jalur-tag {
+    margin-left: auto;
+}
+
+.group-row__title + .jalur-tag + .group-row__count {
+    min-width: 2.2em;
+    text-align: right;
+}
+
 /* In a subline the chip trails the desa/kecamatan text; when the text is
    long the chip drops to its own line, flush left, instead of indenting. */
 .item-subline:has(.kab-tag) {
