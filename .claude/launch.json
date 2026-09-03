@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "pjuts-static",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": ["scripts/dev-server.py"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["start"],
       "port": 8123
     }
   ]

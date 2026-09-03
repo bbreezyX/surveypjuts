@@ -1,0 +1,8 @@
+{
+  "name": "surveypjuts",
+  "private": true,
+  "scripts": {
+    "start": "python3 scripts/dev-server.py",
+    "dev": "python3 scripts/dev-server.py"
+  }
+}

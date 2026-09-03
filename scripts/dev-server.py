@@ -126,7 +126,16 @@ def set_flag(nomor, flag, value):
 
 def main():
     os.chdir(ROOT)
-    httpd = ThreadingHTTPServer((HOST, PORT), Handler)
+    try:
+        httpd = ThreadingHTTPServer((HOST, PORT), Handler)
+    except OSError as exc:
+        if getattr(exc, "errno", None) in (48, 98):
+            sys.stderr.write(
+                "Port %s already in use. Stop the other server "
+                "(often `http-server`) and run `npm start`.\n" % PORT
+            )
+            sys.exit(1)
+        raise
     print("Local atlas  http://%s:%s/" % (HOST, PORT), flush=True)
     try:
         httpd.serve_forever()
