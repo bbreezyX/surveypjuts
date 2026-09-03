@@ -881,7 +881,6 @@ body.is-sidebar-collapsed #sidebar {
     overflow-wrap: anywhere;
 }
 
-/* Tiebreaker for rows the landmark pass could not separate. */
 .item-coord {
     flex-shrink: 0;
     font-size: 10.5px;

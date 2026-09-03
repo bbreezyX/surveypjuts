@@ -36,6 +36,26 @@
     return dot === -1 ? 0 : text.length - dot - 1;
   }
 
+  // Stamps and GeoJSON keep up to 6 decimals (~11 cm). Print that value
+  // without rounding to 4 or 5 — the list used to show 102.1878 for a
+  // photo that reads 102.187755.
+  function formatCoordNumber(n) {
+    var num = Number(n);
+    if (!isFinite(num)) {
+      return "";
+    }
+    return num.toFixed(6).replace(/0+$/, "").replace(/\.$/, "");
+  }
+
+  function formatCoordPair(lat, lon) {
+    var latitude = formatCoordNumber(lat);
+    var longitude = formatCoordNumber(lon);
+    if (!latitude || !longitude) {
+      return "";
+    }
+    return latitude + ", " + longitude;
+  }
+
   // Floor at ~17 m so a 7-decimal Google paste still hits a 4-decimal survey
   // row. Widen with the query's own precision so "-1.49, 102.46" covers the
   // neighbourhood instead of demanding an exact pin.
@@ -222,8 +242,8 @@
   // Nomor is "KABUPATEN-KECAMATAN-DESA-NNN". The desa repeats across most of a
   // group's points (223/230 rows would be identical on desa alone), so the
   // survey landmark in Keterangan is the primary label whenever it exists and
-  // the desa drops to context. Rows that still collide get a coordinate hint
-  // appended at render time — see markDuplicates().
+  // the desa drops to context. Every row also carries its coordinate so a
+  // unique landmark does not hide the pin's position.
   function buildDisplayParts(nomor, keterangan) {
     var parts = String(nomor || "")
       .split("-")
@@ -257,19 +277,6 @@
       code: code || "—",
       primary: primary,
       secondary: secondary || "Lokasi survey lapangan",
-    };
-  }
-
-  // Within a rendered group, flag every row whose primary label is shared with
-  // another row so it can carry a coordinate tiebreaker. Clean rows stay clean.
-  function markDuplicates(list) {
-    var tally = Object.create(null);
-    list.forEach(function (item) {
-      var key = item.display.primary;
-      tally[key] = (tally[key] || 0) + 1;
-    });
-    return function (item) {
-      return tally[item.display.primary] > 1;
     };
   }
 
@@ -963,14 +970,12 @@
             lon === null || lon === undefined || lon === "") {
           var ge = feature.getGeometry().getExtent();
           var ll = ol.proj.toLonLat([(ge[0] + ge[2]) / 2, (ge[1] + ge[3]) / 2]);
-          lon = ll[0].toFixed(5);
-          lat = ll[1].toFixed(5);
+          lon = ll[0];
+          lat = ll[1];
         }
         var latNum = Number(lat);
         var lonNum = Number(lon);
-        var koordinat = lat + ", " + lon;
-        var koordinatSingkat =
-          latNum.toFixed(4) + ", " + lonNum.toFixed(4);
+        var koordinat = formatCoordPair(latNum, lonNum);
 
         return {
           id: String(index),
@@ -985,7 +990,7 @@
           cadangan: cadangan,
           duplikat: duplikat,
           koordinat: koordinat,
-          koordinatSingkat: koordinatSingkat,
+          koordinatSingkat: koordinat,
           latNum: latNum,
           lonNum: lonNum,
           display: buildDisplayParts(nomor, keterangan),
@@ -1659,14 +1664,8 @@
           });
         });
 
-        var needsCoordHint = markDuplicates(matched.map(function (entry) {
-          return entry.item;
-        }));
-
         matched.forEach(function (entry) {
-          fragment.appendChild(
-            buildItemRow(entry.item, needsCoordHint, entry.groupName)
-          );
+          fragment.appendChild(buildItemRow(entry.item, entry.groupName));
         });
 
         if (!visibleCount) {
@@ -1713,12 +1712,9 @@
         visibleIds.add(item.id);
       });
 
-      var needsCoordHint = markDuplicates(matchedItems);
       var showKabupaten = showsKabupatenPerRow();
       matchedItems.forEach(function (item) {
-        fragment.appendChild(
-          buildItemRow(item, needsCoordHint, null, showKabupaten)
-        );
+        fragment.appendChild(buildItemRow(item, null, showKabupaten));
       });
 
       if (!matchedItems.length) {
@@ -1772,7 +1768,7 @@
     // groupName closes the subline on screen 1 search results, where the row
     // has to say which group it came from. withKabupaten adds the kabupaten
     // chip on a pengusul's screen 2.
-    function buildItemRow(item, needsCoordHint, groupName, withKabupaten) {
+    function buildItemRow(item, groupName, withKabupaten) {
       var button = document.createElement("button");
       var code = document.createElement("span");
       var copy = document.createElement("span");
@@ -1822,7 +1818,7 @@
         headline.appendChild(flag);
       }
 
-      if (needsCoordHint(item)) {
+      if (item.koordinatSingkat) {
         var coord = document.createElement("span");
         coord.className = "item-coord";
         coord.textContent = item.koordinatSingkat;
