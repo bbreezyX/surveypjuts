@@ -834,13 +834,34 @@
 
     // The kabupaten always wears the same chip wherever it appears, so the eye
     // learns one shape and finds it instantly among the desa/kecamatan text.
+    // Chip-length names. "Tanjab" is the abbreviation the province itself
+    // uses for Tanjung Jabung, so it reads as the name, not as a truncation.
+    // Anything not listed is already short enough to print in full.
+    var KABUPATEN_SHORT = [
+      [/\bTanjung Jabung\b/i, "Tanjab"]
+    ];
+
+    function shortKabupaten(name) {
+      var short = String(name || "");
+      KABUPATEN_SHORT.forEach(function (rule) {
+        short = short.replace(rule[0], rule[1]);
+      });
+      return short;
+    }
+
     function buildKabupatenTag(name, count) {
       var tag = document.createElement("span");
       tag.className = "kab-tag";
+      var short = shortKabupaten(name);
       var label = document.createElement("span");
       label.className = "kab-tag__name";
-      label.textContent = name;
+      label.textContent = short;
       tag.appendChild(label);
+      if (short !== name) {
+        // The full name stays one hover away, and is what gets read aloud.
+        tag.title = name;
+        label.setAttribute("aria-label", name);
+      }
       if (count !== undefined) {
         var num = document.createElement("span");
         num.className = "kab-tag__count";
