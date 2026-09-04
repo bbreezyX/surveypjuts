@@ -164,6 +164,18 @@
     );
   }
 
+  // Belum Ditetapkan: the allocation sheet grants a unit the survey never
+  // placed (RT 21 Rengas Condong: 3 granted, 2 surveyed). The row still counts
+  // toward the pengusul's quota, but it has no photo and its pin is only an
+  // estimate dropped near its siblings, so the crew knows a unit is still to
+  // be sited — with the RT — rather than reading the map as complete.
+  function isBelumDitetapkan(feature) {
+    return (
+      String(feature.get("Status") || "").trim().toLowerCase() ===
+      "belum ditetapkan"
+    );
+  }
+
   // Duplikat: the phone GPS did not move between two real units, so two rows
   // share one coordinate. Both still count — the flag only says the pin is
   // provisional until the crew confirms which pole is which on site.
@@ -353,7 +365,15 @@
       rows.push(metaRow(fieldIcons.alamat, "Alamat", item.alamat));
     }
     if (item.koordinat) {
-      rows.push(metaRow(fieldIcons.koordinat, "Koordinat", item.koordinat));
+      // An unplaced unit's coordinate is a guess, and the label must say so
+      // before anyone reads the digits as a survey fix.
+      rows.push(
+        metaRow(
+          fieldIcons.koordinat,
+          item.belum ? "Koordinat perkiraan" : "Koordinat",
+          item.koordinat
+        )
+      );
     }
     if (item.tanggal) {
       rows.push(metaRow(fieldIcons.tanggal, "Dokumentasi", item.tanggal));
@@ -367,7 +387,8 @@
     var kicker =
       "Titik " + escapeHtml(item.display.code) +
       (item.kabupaten ? " · " + escapeHtml(item.kabupaten) : "") +
-      (item.duplikat ? " · Duplikat" : "");
+      (item.duplikat ? " · Duplikat" : "") +
+      (item.belum ? " · Belum ditetapkan" : "");
 
     var popupClass = "feature-popup";
     if (item.cadangan) {
@@ -376,6 +397,23 @@
     if (item.duplikat) {
       popupClass += " is-duplikat";
     }
+    if (item.belum) {
+      popupClass += " is-belum";
+    }
+
+    // The note takes the photo's place at the top of the card: the one thing
+    // the installer has to read before the address and the estimated pin.
+    var note = item.belum
+      ? '<div class="feature-popup__note" role="note">' +
+          '<span class="feature-popup__note-mark" aria-hidden="true">?</span>' +
+          "<p>" +
+            escapeHtml(
+              item.catatan ||
+                "Unit ini belum ditetapkan lokasinya. Pin hanya perkiraan; tentukan lokasi pastinya di lapangan."
+            ) +
+          "</p>" +
+        "</div>"
+      : "";
 
     return (
       '<div class="' + popupClass + '">' +
@@ -390,12 +428,15 @@
           '<span class="feature-popup__media-badge">Foto survey awal</span>' +
           "</div>"
         : "") +
+      note +
       '<div class="feature-popup__body">' +
       '<p class="feature-popup__eyebrow">' + kicker + "</p>" +
       '<h3 class="feature-popup__title">' + escapeHtml(item.display.primary) + "</h3>" +
       (rows.length ? '<dl class="feature-popup__meta">' + rows.join("") + "</dl>" : "") +
       '<div class="feature-popup__rule"></div>' +
-      buildRouteAction(item) +
+      // No route to an estimate: a directions link would send the crew to a
+      // spot nobody surveyed and make the guess look like a destination.
+      (item.belum ? "" : buildRouteAction(item)) +
       "</div>" +
       "</div>"
     );
@@ -753,11 +794,16 @@
     // can hide them independently. Optional: an older layers.js without it
     // just keeps everything on the SK layer.
     var cadanganLayer = window.lyr_Cadangan_5 || null;
+    // Unplaced-unit pins likewise get their own layer (visible by default).
+    var belumLayer = window.lyr_BelumDitetapkan_6 || null;
 
     function redrawPoints() {
       window.lyr_260331_4.changed();
       if (cadanganLayer) {
         cadanganLayer.changed();
+      }
+      if (belumLayer) {
+        belumLayer.changed();
       }
     }
 
@@ -948,9 +994,57 @@
       zIndex: 10
     });
 
+    // Belum Ditetapkan pins: pale pin with a dashed slate outline and a "?" in
+    // the head — the position is a placeholder, not a fix. Nothing yellow, so
+    // it never reads as one more surveyed unit.
+    var belumGlyph =
+      '<text x="18" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="19" fill="%23293d50">?</text>';
+    var belumPinSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="26" height="35" viewBox="-2 -2 40 52">' +
+        '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23f4f6f8" stroke="%236b7a8c" stroke-width="2.2" stroke-dasharray="4 3"/>' +
+        belumGlyph +
+      "</svg>";
+    var belumPinStyle = [new ol.style.Style({
+      image: new ol.style.Icon({
+        src: "data:image/svg+xml," + belumPinSvg,
+        anchor: [0.5, 1],
+        anchorXUnits: "fraction",
+        anchorYUnits: "fraction",
+        scale: 1
+      }),
+      zIndex: 2
+    })];
+    var belumDotStyle = [new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: 4.5,
+        fill: new ol.style.Fill({ color: "#f4f6f8" }),
+        stroke: new ol.style.Stroke({ color: "#6b7a8c", width: 1.8, lineDash: [3, 2] })
+      }),
+      zIndex: 2
+    })];
+    var belumSelectedSvg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="44" viewBox="-3 -5 42 54">' +
+        '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23f4f6f8" stroke="%23ffffff" stroke-width="3"/>' +
+        '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="none" stroke="%236b7a8c" stroke-width="1.6" stroke-dasharray="4 3"/>' +
+        belumGlyph +
+      "</svg>";
+    var belumPinSelected = new ol.style.Style({
+      image: new ol.style.Icon({
+        src: "data:image/svg+xml," + belumSelectedSvg,
+        anchor: [0.5, 1],
+        anchorXUnits: "fraction",
+        anchorYUnits: "fraction",
+        scale: 1
+      }),
+      zIndex: 10
+    });
+
     function selectedStyleFor(item) {
       if (item.cadangan) {
         return cadanganPinSelected;
+      }
+      if (item.belum) {
+        return belumPinSelected;
       }
       if (item.duplikat) {
         return duplikatPinSelected;
@@ -1022,6 +1116,8 @@
         var kabupaten = resolveKabupaten(feature);
         var cadangan = isCadangan(feature);
         var duplikat = isDuplikat(feature);
+        var belum = isBelumDitetapkan(feature);
+        var catatan = String(feature.get("Catatan") || "").trim();
         feature.set("kabupaten", kabupaten);
 
         // Koordinat: pakai field survey; kalau kosong, turunkan dari geometri
@@ -1051,8 +1147,13 @@
           kabupaten: kabupaten,
           cadangan: cadangan,
           duplikat: duplikat,
+          belum: belum,
+          catatan: catatan,
           koordinat: koordinat,
-          koordinatSingkat: koordinat,
+          // No coordinate on the row for an unplaced unit: the digits are an
+          // estimate, and the "Belum ditetapkan" tag needs the room. The card
+          // still shows them, labelled as approximate.
+          koordinatSingkat: belum ? "" : koordinat,
           latNum: latNum,
           lonNum: lonNum,
           display: buildDisplayParts(nomor, keterangan),
@@ -1067,7 +1168,8 @@
               koordinat,
               lat + "," + lon,
               cadangan ? "cadangan" : "",
-              duplikat ? "duplikat" : ""
+              duplikat ? "duplikat" : "",
+              belum ? "belum ditetapkan" : ""
             ].join(" ")
           ),
         };
@@ -1378,6 +1480,12 @@
       if (!isLocalEditor() || !popupContent) {
         return;
       }
+      // Both flags share the Status field with "Belum Ditetapkan"; flipping
+      // one on a placeholder would silently overwrite it. Placing the unit is
+      // a data edit (a real coordinate and photo), not a toggle.
+      if (item.belum) {
+        return;
+      }
       var body = popupContent.querySelector(".feature-popup__body");
       if (!body) {
         return;
@@ -1427,7 +1535,8 @@
           item.koordinat,
           item.latNum + "," + item.lonNum,
           item.cadangan ? "cadangan" : "",
-          item.duplikat ? "duplikat" : ""
+          item.duplikat ? "duplikat" : "",
+          item.belum ? "belum ditetapkan" : ""
         ].join(" ")
       );
     }
@@ -1877,6 +1986,9 @@
       if (item.duplikat) {
         button.classList.add("is-duplikat");
       }
+      if (item.belum) {
+        button.classList.add("is-belum");
+      }
       button.dataset.itemId = item.id;
       button.title = item.nomor;
       button.setAttribute(
@@ -1885,6 +1997,7 @@
           "Titik " + item.display.code,
           item.cadangan ? "cadangan" : "",
           item.duplikat ? "duplikat" : "",
+          item.belum ? "belum ditetapkan" : "",
           item.display.primary,
           item.display.secondary,
           item.kabupaten,
@@ -1909,6 +2022,12 @@
         flag.className = "item-flag";
         flag.textContent = "Duplikat";
         headline.appendChild(flag);
+      }
+      if (item.belum) {
+        var belumFlag = document.createElement("span");
+        belumFlag.className = "item-flag item-flag--belum";
+        belumFlag.textContent = "Belum ditetapkan";
+        headline.appendChild(belumFlag);
       }
 
       if (item.koordinatSingkat) {
@@ -2068,6 +2187,14 @@
           ? cadanganDotStyle
           : cadanganPinStyle;
       }
+      if (item.belum) {
+        if (belumLayer) {
+          return null;
+        }
+        return resolution > PIN_MAX_RESOLUTION_260331_4
+          ? belumDotStyle
+          : belumPinStyle;
+      }
       if (item.duplikat) {
         return resolution > PIN_MAX_RESOLUTION_260331_4
           ? duplikatDotStyle
@@ -2084,6 +2211,17 @@
         return resolution > PIN_MAX_RESOLUTION_260331_4
           ? cadanganDotStyle
           : cadanganPinStyle;
+      });
+    }
+    if (belumLayer) {
+      belumLayer.setStyle(function (feature, resolution) {
+        var item = featureLookup.get(feature);
+        if (!item || !item.belum || !visibleIds.has(item.id)) {
+          return null;
+        }
+        return resolution > PIN_MAX_RESOLUTION_260331_4
+          ? belumDotStyle
+          : belumPinStyle;
       });
     }
 
@@ -2233,7 +2371,11 @@
       var clickedFeature = window.map.forEachFeatureAtPixel(
         event.pixel,
         function (feature, layer) {
-          if (layer === window.lyr_260331_4 || layer === cadanganLayer) {
+          if (
+            layer === window.lyr_260331_4 ||
+            layer === cadanganLayer ||
+            layer === belumLayer
+          ) {
             return feature;
           }
           return null;

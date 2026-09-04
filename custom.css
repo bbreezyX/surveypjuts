@@ -869,6 +869,22 @@ body.is-sidebar-collapsed #sidebar {
     white-space: nowrap;
 }
 
+/* Belum Ditetapkan rows: still counted, so the row keeps the SK weight, but
+   a dashed slate edge and a grey tag say "unit exists, place not yet". */
+.item.is-belum {
+    box-shadow: inset 3px 0 #b7c1cc;
+}
+
+.item.is-belum .item-coord {
+    color: var(--disabled-ink);
+}
+
+.item-flag--belum {
+    border-color: #6b7a8c;
+    background: #f4f6f8;
+    color: var(--muted);
+}
+
 /* The sequence number is the row's identity: a fixed column so the digits
    line up, set quiet so the landmark still leads. */
 .item-code {
@@ -1443,6 +1459,48 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 .feature-popup.is-duplikat .feature-popup__eyebrow::before {
     outline: 2px dashed var(--orange);
     outline-offset: 2px;
+}
+
+/* Belum Ditetapkan: pale disc with the pin's dashed slate outline. */
+.feature-popup.is-belum .feature-popup__eyebrow::before {
+    background: #f4f6f8;
+    box-shadow: none;
+    outline: 1.5px dashed #6b7a8c;
+    outline-offset: 1px;
+}
+
+/* The note sits where the photo would be: grey field, dashed edge, a "?"
+   mark echoing the pin, and the plain-language reason in the body tier so
+   the installer reads it before the address. */
+.feature-popup__note {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin: 0;
+    /* Right padding clears the card's close button, which sits over this
+       corner where the photo normally has nothing to hide. */
+    padding: 14px 48px 14px 16px;
+    background: #f4f6f8;
+    border-bottom: 1px dashed #b7c1cc;
+}
+
+.feature-popup__note-mark {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: 1.5px dashed #6b7a8c;
+    border-radius: 50%;
+    font: 700 15px/1 var(--font-ui);
+    color: var(--ink);
+    background: var(--surface);
+}
+
+.feature-popup__note p {
+    margin: 2px 0 0;
+    font: 400 12.5px/1.5 var(--font-ui);
+    color: var(--muted);
 }
 
 /* Route hand-off for the installers: opens Google Maps directions from

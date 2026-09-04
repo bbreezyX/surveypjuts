@@ -83,15 +83,32 @@ var lyr_Cadangan_5 = new ol.layer.Vector({
                 interactive: true,
                 title: '<img src=\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="18" viewBox="0 0 36 48"><defs><pattern id="h" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="4" fill="%23e3e8ed"/><rect width="1.6" height="4" fill="%23293d50" fill-opacity="0.45"/></pattern></defs><path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="url(%23h)" stroke="%23293d50" stroke-width="2"/><circle cx="18" cy="18" r="6.5" fill="%23ffffff" stroke="%23293d50" stroke-width="1.2"/></svg>\' /> Titik Cadangan'
             });
+// Titik Belum Ditetapkan: allocation units the survey has not placed yet
+// (Status "Belum Ditetapkan"). They still count toward the pengusul's quota,
+// so they stay in the list, but the pin is only an estimate dropped near the
+// sibling points. Same shared source as above. Visible by default — the whole
+// point of the layer is that the installer sees there is a unit still to
+// place; hiding it would recreate the gap it exists to close.
+var lyr_BelumDitetapkan_6 = new ol.layer.Vector({
+                declutter: false,
+                source:jsonSource_260331_4,
+                style: null,
+                // Above the SK pins: the estimate sits between its siblings,
+                // which at village zoom would otherwise cover it entirely.
+                zIndex: 1,
+                popuplayertitle: 'Titik Belum Ditetapkan',
+                interactive: true,
+                title: '<img src=\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="18" viewBox="0 0 36 48"><path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23f4f6f8" stroke="%236b7a8c" stroke-width="2.2" stroke-dasharray="4 3"/><text x="18" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="19" fill="%23293d50">?</text></svg>\' /> Titik Belum Ditetapkan'
+            });
 // The switcher lists a group's layers top-down in reverse array order, so
 // Cadangan goes first to sit under Titik PUTS in the panel (and under the
-// SK pins on the map).
+// SK pins on the map); Belum Ditetapkan sits between them.
 var group_RAW = new ol.layer.Group({
-                                layers: [lyr_Cadangan_5, lyr_260331_4,],
+                                layers: [lyr_Cadangan_5, lyr_BelumDitetapkan_6, lyr_260331_4,],
                                 fold: 'open',
                                 title: 'Data Lapangan'});
 
-lyr_GoogleSatellite_0.setVisible(true);lyr_BatasKabupaten2011_1.setVisible(true);lyr_Dissolved_2.setVisible(false);lyr_260331_4.setVisible(true);lyr_Cadangan_5.setVisible(false);
+lyr_GoogleSatellite_0.setVisible(true);lyr_BatasKabupaten2011_1.setVisible(true);lyr_Dissolved_2.setVisible(false);lyr_260331_4.setVisible(true);lyr_Cadangan_5.setVisible(false);lyr_BelumDitetapkan_6.setVisible(true);
 // "Ruas Jalan" is intentionally not loaded; it duplicated the kabupaten
 // boundary, which is drawn (outline + label) by lyr_BatasKabupaten2011_1.
 // Area Cakupan (Dissolved) sits below the boundary so its fill never hides the line.
@@ -110,6 +127,9 @@ lyr_260331_4.set('fieldLabels', {'fid': 'hidden field', 'Nomor': 'inline label -
 lyr_Cadangan_5.set('fieldAliases', lyr_260331_4.get('fieldAliases'));
 lyr_Cadangan_5.set('fieldImages', lyr_260331_4.get('fieldImages'));
 lyr_Cadangan_5.set('fieldLabels', lyr_260331_4.get('fieldLabels'));
+lyr_BelumDitetapkan_6.set('fieldAliases', lyr_260331_4.get('fieldAliases'));
+lyr_BelumDitetapkan_6.set('fieldImages', lyr_260331_4.get('fieldImages'));
+lyr_BelumDitetapkan_6.set('fieldLabels', lyr_260331_4.get('fieldLabels'));
 lyr_260331_4.on('precompose', function(evt) {
     evt.context.globalCompositeOperation = 'normal';
 });
