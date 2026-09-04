@@ -46,7 +46,7 @@
          this file; same byte-identical-href rule as above. -->
     <link rel="preload" href="./data/dissolved.geojson" as="fetch" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Newsreader:wght@500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./resources/ol.css?v=202609041121" />
@@ -63,8 +63,8 @@
     />
     <link rel="stylesheet" href="./resources/ol-layerswitcher.css?v=202609041121" />
     <link rel="stylesheet" href="./resources/qgis2web.css?v=202609041121" />
-    <link rel="preload" href="./custom.css?v=202609041121" as="style" />
-    <link rel="stylesheet" href="./custom.css?v=202609041121" />
+    <link rel="preload" href="./custom.css?v=20260905-ui" as="style" />
+    <link rel="stylesheet" href="./custom.css?v=20260905-ui" />
     <title>Peta Sebaran PUTS 2026 · Penerangan Umum Tenaga Surya Provinsi Jambi</title>
   </head>
   <body>
@@ -99,6 +99,7 @@
           type="button"
           aria-controls="sidebar"
           aria-expanded="false"
+          title="Ketuk atau geser ke atas untuk lihat daftar"
         >
           <span class="sheet-handle__grab" aria-hidden="true"></span>
           <span class="sheet-handle__hint">
@@ -112,7 +113,7 @@
             >
               <path d="m6 15 6-6 6 6" />
             </svg>
-            <span class="sheet-handle__text">Ketuk atau geser ke atas untuk lihat daftar</span>
+            <span class="sheet-handle__text">Lihat daftar titik</span>
           </span>
         </button>
         <button id="sidebar-close" type="button" aria-label="Tutup panel data">
@@ -133,17 +134,26 @@
           <div class="panel-brand__copy">
             <p class="panel-brand__kicker">Dinas ESDM Provinsi Jambi</p>
             <h1 class="panel-brand__title">Sebaran PUTS 2026</h1>
+            <p class="panel-brand__description">Penerangan Umum Tenaga Surya</p>
           </div>
         </div>
 
         <div class="sidebar-header">
+          <div class="summary-row">
+            <p class="list-summary" id="list-summary" role="status">Memuat data titik…</p>
+            <button id="fit-map" class="link-action" type="button">
+              Lihat semua
+            </button>
+          </div>
+
           <label class="search-field" for="list-search">
             <span class="visually-hidden">Cari titik PUTS</span>
             <span class="search-icon" aria-hidden="true"></span>
             <input
               id="list-search"
               type="search"
-              placeholder="Cari titik, lokasi, pengusul, koordinat"
+              placeholder="Cari lokasi atau pengusul…"
+              title="Cari titik, lokasi, pengusul, atau koordinat"
               autocomplete="off"
             />
             <button
@@ -174,13 +184,6 @@
                 Kabupaten
               </button>
             </div>
-          </div>
-
-          <div class="summary-row">
-            <p class="list-summary" id="list-summary">230 titik</p>
-            <button id="fit-map" class="link-action" type="button">
-              Lihat semua
-            </button>
           </div>
         </div>
 
@@ -234,6 +237,6 @@
     <script src="./layers/layers.js?v=202609041121" type="text/javascript"></script>
     <script src="./resources/Autolinker.min.js?v=202609041121"></script>
     <script src="./resources/qgis2web.js?v=202609041121"></script>
-    <script src="./custom.js?v=202609041121"></script>
+    <script src="./custom.js?v=20260905-ui"></script>
   </body>
 </html>

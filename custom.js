@@ -209,24 +209,28 @@
   // screen: the same flag now says the coordinate needs checking on site.
   //   tag    — capsule on a list row and in the card kicker
   //   legend — map legend and the layer switcher
+  //   short  — map legend on phones, where the row must stay one line
   //   count  — after a number on a pengusul row ("2 perlu verifikasi")
   //   search — extra words a query may use; the old name stays a synonym
   var STATUS_LABEL = {
     duplikat: {
       tag: "Perlu verifikasi",
       legend: "Koordinat perlu verifikasi",
+      short: "Perlu verifikasi",
       count: "perlu verifikasi",
       search: "perlu verifikasi duplikat"
     },
     belum: {
       tag: "Lokasi belum ditetapkan",
       legend: "Lokasi belum ditetapkan",
+      short: "Belum ditetapkan",
       count: "lokasi belum ditetapkan",
       search: "lokasi belum ditetapkan"
     },
     cadangan: {
       tag: "Cadangan",
       legend: "Cadangan",
+      short: "Cadangan",
       count: "cadangan",
       search: "cadangan"
     }
@@ -666,6 +670,9 @@
     var handle = document.getElementById("sheet-handle");
     if (handle) {
       handle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      handle.title = isOpen
+        ? "Ketuk atau geser ke bawah untuk lihat peta"
+        : "Ketuk atau geser ke atas untuk lihat daftar";
       var hintText = handle.querySelector(".sheet-handle__text");
       if (hintText) {
         hintText.textContent = isOpen
@@ -679,10 +686,10 @@
     }
   }
 
-  // Handle label, by state. Leads with "ketuk" because a tap is what an older
-  // reader tries first, and it works; the gesture follows as the alternative.
-  var SHEET_HINT_OPEN = "Ketuk atau geser ke atas untuk lihat daftar";
-  var SHEET_HINT_CLOSE = "Ketuk atau geser ke bawah untuk lihat peta";
+  // Short action labels stay readable even on a 320px phone; the title
+  // keeps the alternative drag gesture available as a hint.
+  var SHEET_HINT_OPEN = "Lihat daftar titik";
+  var SHEET_HINT_CLOSE = "Kembali ke peta";
 
   var SHEET_NUDGE_KEY = "puts.sheetNudges";
   var SHEET_NUDGE_VISITS = 3;
@@ -1655,7 +1662,23 @@
         text = formatCount(items.length) + " titik · " +
           formatCount(groupedItems.length) + " " + groupNoun();
       }
-      listSummary.textContent = text;
+      listSummary.textContent = "";
+      var total = document.createElement("span");
+      var detail = document.createElement("span");
+      total.className = "list-summary__total";
+      detail.className = "list-summary__detail";
+      if (!activeGroup && !hasQuery) {
+        total.textContent = formatCount(items.length) + " titik";
+        detail.textContent = formatCount(groupedItems.length) + " " + groupNoun();
+      } else {
+        // Keep the complete filter context together when searching or in a group.
+        detail.textContent = text;
+      }
+      if (total.textContent) {
+        listSummary.appendChild(total);
+        listSummary.appendChild(document.createTextNode(" "));
+      }
+      listSummary.appendChild(detail);
     }
 
     function activeGroupSize() {
@@ -2136,7 +2159,7 @@
       renderPanelNav();
       searchInput.placeholder = activeGroup
         ? "Cari dalam kelompok"
-        : "Cari titik, lokasi, pengusul, koordinat";
+        : "Cari lokasi atau pengusul…";
 
       listContainer.appendChild(fragment);
       renderSummary(visibleCount, Boolean(normalizedQuery));
@@ -2406,6 +2429,15 @@
         meta.insertBefore(buildJalurTag(jalur), meta.firstChild);
       }
       copy.appendChild(meta);
+
+      // Status belongs on its own line so the location remains easy to scan.
+      var flags = meta.querySelectorAll(".group-row__flag");
+      if (flags.length) {
+        var statuses = document.createElement("span");
+        statuses.className = "group-row__statuses";
+        flags.forEach(function (flag) { statuses.appendChild(flag); });
+        copy.appendChild(statuses);
+      }
 
       count.className = "group-row__count";
       count.textContent = String(group.items.length);
@@ -3038,6 +3070,15 @@
       duplikat: STATUS_LABEL.duplikat.legend,
       cadangan: STATUS_LABEL.cadangan.legend
     };
+    // Phones: the pill must stay one row (see .map-legend__pill in the
+    // mobile block of custom.css), so each entry carries a short label too
+    // and CSS shows one or the other. Only the visible one is read aloud.
+    var LEGEND_LABEL_SHORT = {
+      sk: "Titik PUTS",
+      belum: STATUS_LABEL.belum.short,
+      duplikat: STATUS_LABEL.duplikat.short,
+      cadangan: STATUS_LABEL.cadangan.short
+    };
 
     function legendSwatch(kind) {
       var stroke = DOT_STROKE[kind];
@@ -3063,7 +3104,10 @@
         html +=
           '<span class="map-legend__item" role="listitem">' +
           legendSwatch(kind) +
-          "<span>" + LEGEND_LABEL[kind] + "</span></span>";
+          '<span class="map-legend__label map-legend__label--long">' +
+          LEGEND_LABEL[kind] + "</span>" +
+          '<span class="map-legend__label map-legend__label--short">' +
+          LEGEND_LABEL_SHORT[kind] + "</span></span>";
       });
       legendPill.innerHTML = html;
       legendEl.hidden = !(counts.sk || counts.belum || counts.duplikat || counts.cadangan);

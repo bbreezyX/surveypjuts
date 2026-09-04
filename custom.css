@@ -9,9 +9,9 @@
     --orange-deep: #8f4200;
     --orange-tint: #fff3e8;
     --blue-tint: #ecf5ff;
-    --hairline: #d6eaff;
-    --hairline-strong: #c9d6e2;
-    --divider: #e5edf4;
+    --hairline: #dce8f1;
+    --hairline-strong: #d4dee6;
+    --divider: #e9eef2;
     /* Text ramp, all measured on --surface. The audience skews older, so the
        target moved from AA (4.5) to AAA (7) for the body tier. Three tiers all
        above 7:1 would be visually indistinguishable — grays run out of room —
@@ -32,16 +32,13 @@
     --radius-md: 12px;
     --radius-sm: 10px;
     --radius-xs: 6px;
-    --panel-width: clamp(320px, 22vw, 344px);
-    --panel-left: 14px;
-    --panel-top: 14px;
+    --panel-width: clamp(350px, 26vw, 380px);
+    --panel-left: 20px;
+    --panel-top: 20px;
     /* Manrope keeps the compact data rows open and legible while giving the
        panel a less generic voice than the old all-Inter treatment. */
     --font-display: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-ui: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
-    /* Titles only. A book serif reads as an official document rather than a
-       SaaS app, which is what the panel is: a survey register on a map. */
-    --font-serif: "Newsreader", "Iowan Old Style", Georgia, serif;
 
     /* Map control chrome: the sidebar's surface recipe at chip scale — a near
        solid white, a hairline, one contact shadow plus one soft ambient one.
@@ -185,7 +182,7 @@ body {
 
 .masthead-title {
     margin: 0;
-    font: 500 20px/1.15 var(--font-serif);
+    font: 700 20px/1.2 var(--font-display);
     letter-spacing: -0.01em;
     color: var(--ink);
 }
@@ -206,8 +203,8 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    min-height: 64px;
-    padding: 13px 48px 12px 16px;
+    min-height: 98px;
+    padding: 20px 46px 18px 20px;
     background: var(--surface);
     border-bottom: 1px solid var(--divider);
 }
@@ -218,7 +215,7 @@ body {
 }
 
 .panel-brand__lambang {
-    width: 30px;
+    width: 32px;
     height: auto;
     display: block;
 }
@@ -229,17 +226,23 @@ body {
 
 .panel-brand__kicker {
     margin: 0;
-    font: 600 10px var(--font-ui);
-    letter-spacing: 0.08em;
+    font: 700 9px/1.4 var(--font-ui);
+    letter-spacing: 0.07em;
     text-transform: uppercase;
     color: var(--muted-2);
 }
 
 .panel-brand__title {
-    margin: 1px 0 0;
-    font: 500 21px/1.15 var(--font-serif);
-    letter-spacing: -0.01em;
+    margin: 4px 0 0;
+    font: 700 21px/1.25 var(--font-display);
+    letter-spacing: -0.025em;
     color: var(--ink);
+}
+
+.panel-brand__description {
+    margin: 4px 0 0;
+    font: 500 10.5px/1.4 var(--font-ui);
+    color: var(--muted-2);
 }
 
 /* ---------- Data panel ---------- */
@@ -247,7 +250,7 @@ body {
 #sidebar {
     position: absolute;
     top: var(--panel-top);
-    bottom: 14px;
+    bottom: 20px;
     left: var(--panel-left);
     /* Above OpenLayers' .ol-overlaycontainer-stopevent, which ships z-index 21.
        Below 21 the map's own furniture — attribution, layer chip, zoom, scale —
@@ -259,7 +262,7 @@ body {
     flex-direction: column;
     background: var(--surface);
     border: 1px solid var(--hairline-strong);
-    border-radius: 12px;
+    border-radius: 18px;
     /* Still a floating object over satellite imagery, so it needs a real
        shadow to separate — but one soft layer, not a card-stack glow. */
     box-shadow: 0 1px 2px rgba(20, 38, 53, 0.1),
@@ -289,40 +292,56 @@ body.is-sidebar-collapsed #sidebar {
 .sidebar-header {
     flex-shrink: 0;
     display: grid;
-    gap: 10px;
-    padding: 14px 16px 0;
+    gap: 14px;
+    padding: 16px 20px;
     background: var(--surface);
     border-bottom: 1px solid var(--divider);
 }
 
 .summary-row {
+    order: 1;
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     gap: 8px;
-    padding: 0 0 9px;
+    padding: 0;
 }
 
 .list-summary {
     margin: 0;
     min-width: 0;
     display: flex;
-    align-items: center;
-    gap: 7px;
-    font: 500 11.5px var(--font-ui);
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 3px 8px;
+    font: 500 12px/1.5 var(--font-ui);
     font-variant-numeric: tabular-nums;
     color: var(--muted);
 }
 
-/* Legend swatch: the same yellow disc as the map marker. */
-.list-summary::before {
-    content: "";
-    flex: 0 0 8px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--yellow);
-    box-shadow: 0 0 0 1px rgba(41, 61, 80, 0.36);
+.list-summary__total {
+    font: 700 23px/1.2 var(--font-display);
+    letter-spacing: -0.045em;
+    color: var(--ink);
+    white-space: nowrap;
+}
+
+.list-summary__detail {
+    color: var(--muted-2);
+}
+
+#fit-map {
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 7px;
+    background: var(--surface);
+    text-decoration: none;
+}
+
+#fit-map:not(:disabled):hover {
+    background: var(--blue-tint);
+    border-color: var(--blue);
 }
 
 .link-action {
@@ -353,6 +372,7 @@ body.is-sidebar-collapsed #sidebar {
 }
 
 .search-field {
+    order: 2;
     position: relative;
     display: block;
     width: 100%;
@@ -387,10 +407,10 @@ body.is-sidebar-collapsed #sidebar {
 
 .search-field input {
     width: 100%;
-    height: 36px;
+    height: 44px;
     border: 1px solid var(--hairline-strong);
-    border-radius: 8px;
-    background: var(--surface);
+    border-radius: 9px;
+    background: #f6f8fa;
     box-shadow: none;
     padding: 0 36px 0 34px;
     font: 500 13px var(--font-ui);
@@ -436,6 +456,7 @@ body.is-sidebar-collapsed #sidebar {
 /* Nothing typed, nothing to clear. :placeholder-shown tracks programmatic
    resets too, so the button needs no JS to know when to hide. */
 .search-field input:placeholder-shown ~ .search-clear {
+    visibility: hidden;
     opacity: 0;
     pointer-events: none;
 }
@@ -479,6 +500,7 @@ body.is-sidebar-collapsed #sidebar {
 .search-field input:focus-visible {
     outline: none;
     border-color: var(--blue);
+    background: var(--surface);
     box-shadow: 0 0 0 3px rgba(0, 114, 188, 0.14);
 }
 
@@ -505,53 +527,61 @@ body.is-sidebar-collapsed #sidebar {
 
 .group-mode-field {
     display: flex;
-    align-items: baseline;
-    gap: 14px;
+    align-items: center;
+    gap: 12px;
 }
 
 .group-mode-label {
     flex-shrink: 0;
-    font: 500 11.5px var(--font-ui);
-    color: var(--muted-2);
+    font: 600 12px/1.4 var(--font-ui);
+    color: var(--muted);
+    white-space: nowrap;
 }
 
 .group-mode {
-    display: flex;
-    gap: 16px;
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 4px;
+    padding: 4px;
+    border-radius: 10px;
+    background: #f0f3f6;
 }
 
-/* Text tabs. The rule under the active one sits on the header's own bottom
-   border, so the toggle reads as part of the page furniture, not a widget. */
+/* The filled segment makes the current grouping visible at a glance. */
 .group-mode__btn {
     appearance: none;
     display: inline-flex;
     align-items: center;
-    min-height: 30px;
+    justify-content: center;
+    min-height: 34px;
     border: none;
-    border-radius: 0;
+    border-radius: 7px;
     background: none;
-    padding: 4px 0 8px;
-    margin-bottom: -1px;
-    font: 600 12.5px var(--font-ui);
+    padding: 6px 12px;
+    margin: 0;
+    font: 700 12px var(--font-ui);
     color: var(--muted-2);
     cursor: pointer;
-    box-shadow: inset 0 -2px transparent;
+    box-shadow: none;
     transition: color var(--dur) var(--ease-out),
-        box-shadow var(--dur) var(--ease-out);
+        background-color var(--dur) var(--ease-out);
 }
 
-.group-mode__btn:not(:disabled):hover {
+.group-mode__btn:not(:disabled):not(.is-active):hover {
     color: var(--ink);
+    background: #e3eaf0;
 }
 
 .group-mode__btn:focus-visible {
-    outline: none;
-    box-shadow: inset 0 -2px var(--blue);
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
 }
 
 .group-mode__btn.is-active {
-    color: var(--ink);
-    box-shadow: inset 0 -2px var(--ink);
+    color: #ffffff;
+    background: var(--blue-deep);
 }
 
 /* ---------- Group list ---------- */
@@ -560,7 +590,8 @@ body.is-sidebar-collapsed #sidebar {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 0 0 8px;
+    padding: 4px 0 8px;
+    overscroll-behavior: contain;
     background: var(--surface);
     scrollbar-width: thin;
     scrollbar-color: var(--hairline-strong) transparent;
@@ -584,11 +615,11 @@ body.is-sidebar-collapsed #sidebar {
 .group-row {
     position: relative;
     width: 100%;
-    min-height: 42px;
+    min-height: 72px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 9px 16px;
+    gap: 10px;
+    padding: 13px 20px;
     border: none;
     border-radius: 0;
     background: none;
@@ -603,7 +634,11 @@ body.is-sidebar-collapsed #sidebar {
 }
 
 .group-row:hover {
-    background: #f3f7fa;
+    background: #f0f6fb;
+}
+
+.group-row:hover .group-row__title {
+    color: var(--blue-deep);
 }
 
 .group-row:focus-visible {
@@ -619,28 +654,23 @@ body.is-sidebar-collapsed #sidebar {
     flex: 1;
     min-width: 0;
     display: grid;
-    gap: 2px;
+    gap: 5px;
 }
 
 .group-row__title {
     min-width: 0;
-    font: 500 13px var(--font-ui);
-    line-height: 1.3;
+    font: 700 14px var(--font-ui);
+    line-height: 1.45;
     color: var(--ink);
 }
 
-/* Second line: the jalur badge, where the group's units sit, then any pins
-   still waiting on a field check. Same voice as the item subline so the two
-   screens rhyme. Wraps rather than truncates -- a status count cut to "…"
-   is worse than a taller row. */
+/* Channel and location wrap together. Status counts get a separate line. */
 .group-row__meta {
     min-width: 0;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    /* Space, not middle dots, between the pieces: each piece already has a
-       shape of its own (capsule, plain text, status disc), and a separator
-       would strand itself at the start of a wrapped line. */
+    /* Spacing avoids separators stranded at the start of a wrapped line. */
     gap: 3px 10px;
     font: 500 11.5px var(--font-ui);
     line-height: 1.35;
@@ -648,14 +678,31 @@ body.is-sidebar-collapsed #sidebar {
     color: var(--muted);
 }
 
-/* The flag counts wear the same disc the map legend uses for that status, so
-   "2 duplikat" here and the orange ring out on the map read as one thing.
-   The disc is a real element (not ::before) because ::before is the
-   separator dot above. */
+/* The status discs match the map legend; labels carry their meaning too. */
 .group-row__flag {
     display: inline-flex;
     align-items: center;
     color: var(--muted-2);
+}
+
+.group-row__statuses {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    font: 500 11px/1.4 var(--font-ui);
+}
+
+.group-row__flag--duplikat {
+    color: var(--orange-deep);
+}
+
+.group-row .jalur-tag {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 10px;
+    letter-spacing: 0.03em;
 }
 
 .group-row__dot {
@@ -677,32 +724,45 @@ body.is-sidebar-collapsed #sidebar {
     border: 1.5px dashed #6b7a8c;
 }
 
-/* A bare number, right-aligned. The row is the control; it needs no badge. */
+/* Tabular counts occupy a consistent column, separate from the disclosure. */
 .group-row__count {
     flex-shrink: 0;
-    font: 500 12.5px var(--font-ui);
+    display: grid;
+    place-items: center;
+    min-width: 32px;
+    height: 30px;
+    padding: 0 7px;
+    border-radius: 7px;
+    background: #f0f3f6;
+    font: 700 13px var(--font-ui);
     font-variant-numeric: tabular-nums;
-    color: var(--muted-2);
+    color: var(--ink-soft);
 }
 
 .group-row__chevron {
-    display: none;
+    display: block;
+    flex: 0 0 6px;
+    width: 6px;
+    height: 6px;
+    border-top: 1.5px solid var(--muted-2);
+    border-right: 1.5px solid var(--muted-2);
+    transform: rotate(45deg);
 }
 
 /* ---------- Screen 2: context header ---------- */
 
 .panel-context {
     display: grid;
-    gap: 2px;
-    margin: -12px -16px 0;
-    padding: 10px 16px 12px;
-    background: var(--surface);
+    gap: 7px;
+    margin: -16px -20px 0;
+    padding: 8px 20px 16px;
+    background: #f8fafc;
     border-bottom: 1px solid var(--divider);
 }
 
 .panel-back {
     justify-self: start;
-    min-height: 24px;
+    min-height: 36px;
     appearance: none;
     border: none;
     background: none;
@@ -732,8 +792,8 @@ body.is-sidebar-collapsed #sidebar {
 
 .panel-context__title {
     margin: 0;
-    font: 500 19px/1.2 var(--font-serif);
-    letter-spacing: -0.01em;
+    font: 700 20px/1.35 var(--font-display);
+    letter-spacing: -0.035em;
     color: var(--ink);
 }
 
@@ -794,8 +854,7 @@ body.is-sidebar-collapsed #sidebar {
 }
 
 .group-row__count {
-    min-width: 2.2em;
-    text-align: right;
+    text-align: center;
 }
 
 /* In a subline the chip trails the desa/kecamatan text; when the text is
@@ -807,9 +866,7 @@ body.is-sidebar-collapsed #sidebar {
     gap: 2px 7px;
 }
 
-/* Screen 2 reorders its zones: context header, then the summary that explains
-   the filter, then a search box now scoped to this group. The grouping toggle
-   has no coherent meaning from inside a single group, so it steps out. */
+/* Screen 2 keeps context, filter summary and scoped search together. */
 .group-mode-field {
     order: 3;
 }
@@ -822,9 +879,7 @@ body.is-sidebar-collapsed #sidebar {
     order: 1;
 }
 
-/* Screen 1 ends in the tab row, whose underline sits on the header's border,
-   so the header carries no bottom padding. Screen 2 ends in the search field
-   and needs the same breathing room the rows get. */
+/* The detail view ends with the scoped search. */
 .sidebar-header.is-detail {
     padding-bottom: 12px;
 }
@@ -852,8 +907,8 @@ body.is-sidebar-collapsed #sidebar {
     align-items: baseline;
     justify-content: space-between;
     gap: 10px;
-    padding: 9px 16px 5px;
-    background: var(--surface);
+    padding: 10px 20px;
+    background: #f6f8fa;
     border-bottom: 1px solid var(--divider);
 }
 
@@ -1032,7 +1087,7 @@ body.is-sidebar-collapsed #sidebar {
 .item-label {
     flex: 1;
     min-width: 0;
-    font: 500 13px var(--font-ui);
+    font: 600 14px var(--font-ui);
     line-height: 1.35;
     color: var(--ink);
     display: -webkit-box;
@@ -1206,9 +1261,9 @@ body.is-data-unavailable .list-summary {
 .sidebar-footer {
     flex-shrink: 0;
     margin: 0;
-    padding: 9px 16px 11px;
+    padding: 12px 20px;
     border-top: 1px solid var(--divider);
-    background: var(--surface);
+    background: #f8fafc;
     font-size: 10.5px;
     font-weight: 500;
     line-height: 1.35;
@@ -1442,7 +1497,7 @@ body.is-sidebar-collapsed .panel-toggle:hover {
    over the header from outside. */
 .panel-toggle {
     position: absolute;
-    top: calc(var(--panel-top) + 17px);
+    top: calc(var(--panel-top) + 18px);
     left: calc(var(--panel-left) + var(--panel-width) - 42px);
     z-index: 23;
     width: 30px;
@@ -1982,7 +2037,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 
 .feature-popup__title {
     margin: 4px 0 0;
-    font: 500 21px/1.15 var(--font-serif);
+    font: 600 21px/1.25 var(--font-display);
     letter-spacing: -0.01em;
     color: var(--ink);
     display: -webkit-box;
@@ -2140,6 +2195,11 @@ body.is-sidebar-collapsed .map-legend {
 .map-legend__swatch {
     display: block;
     flex: none;
+}
+
+/* Two labels per entry; the phone block swaps which one shows. */
+.map-legend__label--short {
+    display: none;
 }
 
 .ol-zoom {
@@ -2575,11 +2635,10 @@ body.is-sidebar-collapsed .map-legend {
         display: none;
     }
 
-    /* Peek shows search + grouping + a sliver of the first row, which is more
-       use than the stat row that used to sit here. */
+    /* The peek keeps the summary, search and grouping controls visible. */
     .sidebar-header {
         gap: 10px;
-        padding: 4px 16px 0;
+        padding: 4px 16px 12px;
     }
 
     .search-field input {
@@ -2588,12 +2647,12 @@ body.is-sidebar-collapsed .map-legend {
     }
 
     .group-mode__btn {
-        min-height: 36px;
+        min-height: 40px;
     }
 
     .group-row {
-        min-height: 48px;
-        padding: 10px 16px;
+        min-height: 72px;
+        padding: 13px 16px;
     }
 
     .panel-back {
@@ -2609,6 +2668,21 @@ body.is-sidebar-collapsed .map-legend {
 
     .summary-row {
         gap: 12px;
+    }
+
+    .list-summary__total {
+        font-size: 21px;
+    }
+
+    #fit-map {
+        min-height: 40px;
+    }
+
+    .search-clear {
+        width: 40px;
+        height: 40px;
+        right: 2px;
+        margin-top: -20px;
     }
 
     .item {
@@ -2698,7 +2772,8 @@ body.is-sidebar-collapsed .map-legend {
     }
 
     .masthead-title {
-        font-size: 18px;
+        font-size: 17px;
+        letter-spacing: -0.03em;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -2766,14 +2841,8 @@ body.is-sidebar-collapsed .map-legend {
         visibility: hidden;
     }
 
-    /* The bare grabber pill is a convention younger phone users have learned
-       and older ones have not: on its own it reads as decoration, and the
-       audience here skews older. So the handle says what it does, in words,
-       with the verb the reader is likeliest to try first ("ketuk") ahead of
-       the gesture — the tap works too. Three redundant cues, on purpose:
-       a heavier, darker grabber; a chip that looks like a button and names
-       the action; and a chevron that points the way and, on first visits,
-       bobs while the whole sheet lifts once (see is-sheet-nudging below). */
+    /* A short action label, grabber and directional chevron make the sheet
+       discoverable without requiring familiarity with swipe gestures. */
     #sheet-handle {
         display: flex;
         flex-direction: column;
@@ -2781,8 +2850,7 @@ body.is-sidebar-collapsed .map-legend {
         gap: 8px;
         flex-shrink: 0;
         width: 100%;
-        /* 12px sides: the longer label (43 chars at 14px, ~332px) has to fit
-           a 360px phone without an ellipsis. */
+        /* Short labels fit even the narrowest supported phones. */
         padding: 10px 12px;
         background: var(--surface);
         border: none;
@@ -2790,6 +2858,7 @@ body.is-sidebar-collapsed .map-legend {
         /* The drag gesture is ours; without this the browser claims the
            vertical swipe for scroll/pull-to-refresh first. */
         touch-action: none;
+        user-select: none;
         -webkit-tap-highlight-color: transparent;
     }
 
@@ -2990,8 +3059,10 @@ body.is-sidebar-collapsed .map-legend {
 
     /* The band above the sheet already holds the scale strip and the zoom
        rail and the layer chip. The legend takes its own row under the
-       centred masthead, on the same axis, and wraps onto a second line on
-       narrow phones. */
+       centred masthead, on the same axis. It stays one line: a legend that
+       wraps reads as two rows of unrelated chips. The labels shorten to
+       fit a 360px phone; if more statuses show up than fit (or the phone is
+       narrower) the row pans sideways instead of stacking. */
     .map-legend {
         top: calc(12px + 48px + 10px);
         bottom: auto;
@@ -3000,9 +3071,29 @@ body.is-sidebar-collapsed .map-legend {
     }
 
     .map-legend__pill {
-        gap: 4px 10px;
+        flex-wrap: nowrap;
+        /* Start-aligned so the first entry stays reachable when the row
+           overflows; the band still centres the pill when it fits. */
+        justify-content: flex-start;
+        gap: 10px;
         padding: 5px 10px 5px 8px;
         font-size: 11px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+
+    .map-legend__pill::-webkit-scrollbar {
+        display: none;
+    }
+
+    .map-legend__label--long {
+        display: none;
+    }
+
+    .map-legend__label--short {
+        display: inline;
     }
 
     /* The cluster spans the full width above the sheet: metadata left, zoom
@@ -3033,12 +3124,55 @@ body.is-sidebar-collapsed .map-legend {
     }
 
     .sidebar-header {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         gap: 6px;
     }
 
-    /* The old stat block was hidden here to buy vertical room. Its replacement
-       is a single 13px line that also carries "Lihat semua", so it stays —
-       losing that action costs more than the row saves. */
+    /* Use the extra width to keep results usable on a short landscape screen. */
+    #sheet-handle {
+        flex-direction: row;
+        justify-content: center;
+        padding: 6px 12px;
+    }
+
+    .sheet-handle__grab {
+        display: none;
+    }
+
+    .sidebar-header .search-field {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .sidebar-header .summary-row {
+        grid-column: 1;
+        grid-row: 1;
+        padding-right: 10px;
+    }
+
+    .sidebar-header .group-mode-field {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .sidebar-header.is-detail .panel-context {
+        grid-column: 1;
+        grid-row: 1 / 3;
+        margin: -4px 0 -12px -16px;
+        padding: 4px 16px 12px;
+        border-bottom: none;
+        border-right: 1px solid var(--divider);
+    }
+
+    .sidebar-header.is-detail .summary-row {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .sidebar-header.is-detail .search-field {
+        grid-column: 2;
+        grid-row: 2;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
