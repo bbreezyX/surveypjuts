@@ -400,6 +400,13 @@ body.is-sidebar-collapsed #sidebar {
         background-color var(--dur) var(--ease-out);
 }
 
+/* The 36px right inset is for the clear button. That button is hidden while
+   the field is empty, so the placeholder can use the space and "koordinat"
+   reaches the field edge instead of clipping mid-word. */
+.search-field input:placeholder-shown {
+    padding-right: 10px;
+}
+
 .search-field input::placeholder {
     color: var(--muted-2);
 }
@@ -608,11 +615,66 @@ body.is-sidebar-collapsed #sidebar {
     background: #eaf2f7;
 }
 
-.group-row__title {
+.group-row__copy {
     flex: 1;
     min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+
+.group-row__title {
+    min-width: 0;
     font: 500 13px var(--font-ui);
+    line-height: 1.3;
     color: var(--ink);
+}
+
+/* Second line: the jalur badge, where the group's units sit, then any pins
+   still waiting on a field check. Same voice as the item subline so the two
+   screens rhyme. Wraps rather than truncates -- a status count cut to "…"
+   is worse than a taller row. */
+.group-row__meta {
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    /* Space, not middle dots, between the pieces: each piece already has a
+       shape of its own (capsule, plain text, status disc), and a separator
+       would strand itself at the start of a wrapped line. */
+    gap: 3px 10px;
+    font: 500 11.5px var(--font-ui);
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+}
+
+/* The flag counts wear the same disc the map legend uses for that status, so
+   "2 duplikat" here and the orange ring out on the map read as one thing.
+   The disc is a real element (not ::before) because ::before is the
+   separator dot above. */
+.group-row__flag {
+    display: inline-flex;
+    align-items: center;
+    color: var(--muted-2);
+}
+
+.group-row__dot {
+    flex: 0 0 7px;
+    width: 7px;
+    height: 7px;
+    margin-right: 5px;
+    border-radius: 50%;
+    box-sizing: border-box;
+}
+
+.group-row__flag--duplikat .group-row__dot {
+    background: var(--orange-tint);
+    border: 1.5px solid var(--orange);
+}
+
+.group-row__flag--belum .group-row__dot {
+    background: var(--surface);
+    border: 1.5px dashed #6b7a8c;
 }
 
 /* A bare number, right-aligned. The row is the control; it needs no badge. */
@@ -731,11 +793,7 @@ body.is-sidebar-collapsed #sidebar {
     vertical-align: middle;
 }
 
-.group-row .jalur-tag {
-    margin-left: auto;
-}
-
-.group-row__title + .jalur-tag + .group-row__count {
+.group-row__count {
     min-width: 2.2em;
     text-align: right;
 }
@@ -778,6 +836,52 @@ body.is-sidebar-collapsed #sidebar {
 
 .sidebar-header.is-detail .search-field {
     order: 3;
+}
+
+/* ---------- Kecamatan section label ----------
+   Sticky at the top of the scroller, so while the reader is deep in a
+   40-row pengusul the kecamatan they are looking at stays in view. Small
+   caps in the metadata voice; the count is the same tabular number the group
+   rows use. Sits above the rows (z-index) because the active row paints a
+   tinted background that would otherwise scroll over it. */
+.list-section {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 16px 5px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--divider);
+}
+
+.list-section + .item {
+    border-top: none;
+}
+
+.item + .list-section {
+    margin-top: 6px;
+    border-top: 1px solid var(--divider);
+}
+
+.list-section__title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 700 10px/1.5 var(--font-ui);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+}
+
+.list-section__count {
+    flex-shrink: 0;
+    font: 500 11px/1.5 var(--font-ui);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted-2);
 }
 
 .item {

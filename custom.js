@@ -92,11 +92,24 @@
       .replace(/'/g, "&#39;");
   }
 
+  // A strict Roman numeral: "XXIV", "VII", "III". Strict so that ordinary
+  // words spelled from the same letters ("Dili", "Lim") stay title-cased;
+  // "di" is a valid numeral (501) but far likelier to be the preposition.
+  var ROMAN_NUMERAL = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/;
+  var NOT_A_NUMERAL = { DI: true };
+
+  // Title case for place names. Kecamatan and desa names carry Roman
+  // numerals -- Batin XXIV, VII Koto, Lambur I, Simpang III Sipin -- which
+  // plain title case turns into "Xxiv" and "Vii".
   function toDisplayCase(value) {
     return String(value || "")
       .toLowerCase()
       .replace(/\b\w/g, function (letter) {
         return letter.toUpperCase();
+      })
+      .replace(/\b[IVXLCDMivxlcdm]{2,}\b/g, function (token) {
+        var upper = token.toUpperCase();
+        return ROMAN_NUMERAL.test(upper) && !NOT_A_NUMERAL[upper] ? upper : token;
       });
   }
 
@@ -293,6 +306,9 @@
       code: code || "—",
       primary: primary,
       secondary: secondary || "Lokasi survey lapangan",
+      // Kept separately so the list can section a long group by kecamatan.
+      desa: desa,
+      kecamatan: kecamatan,
     };
   }
 
@@ -1499,6 +1515,49 @@
       return value.toLocaleString("id-ID");
     }
 
+    var MONTHS_ID = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+
+    // Tanggal Dokumentasi is dd/mm/yyyy. Returns a sortable yyyymmdd number.
+    function dateKey(text) {
+      var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(text || "").trim());
+      return m ? Number(m[3]) * 10000 + Number(m[2]) * 100 + Number(m[1]) : 0;
+    }
+
+    function formatDateKey(key) {
+      var day = key % 100;
+      var month = Math.floor(key / 100) % 100;
+      var year = Math.floor(key / 10000);
+      return day + " " + (MONTHS_ID[month - 1] || "") + " " + year;
+    }
+
+    // The footer used to say only the year. The newest survey date tells a
+    // reader whether the batch they are waiting for has landed yet.
+    function renderFooter() {
+      var footer = document.querySelector(".sidebar-footer");
+      if (!footer) {
+        return;
+      }
+      var latest = 0;
+      mappedItems.forEach(function (item) {
+        latest = Math.max(latest, dateKey(item.tanggal));
+      });
+      if (!latest) {
+        return;
+      }
+      footer.textContent = "";
+      footer.appendChild(
+        document.createTextNode("Survey lapangan s.d. " + formatDateKey(latest) + " ")
+      );
+      var dot = document.createElement("span");
+      dot.setAttribute("aria-hidden", "true");
+      dot.textContent = "\u00b7";
+      footer.appendChild(dot);
+      footer.appendChild(document.createTextNode(" Dinas ESDM Jambi"));
+    }
+
     // One line that changes with the situation, instead of three numbers that
     // are usually identical and therefore unreadable.
     function renderSummary(matchCount, hasQuery) {
@@ -2078,9 +2137,21 @@
         visibleIds.add(item.id);
       });
 
+      // Rows sort by Nomor (KABUPATEN-KECAMATAN-DESA-NNN), so a group's
+      // kecamatan already arrive in contiguous runs. When there is more than
+      // one, a sticky label at the top of each run names it and says how many
+      // units sit there -- the structure a 40-row list otherwise hides in the
+      // sublines. One kecamatan needs no label: the rows already say it.
+      var sections = sectionsByKecamatan(matchedItems);
       var showKabupaten = showsKabupatenPerRow();
-      matchedItems.forEach(function (item) {
-        fragment.appendChild(buildItemRow(item, null, showKabupaten));
+      var sectioned = sections.length > 1;
+      sections.forEach(function (section) {
+        if (sectioned) {
+          fragment.appendChild(buildSectionHeader(section));
+        }
+        section.items.forEach(function (item) {
+          fragment.appendChild(buildItemRow(item, null, showKabupaten));
+        });
       });
 
       if (!matchedItems.length) {
@@ -2095,8 +2166,132 @@
       return skCount;
     }
 
+    // One section per kecamatan, in order of first appearance. Keyed rather
+    // than run-based so a stray Nomor prefix ("JAMBI-KOTA BARU-…" among
+    // "KOTA JAMBI-KOTA BARU-…") joins its kecamatan instead of opening a
+    // second header for it. Cadangan rows travel with their kecamatan but do
+    // not count: the header total matches the summary line.
+    function sectionsByKecamatan(rows) {
+      var sections = [];
+      var byKey = {};
+      rows.forEach(function (item) {
+        var key = item.display.kecamatan || "";
+        var section = byKey[key];
+        if (!section) {
+          section = byKey[key] = { key: key, items: [], count: 0 };
+          sections.push(section);
+        }
+        section.items.push(item);
+        if (!item.cadangan) {
+          section.count += 1;
+        }
+      });
+      return sections;
+    }
+
+    function buildSectionHeader(section) {
+      var header = document.createElement("div");
+      var title = document.createElement("span");
+      var count = document.createElement("span");
+
+      header.className = "list-section";
+      header.setAttribute("role", "heading");
+      header.setAttribute("aria-level", "3");
+
+      title.className = "list-section__title";
+      title.textContent = section.key ? "Kec. " + section.key : "Kecamatan lain";
+
+      count.className = "list-section__count";
+      count.textContent = formatCount(section.count) + " titik";
+
+      header.appendChild(title);
+      header.appendChild(count);
+      return header;
+    }
+
+    // Where a group's units sit and how many pins still need a field check.
+    // Pengusul rows name the kabupaten (biggest share first); kabupaten rows
+    // say how many pengusul share it. Duplikat and Belum Ditetapkan counts
+    // follow only when non-zero, so a clean group stays a clean line.
+    function buildGroupMeta(group) {
+      var meta = document.createElement("span");
+      meta.className = "group-row__meta";
+      var parts = [];
+
+      if (groupMode === "kabupaten") {
+        var pengusul = {};
+        group.items.forEach(function (item) {
+          pengusul[item.nama] = true;
+        });
+        var n = Object.keys(pengusul).length;
+        parts.push({ text: formatCount(n) + " pengusul" });
+      } else {
+        var counts = {};
+        group.items.forEach(function (item) {
+          var key = item.kabupaten || "Lainnya";
+          counts[key] = (counts[key] || 0) + 1;
+        });
+        var names = Object.keys(counts).sort(function (left, right) {
+          return counts[right] - counts[left] || collator.compare(left, right);
+        });
+        // No-break space before each dot: a long list may wrap, but the dot
+        // then ends a line instead of opening the next one.
+        parts.push({
+          text: names.map(shortKabupatenInline).join("\u00a0· "),
+          title: names.join(", ")
+        });
+      }
+
+      var duplikat = 0;
+      var belum = 0;
+      group.items.forEach(function (item) {
+        if (item.duplikat) {
+          duplikat += 1;
+        }
+        if (item.belum) {
+          belum += 1;
+        }
+      });
+      if (duplikat) {
+        parts.push({ text: formatCount(duplikat) + " duplikat", flag: "duplikat" });
+      }
+      if (belum) {
+        parts.push({ text: formatCount(belum) + " belum ditetapkan", flag: "belum" });
+      }
+
+      parts.forEach(function (part) {
+        var span = document.createElement("span");
+        span.className = "group-row__meta-item";
+        if (part.title) {
+          span.title = part.title;
+        }
+        if (part.flag) {
+          span.className += " group-row__flag group-row__flag--" + part.flag;
+          var dot = document.createElement("span");
+          dot.className = "group-row__dot";
+          dot.setAttribute("aria-hidden", "true");
+          span.appendChild(dot);
+        }
+        span.appendChild(document.createTextNode(part.text));
+        meta.appendChild(span);
+      });
+
+      meta.dataset.text = parts
+        .map(function (part) { return part.text; })
+        .join(", ");
+      return meta;
+    }
+
+    // "Kab. Merangin" is the polygon's name; on a line that already sits under
+    // a pengusul it is the noun that matters, so the prefix goes. "Kota Jambi"
+    // keeps its word: it distinguishes the city from the kabupaten around it.
+    function shortKabupatenInline(name) {
+      return shortKabupaten(name).replace(/^Kab\.\s+/i, "");
+    }
+
     function buildGroupRow(group) {
       var row = document.createElement("button");
+      var copy = document.createElement("span");
       var title = document.createElement("span");
       var count = document.createElement("span");
       var chevron = document.createElement("span");
@@ -2104,20 +2299,31 @@
       row.type = "button";
       row.className = "group-row";
       row.dataset.groupName = group.name;
-      // The visible count is a bare number so the column lines up; the
-      // accessible name still spells out what it counts.
       // Only pengusul rows carry a jalur; a kabupaten spans several.
       var jalur = groupMode === "kabupaten" ? "" : groupJalur(group);
+      var meta = buildGroupMeta(group);
 
+      // The visible count is a bare number so the column lines up; the
+      // accessible name still spells out what it counts.
       row.setAttribute(
         "aria-label",
         group.name +
           (jalur ? ", jalur " + jalur : "") +
+          ", " + meta.dataset.text +
           ", " + group.items.length + " titik, buka daftar"
       );
 
+      copy.className = "group-row__copy";
       title.className = "group-row__title";
       title.textContent = group.name;
+      copy.appendChild(title);
+      // The jalur badge leads the second line rather than sitting in its own
+      // column: that column cost the line half its width, and a kabupaten
+      // list or a "belum ditetapkan" count ended in an ellipsis.
+      if (jalur) {
+        meta.insertBefore(buildJalurTag(jalur), meta.firstChild);
+      }
+      copy.appendChild(meta);
 
       count.className = "group-row__count";
       count.textContent = String(group.items.length);
@@ -2125,10 +2331,7 @@
       chevron.className = "group-row__chevron";
       chevron.setAttribute("aria-hidden", "true");
 
-      row.appendChild(title);
-      if (jalur) {
-        row.appendChild(buildJalurTag(jalur));
-      }
+      row.appendChild(copy);
       row.appendChild(count);
       row.appendChild(chevron);
 
@@ -3216,6 +3419,15 @@
       if (event.key !== "Escape") {
         return;
       }
+      // Mid-search, Escape means "drop what I typed", not "close the panel":
+      // the list and the map go back to the unfiltered set, focus stays put.
+      if (document.activeElement === searchInput && searchInput.value) {
+        clearTimeout(searchDebounce);
+        searchInput.value = "";
+        renderList("");
+        fitToVisible({ maxZoom: 16, duration: 500 });
+        return;
+      }
       if (window.layerSwitcher) {
         window.layerSwitcher.hidePanel();
       }
@@ -3296,6 +3508,7 @@
     });
 
     renderList("");
+    renderFooter();
 
     // qgis2web's start view fits the bare province bbox to the full map size,
     // so the westernmost points (Kerinci, Merangin, Bungo) open underneath the
