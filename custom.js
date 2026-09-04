@@ -201,6 +201,55 @@
     return s === "true" || s === "ya" || s === "1";
   }
 
+  // What each status is called wherever a reader sees it. The geojson keeps
+  // its field names ("Duplikat", Status "Belum Ditetapkan"); these are the
+  // words for the installer and for other offices reading the map, phrased
+  // as what to do about the pin rather than what is wrong with the data.
+  // "Duplikat" read as a double entry to be deleted, so it is gone from the
+  // screen: the same flag now says the coordinate needs checking on site.
+  //   tag    — capsule on a list row and in the card kicker
+  //   legend — map legend and the layer switcher
+  //   count  — after a number on a pengusul row ("2 perlu verifikasi")
+  //   search — extra words a query may use; the old name stays a synonym
+  var STATUS_LABEL = {
+    duplikat: {
+      tag: "Perlu verifikasi",
+      legend: "Koordinat perlu verifikasi",
+      count: "perlu verifikasi",
+      search: "perlu verifikasi duplikat"
+    },
+    belum: {
+      tag: "Lokasi belum ditetapkan",
+      legend: "Lokasi belum ditetapkan",
+      count: "lokasi belum ditetapkan",
+      search: "lokasi belum ditetapkan"
+    },
+    cadangan: {
+      tag: "Cadangan",
+      legend: "Cadangan",
+      count: "cadangan",
+      search: "cadangan"
+    }
+  };
+
+  // One short line on the card, above the address: what the installer does
+  // with this pin. No reasons, no history -- the crew needs the instruction.
+  function statusNote(item) {
+    if (item.belum) {
+      return item.catatan || "Pin perkiraan. Lokasi pasti ditentukan di lapangan bersama RT.";
+    }
+    if (item.duplikat) {
+      var n = item.sharedCoordinateCount || 1;
+      return n > 1
+        ? n + " unit di satu koordinat. Cek posisi tiap tiang di lapangan."
+        : "Cek posisi tiang di lapangan.";
+    }
+    if (item.cadangan) {
+      return "Di luar jatah. Dipasang hanya jika ada titik lain yang batal.";
+    }
+    return "";
+  }
+
   // The hatch control writes the geojson. That path only exists on the
   // local dev server; production is a static host and must not show it.
   function isLocalEditor() {
@@ -402,10 +451,9 @@
 
     var kicker =
       "Titik " + escapeHtml(item.display.code) +
-      (item.kabupaten ? " · " + escapeHtml(item.kabupaten) : "") +
-      (item.duplikat ? " · Duplikat" : "");
-    // No status word for an unplaced unit here: the note above the title and
-    // the dashed disc already say it, and the kicker would wrap to two lines.
+      (item.kabupaten ? " · " + escapeHtml(item.kabupaten) : "");
+    // No status word in the kicker: each status has its note under the photo,
+    // and the disc before the kicker already wears that status's ring.
 
     var popupClass = "feature-popup";
     if (item.cadangan) {
@@ -418,16 +466,28 @@
       popupClass += " is-belum";
     }
 
-    // The note takes the photo's place at the top of the card: the one thing
-    // the installer has to read before the address and the estimated pin.
-    var note = item.belum
-      ? '<div class="feature-popup__note" role="note">' +
-          '<span class="feature-popup__note-mark" aria-hidden="true">?</span>' +
+    // Every status gets its reason in plain words: what the installer has to
+    // read before the address and the coordinate. An unplaced unit has no
+    // photo, so the note takes the photo's place at the top; the others sit
+    // between the photo and the title. The mark echoes the pin: "?" for a
+    // spot nobody has chosen, "!" for a coordinate to check, hatch for reserve.
+    var noteKind = item.belum
+      ? "belum"
+      : item.duplikat
+        ? "duplikat"
+        : item.cadangan
+          ? "cadangan"
+          : "";
+    var noteText = statusNote(item);
+    var noteMark = { belum: "?", duplikat: "!", cadangan: "" }[noteKind];
+    var note = noteKind && noteText
+      ? '<div class="feature-popup__note feature-popup__note--' + noteKind + '" role="note">' +
+          '<span class="feature-popup__note-mark" aria-hidden="true">' + noteMark + "</span>" +
           "<p>" +
-            escapeHtml(
-              item.catatan ||
-                "Unit ini belum ditetapkan lokasinya. Pin hanya perkiraan; tentukan lokasi pastinya di lapangan."
-            ) +
+            '<strong class="feature-popup__note-title">' +
+              escapeHtml(STATUS_LABEL[noteKind].legend) +
+            "</strong> " +
+            escapeHtml(noteText) +
           "</p>" +
         "</div>"
       : "";
@@ -1348,9 +1408,9 @@
               tanggal,
               koordinat,
               lat + "," + lon,
-              cadangan ? "cadangan" : "",
-              duplikat ? "duplikat" : "",
-              belum ? "belum ditetapkan" : ""
+              cadangan ? STATUS_LABEL.cadangan.search : "",
+              duplikat ? STATUS_LABEL.duplikat.search : "",
+              belum ? STATUS_LABEL.belum.search : ""
             ].join(" ")
           ),
         };
@@ -1358,6 +1418,22 @@
       .sort(function (left, right) {
         return collator.compare(left.nomor, right.nomor);
       });
+
+    // How many rows share a flagged point's exact stamp, so its card can say
+    // "3 unit tercatat pada koordinat yang sama" instead of guessing at two.
+    (function countSharedCoordinates() {
+      var byCoord = {};
+      mappedItems.forEach(function (item) {
+        var key = item.latNum.toFixed(6) + "," + item.lonNum.toFixed(6);
+        byCoord[key] = (byCoord[key] || 0) + 1;
+      });
+      mappedItems.forEach(function (item) {
+        if (item.duplikat) {
+          item.sharedCoordinateCount =
+            byCoord[item.latNum.toFixed(6) + "," + item.lonNum.toFixed(6)] || 1;
+        }
+      });
+    })();
 
     var items = mappedItems.filter(function (item) {
       return !item.cadangan;
@@ -1726,7 +1802,7 @@
         buildFlagButton(
           item,
           "duplikat",
-          item.duplikat ? "Batal duplikat" : "Duplikat"
+          item.duplikat ? "Batal verifikasi" : "Perlu verifikasi"
         )
       );
       body.appendChild(tools);
@@ -1761,9 +1837,9 @@
           item.tanggal,
           item.koordinat,
           item.latNum + "," + item.lonNum,
-          item.cadangan ? "cadangan" : "",
-          item.duplikat ? "duplikat" : "",
-          item.belum ? "belum ditetapkan" : ""
+          item.cadangan ? STATUS_LABEL.cadangan.search : "",
+          item.duplikat ? STATUS_LABEL.duplikat.search : "",
+          item.belum ? STATUS_LABEL.belum.search : ""
         ].join(" ")
       );
     }
@@ -2253,10 +2329,16 @@
         }
       });
       if (duplikat) {
-        parts.push({ text: formatCount(duplikat) + " duplikat", flag: "duplikat" });
+        parts.push({
+          text: formatCount(duplikat) + " " + STATUS_LABEL.duplikat.count,
+          flag: "duplikat"
+        });
       }
       if (belum) {
-        parts.push({ text: formatCount(belum) + " belum ditetapkan", flag: "belum" });
+        parts.push({
+          text: formatCount(belum) + " " + STATUS_LABEL.belum.count,
+          flag: "belum"
+        });
       }
 
       parts.forEach(function (part) {
@@ -2370,9 +2452,9 @@
         "aria-label",
         [
           "Titik " + item.display.code,
-          item.cadangan ? "cadangan" : "",
-          item.duplikat ? "duplikat" : "",
-          item.belum ? "belum ditetapkan" : "",
+          item.cadangan ? STATUS_LABEL.cadangan.tag : "",
+          item.duplikat ? STATUS_LABEL.duplikat.tag : "",
+          item.belum ? STATUS_LABEL.belum.tag : "",
           item.display.primary,
           item.display.secondary,
           item.kabupaten,
@@ -2392,24 +2474,34 @@
       label.textContent = item.display.primary;
       headline.appendChild(label);
 
-      if (item.duplikat) {
-        var flag = document.createElement("span");
-        flag.className = "item-flag";
-        flag.textContent = "Duplikat";
-        headline.appendChild(flag);
-      }
-      if (item.belum) {
-        var belumFlag = document.createElement("span");
-        belumFlag.className = "item-flag item-flag--belum";
-        belumFlag.textContent = "Belum ditetapkan";
-        headline.appendChild(belumFlag);
-      }
-
       if (item.koordinatSingkat) {
         var coord = document.createElement("span");
         coord.className = "item-coord";
         coord.textContent = item.koordinatSingkat;
         headline.appendChild(coord);
+      }
+
+      // Status capsules get a line of their own under the title. In the
+      // headline they left the title a few letters of width next to the
+      // coordinate ("K a…"); on their own line the title and the location
+      // line read exactly as they do on an unflagged row.
+      var status = null;
+      if (item.duplikat || item.belum) {
+        status = document.createElement("span");
+        status.className = "item-status";
+      }
+      if (item.duplikat) {
+        var flag = document.createElement("span");
+        flag.className = "item-flag";
+        flag.textContent = STATUS_LABEL.duplikat.tag;
+        flag.title = STATUS_LABEL.duplikat.legend;
+        status.appendChild(flag);
+      }
+      if (item.belum) {
+        var belumFlag = document.createElement("span");
+        belumFlag.className = "item-flag item-flag--belum";
+        belumFlag.textContent = STATUS_LABEL.belum.tag;
+        status.appendChild(belumFlag);
       }
 
       subline.className = "item-subline";
@@ -2424,6 +2516,9 @@
       }
 
       copy.appendChild(headline);
+      if (status) {
+        copy.appendChild(status);
+      }
       copy.appendChild(subline);
       button.appendChild(code);
       button.appendChild(copy);
@@ -2939,9 +3034,9 @@
 
     var LEGEND_LABEL = {
       sk: "Titik PUTS",
-      belum: "Belum ditetapkan",
-      duplikat: "Duplikat",
-      cadangan: "Cadangan"
+      belum: STATUS_LABEL.belum.legend,
+      duplikat: STATUS_LABEL.duplikat.legend,
+      cadangan: STATUS_LABEL.cadangan.legend
     };
 
     function legendSwatch(kind) {

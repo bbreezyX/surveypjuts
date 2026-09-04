@@ -961,12 +961,20 @@ body.is-sidebar-collapsed #sidebar {
     box-shadow: inset 3px 0 var(--muted-2);
 }
 
-/* Duplikat rows keep the SK look — they still count — and add one small
-   orange tag so the crew knows the pin is provisional. */
+/* Status line between the title and the location: the capsule(s) alone, so
+   neither the title nor the desa line gives up width to them. */
+.item-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px 6px;
+    margin: 2px 0 1px;
+}
+
+/* Perlu verifikasi rows keep the SK look — they still count — and add one
+   small orange capsule so the crew knows the pin is provisional. */
 .item-flag {
-    flex-shrink: 0;
-    align-self: center;
-    padding: 1px 6px;
+    display: inline-block;
+    padding: 1px 7px;
     border: 1px dashed var(--orange);
     border-radius: 999px;
     background: var(--orange-tint);
@@ -1767,6 +1775,57 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     margin: 2px 0 0;
     font: 400 12.5px/1.5 var(--font-ui);
     color: var(--muted);
+}
+
+/* The status name leads the sentence so a reader skimming the card gets the
+   category first ("Koordinat perlu verifikasi") and the instruction after. */
+.feature-popup__note-title {
+    display: block;
+    margin-bottom: 1px;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+/* Under a photo the note is a band between picture and title; the dashed
+   top edge separates it from the photo, the bottom one from the body. */
+.feature-popup__media + .feature-popup__note {
+    border-top: 1px dashed #b7c1cc;
+    /* The close button sits over the photo here, not over the note. */
+    padding-right: 16px;
+}
+
+/* Perlu verifikasi: the same orange the pin's ring and the list capsule use,
+   so the reader connects the three without a legend lookup. */
+.feature-popup__note--duplikat {
+    background: var(--orange-tint);
+    border-color: var(--orange);
+}
+
+.feature-popup__note--duplikat .feature-popup__note-mark {
+    border-color: var(--orange);
+    color: var(--orange-deep);
+}
+
+/* Cadangan: the hatched field from the reserve pin and the list row. */
+.feature-popup__note--cadangan {
+    background-color: #f6f8fa;
+    background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(41, 61, 80, 0.085) 0 1px,
+        transparent 1px 7px
+    );
+    border-color: #c5cdd6;
+}
+
+.feature-popup__note--cadangan .feature-popup__note-mark {
+    border-style: solid;
+    border-color: #8fa3b3;
+    background-color: #e3e8ed;
+    background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(41, 61, 80, 0.45) 0 1px,
+        transparent 1px 3px
+    );
 }
 
 /* Route hand-off for the installers: opens Google Maps directions from

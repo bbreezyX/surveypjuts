@@ -110,9 +110,9 @@ var lyr_BelumDitetapkan_6 = new ol.layer.Vector({
                 // Above the SK pins: the estimate sits between its siblings,
                 // which at village zoom would otherwise cover it entirely.
                 zIndex: 1,
-                popuplayertitle: 'Titik Belum Ditetapkan',
+                popuplayertitle: 'Lokasi Belum Ditetapkan',
                 interactive: true,
-                title: '<img src=\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="18" viewBox="0 0 36 48"><path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23f4f6f8" stroke="%236b7a8c" stroke-width="2.2" stroke-dasharray="4 3"/><text x="18" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="19" fill="%23293d50">?</text></svg>\' /> Titik Belum Ditetapkan'
+                title: '<img src=\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="18" viewBox="0 0 36 48"><path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23f4f6f8" stroke="%236b7a8c" stroke-width="2.2" stroke-dasharray="4 3"/><text x="18" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="19" fill="%23293d50">?</text></svg>\' /> Lokasi Belum Ditetapkan'
             });
 // The switcher lists a group's layers top-down in reverse array order, so
 // Cadangan goes first to sit under Titik PUTS in the panel (and under the
