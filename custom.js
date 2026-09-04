@@ -387,8 +387,9 @@
     var kicker =
       "Titik " + escapeHtml(item.display.code) +
       (item.kabupaten ? " · " + escapeHtml(item.kabupaten) : "") +
-      (item.duplikat ? " · Duplikat" : "") +
-      (item.belum ? " · Belum ditetapkan" : "");
+      (item.duplikat ? " · Duplikat" : "");
+    // No status word for an unplaced unit here: the note above the title and
+    // the dashed disc already say it, and the kicker would wrap to two lines.
 
     var popupClass = "feature-popup";
     if (item.cadangan) {
