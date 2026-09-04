@@ -701,6 +701,73 @@
     });
   }
 
+  // Material-style press ripple. `trigger` takes the pointerdown; `host` is
+  // where the clipped wave is drawn — usually the trigger itself, but the
+  // layer chip has to draw into its sibling overlay because the vendor wipes
+  // the button's children on every toggle (see LAYER_ICON note below).
+  // Pointer only: a keyboard press has no point to ripple from, and :active
+  // still gives it the sink-and-spring.
+  function initPressRipple(trigger, host) {
+    var layer = document.createElement("span");
+    layer.className = "ctl-ripple";
+    layer.setAttribute("aria-hidden", "true");
+    host.insertBefore(layer, host.firstChild);
+
+    trigger.addEventListener("pointerdown", function (event) {
+      if (event.button !== 0) {
+        return;
+      }
+      var rect = layer.getBoundingClientRect();
+      var x = event.clientX - rect.left;
+      var y = event.clientY - rect.top;
+      // Big enough to reach the farthest corner from wherever the press
+      // landed, so an off-centre tap still floods the whole shape.
+      var reach = Math.max(x, rect.width - x);
+      var drop = Math.max(y, rect.height - y);
+      var size = Math.ceil(Math.sqrt(reach * reach + drop * drop) * 2);
+
+      var wave = document.createElement("span");
+      wave.className = "ctl-ripple__wave";
+      wave.style.width = size + "px";
+      wave.style.height = size + "px";
+      wave.style.left = x - size / 2 + "px";
+      wave.style.top = y - size / 2 + "px";
+
+      var done = false;
+      function remove() {
+        if (done) {
+          return;
+        }
+        done = true;
+        if (wave.parentNode) {
+          wave.parentNode.removeChild(wave);
+        }
+      }
+      wave.addEventListener("animationend", remove);
+      // Reduced-motion sets animation:none, so animationend never fires.
+      setTimeout(remove, 700);
+      layer.appendChild(wave);
+    });
+  }
+
+  // The zoom rail dips as one object when either half is pressed. CSS alone
+  // cannot reach the parent from a child's :active without :has(), which the
+  // older devices this audience carries do not all have yet.
+  function initPressedRail(rail) {
+    function release() {
+      rail.classList.remove("is-pressed");
+    }
+    rail.addEventListener("pointerdown", function (event) {
+      if (event.button !== 0) {
+        return;
+      }
+      rail.classList.add("is-pressed");
+    });
+    window.addEventListener("pointerup", release, { passive: true });
+    window.addEventListener("pointercancel", release, { passive: true });
+    rail.addEventListener("pointerleave", release);
+  }
+
   function enhanceMapControls() {
     var shell = document.querySelector(".app-shell");
     var zoom = document.querySelector(".ol-zoom");
@@ -753,7 +820,9 @@
         button.setAttribute("aria-label", entry.label);
         button.setAttribute("data-tooltip", entry.label);
         stripNativeTitle(button);
+        initPressRipple(button, button);
       });
+      initPressedRail(zoom);
     }
 
     if (switcher) {
@@ -768,7 +837,13 @@
         slot.setAttribute("aria-hidden", "true");
         slot.innerHTML = LAYER_ICON;
         switcherButton.insertAdjacentElement("afterend", slot);
+        initPressRipple(switcherButton, slot);
       }
+    }
+
+    var panelToggle = document.getElementById("panel-toggle");
+    if (panelToggle) {
+      initPressRipple(panelToggle, panelToggle);
     }
 
     initControlProximity(
@@ -798,6 +873,10 @@
     // Unplaced-unit pins likewise get their own layer (visible by default).
     var belumLayer = window.lyr_BelumDitetapkan_6 || null;
 
+    // init() installs the cluster refresh + legend update here once the data
+    // and the lookup tables it needs exist.
+    var pointsRedrawHook = null;
+
     function redrawPoints() {
       window.lyr_260331_4.changed();
       if (cadanganLayer) {
@@ -805,6 +884,9 @@
       }
       if (belumLayer) {
         belumLayer.changed();
+      }
+      if (pointsRedrawHook) {
+        pointsRedrawHook();
       }
     }
 
@@ -925,14 +1007,6 @@
       }),
       zIndex: 1
     })];
-    var cadanganDotStyle = [new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: 3.6,
-        fill: new ol.style.Fill({ color: "#c5cdd6" }),
-        stroke: new ol.style.Stroke({ color: "#293d50", width: 1.4 })
-      }),
-      zIndex: 1
-    })];
     var cadanganSelectedSvg =
       '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="43" viewBox="-2 -4 40 52">' +
         cadanganHatch +
@@ -967,14 +1041,6 @@
         anchorXUnits: "fraction",
         anchorYUnits: "fraction",
         scale: 1
-      }),
-      zIndex: 2
-    })];
-    var duplikatDotStyle = [new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: 4.5,
-        fill: new ol.style.Fill({ color: "#fee50f" }),
-        stroke: new ol.style.Stroke({ color: "#e8731a", width: 2, lineDash: [3, 2] })
       }),
       zIndex: 2
     })];
@@ -1015,14 +1081,6 @@
       }),
       zIndex: 2
     })];
-    var belumDotStyle = [new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: 4.5,
-        fill: new ol.style.Fill({ color: "#f4f6f8" }),
-        stroke: new ol.style.Stroke({ color: "#6b7a8c", width: 1.8, lineDash: [3, 2] })
-      }),
-      zIndex: 2
-    })];
     var belumSelectedSvg =
       '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="44" viewBox="-3 -5 42 54">' +
         '<path d="M18 0C8.06 0 0 8.06 0 18c0 12.6 18 30 18 30s18-17.4 18-30C36 8.06 27.94 0 18 0z" fill="%23f4f6f8" stroke="%23ffffff" stroke-width="3"/>' +
@@ -1040,17 +1098,33 @@
       zIndex: 10
     });
 
+    // Ground halo under the selected pin, at its tip. The card is 312px of
+    // white; the pin is 30px — this is what leads the eye back from one to the
+    // other, the way a selected place lights up its footprint in Google Maps.
+    function selectionHalo(color, ring) {
+      return new ol.style.Style({
+        image: new ol.style.Circle({
+          radius: 15,
+          fill: new ol.style.Fill({ color: color }),
+          stroke: new ol.style.Stroke({ color: ring, width: 1.5 })
+        }),
+        zIndex: 9
+      });
+    }
+    var haloYellow = selectionHalo("rgba(254, 229, 15, 0.26)", "rgba(255, 255, 255, 0.7)");
+    var haloSlate = selectionHalo("rgba(107, 122, 140, 0.24)", "rgba(255, 255, 255, 0.7)");
+
     function selectedStyleFor(item) {
       if (item.cadangan) {
-        return cadanganPinSelected;
+        return [haloSlate, cadanganPinSelected];
       }
       if (item.belum) {
-        return belumPinSelected;
+        return [haloSlate, belumPinSelected];
       }
       if (item.duplikat) {
-        return duplikatPinSelected;
+        return [haloYellow, duplikatPinSelected];
       }
-      return pinStyle;
+      return [haloYellow, pinStyle];
     }
 
     // Resolve each point's kabupaten/kota by which boundary polygon contains it
@@ -1468,6 +1542,9 @@
       // mobile breakpoint it does not touch .ol-popup at all.
       var popupHeight = popup.offsetHeight;
       document.body.classList.add("is-popup-open");
+      // After the flush above, so the scrollHeight/clientHeight it reads are
+      // the laid-out ones and no second layout is forced.
+      syncPopupScrollHint();
 
       return popupHeight;
     }
@@ -1794,6 +1871,10 @@
       if (window.featureOverlay) {
         window.featureOverlay.setStyle(selectedStyleFor(item));
       }
+      // The card takes over from the hover tip; the tip would otherwise sit
+      // there until the pointer moves.
+      setHover(null);
+      startSelectionPulse(featureCenter);
 
       if (isMobileViewport()) {
         setPanelOpen(false);
@@ -2172,58 +2253,475 @@
 
     // ---- Map <-> list synchronisation --------------------------------------
     // The layers render exactly the ids the list is showing, so the "tampil"
-    // counter is true by construction. SK and cadangan share one source but
-    // draw on two layers, each taking only its own half, so the switcher can
-    // hide the reserve pins (the default) without touching the SK set.
-    window.lyr_260331_4.setStyle(function (feature, resolution) {
-      var item = featureLookup.get(feature);
-      if (!item || !visibleIds.has(item.id)) {
-        return null;
-      }
+    // counter is true by construction. SK, cadangan and belum share one source
+    // but draw on three layers, each taking only its own status, so the
+    // switcher can hide the reserve pins (the default) without touching the SK
+    // set. Every point is drawn at every zoom — see the declutter note in
+    // layers/layers.js; clustering into count badges was tried and rejected
+    // too, for reading as a dashboard instead of a map of where the poles are.
+    var INK = "#293d50";
+
+    // sk | duplikat | belum | cadangan — the status a point is drawn as.
+    function itemKind(item) {
       if (item.cadangan) {
-        if (cadanganLayer) {
-          return null;
-        }
-        return resolution > PIN_MAX_RESOLUTION_260331_4
-          ? cadanganDotStyle
-          : cadanganPinStyle;
+        return "cadangan";
       }
       if (item.belum) {
-        if (belumLayer) {
-          return null;
-        }
-        return resolution > PIN_MAX_RESOLUTION_260331_4
-          ? belumDotStyle
-          : belumPinStyle;
+        return "belum";
       }
       if (item.duplikat) {
-        return resolution > PIN_MAX_RESOLUTION_260331_4
-          ? duplikatDotStyle
-          : duplikatPinStyle;
+        return "duplikat";
       }
-      return style_260331_4(feature, resolution);
-    });
-    if (cadanganLayer) {
-      cadanganLayer.setStyle(function (feature, resolution) {
+      return "sk";
+    }
+
+    function layerForKind(kind) {
+      if (kind === "cadangan" && cadanganLayer) {
+        return cadanganLayer;
+      }
+      if (kind === "belum" && belumLayer) {
+        return belumLayer;
+      }
+      return window.lyr_260331_4;
+    }
+
+    function isItemShown(item) {
+      return visibleIds.has(item.id) && layerForKind(itemKind(item)).getVisible();
+    }
+
+    // Each layer paints only the status it owns, and only ids the list shows.
+    // cadangan/belum fall back onto the SK layer when their own layer is
+    // missing (an older layers.js).
+    function layerStyleFor(kinds) {
+      return function (feature, resolution) {
         var item = featureLookup.get(feature);
-        if (!item || !item.cadangan || !visibleIds.has(item.id)) {
+        if (!item || !visibleIds.has(item.id)) {
           return null;
         }
-        return resolution > PIN_MAX_RESOLUTION_260331_4
-          ? cadanganDotStyle
-          : cadanganPinStyle;
-      });
+        return kinds.indexOf(itemKind(item)) === -1
+          ? null
+          : singleStyle(item, resolution);
+      };
+    }
+
+    var skKinds = ["sk", "duplikat"];
+    if (!cadanganLayer) {
+      skKinds.push("cadangan");
+    }
+    if (!belumLayer) {
+      skKinds.push("belum");
+    }
+    window.lyr_260331_4.setStyle(layerStyleFor(skKinds));
+    if (cadanganLayer) {
+      cadanganLayer.setStyle(layerStyleFor(["cadangan"]));
     }
     if (belumLayer) {
-      belumLayer.setStyle(function (feature, resolution) {
-        var item = featureLookup.get(feature);
-        if (!item || !item.belum || !visibleIds.has(item.id)) {
-          return null;
-        }
-        return resolution > PIN_MAX_RESOLUTION_260331_4
-          ? belumDotStyle
-          : belumPinStyle;
+      belumLayer.setStyle(layerStyleFor(["belum"]));
+    }
+
+    var pointLayers = [window.lyr_260331_4, cadanganLayer, belumLayer].filter(Boolean);
+
+    function isPointLayer(layer) {
+      return pointLayers.indexOf(layer) !== -1;
+    }
+
+    // The legend lists only statuses currently on the map.
+    pointLayers.forEach(function (layer) {
+      layer.on("change:visible", function () {
+        renderLegend();
       });
+    });
+
+    // ---- Point symbology ----------------------------------------------------
+    // Bertin: at nine pixels the only visual variables that survive are hue and
+    // lightness. The old dots told the statuses apart with dash patterns, which
+    // do not exist at that size. Now: SK solid yellow; duplikat yellow with an
+    // orange rim; belum a pale disc with a heavy slate rim (still nothing yellow
+    // — it must never read as one more surveyed unit); cadangan grey.
+    var DOT_FILL = {
+      sk: "#fee50f",
+      duplikat: "#fee50f",
+      belum: "#f4f6f8",
+      cadangan: "#c5cdd6"
+    };
+    var DOT_STROKE = {
+      sk: { color: INK, width: 1.6 },
+      duplikat: { color: "#e8731a", width: 2.2 },
+      belum: { color: "#6b7a8c", width: 2.2 },
+      cadangan: { color: INK, width: 1.4 }
+    };
+    // Belum/duplikat above SK so an estimate between its siblings stays seen.
+    var DOT_Z = { sk: 1, duplikat: 2, belum: 2, cadangan: 1 };
+
+    // 5px at the province extent, growing to 7px where the pins take over, so
+    // the dot→pin handoff is a step of one size rather than a jump of four.
+    function dotRadiusFor(resolution) {
+      var t = (430 - resolution) / (430 - PIN_MAX_RESOLUTION_260331_4);
+      t = Math.max(0, Math.min(1, t));
+      return Math.round((5 + 2 * t) * 2) / 2;
+    }
+
+    var dotStyleCache = {};
+    function dotStyleAt(kind, radius) {
+      var key = kind + "|" + radius;
+      if (!dotStyleCache[key]) {
+        dotStyleCache[key] = [
+          new ol.style.Style({
+            image: new ol.style.Circle({
+              radius: radius,
+              fill: new ol.style.Fill({ color: DOT_FILL[kind] }),
+              stroke: new ol.style.Stroke(DOT_STROKE[kind])
+            }),
+            zIndex: DOT_Z[kind]
+          })
+        ];
+      }
+      return dotStyleCache[key];
+    }
+
+    function pinStyleFor(kind) {
+      if (kind === "cadangan") {
+        return cadanganPinStyle;
+      }
+      if (kind === "belum") {
+        return belumPinStyle;
+      }
+      if (kind === "duplikat") {
+        return duplikatPinStyle;
+      }
+      return pinStyle_260331_4;
+    }
+
+    function singleStyle(item, resolution) {
+      var kind = itemKind(item);
+      return resolution > PIN_MAX_RESOLUTION_260331_4
+        ? dotStyleAt(kind, dotRadiusFor(resolution))
+        : pinStyleFor(kind);
+    }
+
+    // Padding for every fit: clears the panel on the left and the chips on the
+    // right, with enough air that the outermost pin is not kissing an edge.
+    // On phones the panel is a bottom sheet instead, so the reserve moves to
+    // the bottom edge (the peek height comes from the stylesheet).
+    function fitPadding() {
+      if (window.innerWidth < 960) {
+        var peek =
+          parseInt(
+            getComputedStyle(document.documentElement).getPropertyValue("--sheet-peek"),
+            10
+          ) || 240;
+        return [72, 24, peek + 24, 24];
+      }
+      return [56, 72, 72, panelInset() + 48];
+    }
+
+    // ---- Hover --------------------------------------------------------------
+    // qgis2web's own hover (doHover/doHighlight) is off; the only feedback a
+    // pin gave was the cursor. Two things now: the symbol grows a step on its
+    // own overlay, and a label names the point above it — the same dark pill
+    // as the control tooltips. Pointer devices only; a finger never hovers.
+    var HOVER_SCALE = 1.12;
+    // Rendered pin heights (CSS px, scale 1). The tip has to clear the head.
+    var PIN_HEIGHT = { sk: 32, duplikat: 34, belum: 35, cadangan: 32 * 0.86 };
+
+    var hoverSource = new ol.source.Vector({ useSpatialIndex: false });
+    var hoverLayer = new ol.layer.Vector({
+      map: window.map,
+      source: hoverSource,
+      style: hoverStyle,
+      zIndex: 4
+    });
+
+    var hoverTipEl = document.createElement("div");
+    hoverTipEl.className = "pin-tip";
+    hoverTipEl.setAttribute("aria-hidden", "true");
+    var hoverTip = new ol.Overlay({
+      element: hoverTipEl,
+      positioning: "bottom-center",
+      offset: [0, -10],
+      stopEvent: false,
+      insertFirst: false
+    });
+    window.map.addOverlay(hoverTip);
+    var hoveredFeature = null;
+
+    var hoverPinCache = {};
+    function hoverPinStyle(kind) {
+      if (!hoverPinCache[kind]) {
+        var image = pinStyleFor(kind)[0].getImage().clone();
+        var scale = image.getScale();
+        image.setScale((typeof scale === "number" ? scale : 1) * HOVER_SCALE);
+        hoverPinCache[kind] = [new ol.style.Style({ image: image, zIndex: 5 })];
+      }
+      return hoverPinCache[kind];
+    }
+
+    // The ghost on the hover overlay carries its item, so the style needs no
+    // lookup and cannot disagree with the layer underneath about the status.
+    function hoverStyle(feature, resolution) {
+      var item = feature.get("item");
+      if (!item) {
+        return null;
+      }
+      var kind = itemKind(item);
+      return resolution > PIN_MAX_RESOLUTION_260331_4
+        ? dotStyleAt(kind, dotRadiusFor(resolution) + 2)
+        : hoverPinStyle(kind);
+    }
+
+    function truncateLabel(text, max) {
+      var value = String(text || "").trim();
+      return value.length > max ? value.slice(0, max - 1).trim() + "…" : value;
+    }
+
+    function hoverLabel(item) {
+      var title = truncateLabel(item.display.primary, 34);
+      return "Titik " + item.display.code + (title ? " · " + title : "");
+    }
+
+    function hoverTipOffset(item, resolution) {
+      if (resolution > PIN_MAX_RESOLUTION_260331_4) {
+        return -(dotRadiusFor(resolution) + 2 + 8);
+      }
+      return -(PIN_HEIGHT[itemKind(item)] * HOVER_SCALE + 6);
+    }
+
+    function hideHoverTip() {
+      hoverTipEl.classList.remove("is-visible");
+      hoverTip.setPosition(undefined);
+    }
+
+    function setHover(feature) {
+      if (feature === hoveredFeature) {
+        return;
+      }
+      hoveredFeature = feature;
+      hoverSource.clear();
+      if (!feature) {
+        hideHoverTip();
+        return;
+      }
+      var item = featureLookup.get(feature);
+      // The selected point already has the card saying everything the tip
+      // would, and its own enlarged pin on the feature overlay.
+      if (!item || item.id === activeItemId) {
+        hideHoverTip();
+        return;
+      }
+      hoverSource.addFeature(
+        new ol.Feature({ geometry: feature.getGeometry(), item: item })
+      );
+      var resolution = window.map.getView().getResolution();
+      hoverTipEl.textContent = hoverLabel(item);
+      hoverTip.setOffset([0, hoverTipOffset(item, resolution)]);
+      hoverTip.setPosition(feature.getGeometry().getCoordinates());
+      hoverTipEl.classList.remove("is-visible");
+      requestAnimationFrame(function () {
+        if (hoveredFeature === feature) {
+          hoverTipEl.classList.add("is-visible");
+        }
+      });
+    }
+
+    if (
+      window.matchMedia &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    ) {
+      window.map.on("pointermove", function (evt) {
+        if (evt.dragging) {
+          setHover(null);
+          return;
+        }
+        var original = evt.originalEvent;
+        if (original && original.pointerType && original.pointerType !== "mouse") {
+          return;
+        }
+        var hit = window.map.forEachFeatureAtPixel(
+          evt.pixel,
+          function (feature) {
+            return feature;
+          },
+          { layerFilter: isPointLayer, hitTolerance: 3 }
+        );
+        setHover(hit || null);
+      });
+      window.map.getViewport().addEventListener("pointerleave", function () {
+        setHover(null);
+      });
+    }
+
+    // ---- Selection pulse ----------------------------------------------------
+    // One-shot: two rings run out from the pin's tip when a point is chosen,
+    // then stop. A permanent pulse would mean re-rendering every layer at 60fps
+    // for as long as the card is open; 1.4s of that on selection is the
+    // "landed here" cue at a price that ends.
+    var PULSE_DURATION = 1400;
+    var pulse = null;
+    var reduceMotion =
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function startSelectionPulse(coordinate) {
+      if (reduceMotion) {
+        return;
+      }
+      pulse = { coordinate: coordinate, start: Date.now() };
+      window.map.render();
+    }
+
+    // On the managed SK layer, so the rings draw under the selected pin
+    // (feature overlay, unmanaged, always on top) — a ring on the ground, not
+    // a ring over the marker.
+    window.lyr_260331_4.on("postrender", function (event) {
+      if (!pulse) {
+        return;
+      }
+      var elapsed = Date.now() - pulse.start;
+      if (elapsed > PULSE_DURATION) {
+        pulse = null;
+        return;
+      }
+      var context = ol.render.getVectorContext(event);
+      var point = new ol.geom.Point(pulse.coordinate);
+      for (var k = 0; k < 2; k++) {
+        var t = elapsed / 800 - k * 0.45;
+        if (t < 0 || t > 1) {
+          continue;
+        }
+        var eased = 1 - Math.pow(1 - t, 3);
+        context.setStyle(
+          new ol.style.Style({
+            image: new ol.style.Circle({
+              radius: 10 + 24 * eased,
+              stroke: new ol.style.Stroke({
+                color: "rgba(254, 229, 15, " + (0.6 * (1 - t)).toFixed(3) + ")",
+                width: 2.5
+              })
+            })
+          })
+        );
+        context.drawGeometry(point);
+      }
+      window.map.render();
+    });
+
+    // ---- Legend -------------------------------------------------------------
+    // The statuses are told apart by colour on the map, and the only key to
+    // those colours used to be inside the layer panel, one click away. A
+    // legend that has to be opened is not a legend. This one lists only the
+    // statuses currently on the map.
+    // Band (positioned, pointer-transparent) + pill (the visible object). The
+    // band's left/right edges are the panel and the scale/attribution block,
+    // and the pill centres between them — see .map-legend in custom.css.
+    var legendEl = document.createElement("div");
+    legendEl.className = "map-legend";
+    var legendPill = document.createElement("div");
+    legendPill.className = "map-legend__pill";
+    legendPill.setAttribute("role", "list");
+    legendPill.setAttribute("aria-label", "Legenda simbol peta");
+    legendEl.appendChild(legendPill);
+    (document.querySelector(".app-shell") || document.body).appendChild(legendEl);
+
+    // The right bound: the viewport's right edge to the scale/attribution
+    // block's left edge (its width plus its 16px margin). Measured, because
+    // the attribution text is whatever the tile source declares, and
+    // re-measured whenever that block changes size.
+    var metaBlock = document.querySelector(".map-meta");
+    function syncLegendBounds() {
+      if (!metaBlock) {
+        return;
+      }
+      var width = metaBlock.getBoundingClientRect().width;
+      document.documentElement.style.setProperty(
+        "--map-meta-inset",
+        Math.round(width + 16) + "px"
+      );
+    }
+    if (metaBlock && window.ResizeObserver) {
+      new ResizeObserver(syncLegendBounds).observe(metaBlock);
+    } else {
+      window.addEventListener("resize", syncLegendBounds);
+    }
+    syncLegendBounds();
+
+    var LEGEND_LABEL = {
+      sk: "Titik PUTS",
+      belum: "Belum ditetapkan",
+      duplikat: "Duplikat",
+      cadangan: "Cadangan"
+    };
+
+    function legendSwatch(kind) {
+      var stroke = DOT_STROKE[kind];
+      return (
+        '<svg class="map-legend__swatch" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">' +
+        '<circle cx="7" cy="7" r="5" fill="' + DOT_FILL[kind] + '" stroke="' +
+        stroke.color + '" stroke-width="' + stroke.width + '"/></svg>'
+      );
+    }
+
+    function renderLegend() {
+      var counts = { sk: 0, belum: 0, duplikat: 0, cadangan: 0 };
+      mappedItems.forEach(function (item) {
+        if (isItemShown(item)) {
+          counts[itemKind(item)]++;
+        }
+      });
+      var html = "";
+      ["sk", "belum", "duplikat", "cadangan"].forEach(function (kind) {
+        if (!counts[kind]) {
+          return;
+        }
+        html +=
+          '<span class="map-legend__item" role="listitem">' +
+          legendSwatch(kind) +
+          "<span>" + LEGEND_LABEL[kind] + "</span></span>";
+      });
+      legendPill.innerHTML = html;
+      legendEl.hidden = !(counts.sk || counts.belum || counts.duplikat || counts.cadangan);
+    }
+    renderLegend();
+
+    pointsRedrawHook = function () {
+      // A filtered-out point may be the one under the pointer.
+      setHover(null);
+      renderLegend();
+    };
+
+    // ---- Popup scroll hint --------------------------------------------------
+    // qgis2web caps #popup-content at 70vh and scrolls it; on a Mac with
+    // overlay scrollbars nothing says so, and the last row ("Arsir", "Duplikat"
+    // on the dev server; the route button on shorter screens) simply looked cut
+    // in half. A sticky fade at the foot of whichever element scrolls (the
+    // content on desktop, the whole card on mobile) says "more below", and
+    // lifts once the user gets there.
+    var popupScrollFade = document.createElement("div");
+    popupScrollFade.className = "popup-scroll-fade";
+    popupScrollFade.setAttribute("aria-hidden", "true");
+
+    function popupScroller() {
+      return isMobileViewport() ? popup : popupContent;
+    }
+
+    function updatePopupScrollHint() {
+      var scroller = popupScroller();
+      var canScroll = scroller.scrollHeight - scroller.clientHeight > 4;
+      var atEnd =
+        scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 4;
+      popup.classList.toggle("is-scrollable", canScroll);
+      popup.classList.toggle("is-scroll-end", atEnd);
+    }
+
+    // Called after each innerHTML rebuild: the fade lives inside the scroller
+    // (position: sticky needs that) so it is wiped with the content.
+    function syncPopupScrollHint() {
+      popupScroller().appendChild(popupScrollFade);
+      updatePopupScrollHint();
+    }
+
+    if (popup && popupContent) {
+      popup.addEventListener("scroll", updatePopupScrollHint, { passive: true });
+      popupContent.addEventListener("scroll", updatePopupScrollHint, { passive: true });
     }
 
     function fitToVisible(options) {
@@ -2250,11 +2748,11 @@
       }
 
       window.map.getView().fit(extent, {
-        // Reserve the panel's real footprint, otherwise the westernmost points
-        // land underneath it.
-        padding: [40, 32, 40, panelInset() + 24],
+        // Reserves the panel's real footprint (fitPadding), otherwise the
+        // westernmost points land underneath it.
+        padding: fitPadding(),
         maxZoom: config.maxZoom || 15,
-        duration: config.duration || 700
+        duration: config.duration === undefined ? 700 : config.duration
       });
     }
 
@@ -2371,16 +2869,10 @@
       }
       var clickedFeature = window.map.forEachFeatureAtPixel(
         event.pixel,
-        function (feature, layer) {
-          if (
-            layer === window.lyr_260331_4 ||
-            layer === cadanganLayer ||
-            layer === belumLayer
-          ) {
-            return feature;
-          }
-          return null;
-        }
+        function (feature) {
+          return feature;
+        },
+        { layerFilter: isPointLayer, hitTolerance: 4 }
       );
 
       if (!clickedFeature) {
@@ -2711,6 +3203,13 @@
     });
 
     renderList("");
+
+    // qgis2web's start view fits the bare province bbox to the full map size,
+    // so the westernmost points (Kerinci, Merangin, Bungo) open underneath the
+    // panel — the reader's first impression is a coverage map with a quarter
+    // missing. Refit to the points with the panel reserved. Instant: the data
+    // has only just arrived, there is no "before" worth animating from.
+    fitToVisible({ maxZoom: 15, duration: 0 });
     }
 
     // Data titik dimuat async dari data/points.geojson — jalankan init

@@ -60,7 +60,11 @@
     --ctl-blur: saturate(170%) blur(10px);
     /* Layer chip footprint. The icon overlay is sized from the same token —
        see .ctl-layers-slot for why the icon cannot live inside the button. */
-    --ctl-chip: 42px;
+    --ctl-chip: 44px;
+    /* Ripple + pressed-state tint. Blue, not gray: the wave should read as
+       the control lighting up, not as a smudge. */
+    --ctl-ripple: rgba(0, 114, 188, 0.22);
+    --ctl-press-scale: 0.92;
 
     --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
     /* Slight overshoot — this is what makes icon motion read as alive
@@ -1110,10 +1114,14 @@ body.is-data-unavailable .list-summary {
 .ol-zoom,
 .layer-switcher > button,
 .panel-toggle {
+    /* `scale` rides a spring so the release overshoots a hair and settles —
+       that bounce-back is most of what makes the press feel physical. The
+       press itself (below) overrides to a fast ease-out. */
     transition: background-color var(--dur) var(--ease-out),
         border-color var(--dur) var(--ease-out),
         box-shadow var(--dur) var(--ease-out),
-        transform var(--dur) var(--ease-out);
+        transform var(--dur) var(--ease-out),
+        scale var(--dur-state) var(--ease-spring);
 }
 
 .ol-zoom.is-near,
@@ -1132,10 +1140,76 @@ body.is-sidebar-collapsed .panel-toggle:hover {
 }
 
 .layer-switcher > button:active,
-.panel-toggle:active {
-    background-color: var(--hairline);
+.panel-toggle:active,
+.ol-zoom.is-pressed {
+    background-color: var(--ctl-surface-hover);
     box-shadow: var(--ctl-shadow-press);
+    /* Sinks under the pointer; the shadow collapsing with it sells the
+       depth. Fast on the way down — the spring is for the way back up. */
+    scale: var(--ctl-press-scale);
     transition-duration: var(--dur-press);
+    transition-timing-function: var(--ease-out);
+}
+
+/* The zoom rail is two buttons, so the whole pill dips as one object rather
+   than one half shrinking inside the other. Slightly less travel than a lone
+   chip — it is a bigger thing to move. */
+.ol-zoom.is-pressed {
+    scale: 0.96;
+}
+
+/* The layer icon is a sibling overlay, not a child of the button (see the
+   layer switcher section), so it has to be sunk in lockstep by hand. */
+.layer-switcher > button:active ~ .ctl-layers-slot {
+    scale: var(--ctl-press-scale);
+    transition-duration: var(--dur-press);
+    transition-timing-function: var(--ease-out);
+}
+
+/* ---------- Press ripple ---------- */
+
+/* Material-style wave from the pointer-down point (custom.js spawns one
+   `.ctl-ripple__wave` per press). The clip layer carries its own
+   overflow:hidden so the host button can keep overflow visible for its
+   tooltip. `border-radius: inherit` makes it follow whatever shape the host
+   is — full circle on the chip, half-pill on each zoom button. */
+.ctl-ripple {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+    /* Safari otherwise lets the wave leak past a rounded overflow clip. */
+    -webkit-mask-image: radial-gradient(#fff, #000);
+    mask-image: radial-gradient(#fff, #000);
+}
+
+.ctl-ripple__wave {
+    position: absolute;
+    border-radius: 50%;
+    background: var(--ctl-ripple);
+    /* Invisible at rest so a reduced-motion `animation: none` leaves nothing
+       behind — the node is removed on animationend or a fallback timer. */
+    opacity: 0;
+    scale: 0;
+    animation: ctl-ripple 520ms var(--ease-out) forwards;
+}
+
+@keyframes ctl-ripple {
+    0% {
+        opacity: 1;
+        scale: 0;
+    }
+    /* The wave reaches the edge well before it is gone, so the fade reads as
+       the surface settling rather than the wave being cut off. */
+    55% {
+        opacity: 0.75;
+    }
+    100% {
+        opacity: 0;
+        scale: 1;
+    }
 }
 
 /* ol.css paints `.ol-control button:focus` dark blue (rgba(0,60,136,.7)), and
@@ -1206,6 +1280,47 @@ body.is-sidebar-collapsed .panel-toggle:hover {
     }
 }
 
+/* ---------- Pin hover tip ---------- */
+
+/* Same pill as the control tooltips, positioned by an ol.Overlay above the
+   hovered symbol (custom.js). It is one element reused for every pin, so the
+   transition only runs opacity/translate — no per-pin nodes. */
+.pin-tip {
+    position: relative;
+    padding: 5px 9px;
+    border-radius: var(--radius-xs);
+    background: var(--ink);
+    color: #fff;
+    font: 500 12px/1 var(--font-ui);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: var(--ctl-shadow);
+    opacity: 0;
+    translate: 0 4px;
+    transition: opacity var(--dur) var(--ease-out),
+        translate var(--dur) var(--ease-out);
+}
+
+/* Caret toward the pin, so the label reads as belonging to it. */
+.pin-tip::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: -4px;
+    width: 8px;
+    height: 8px;
+    background: var(--ink);
+    translate: -50% 0;
+    rotate: 45deg;
+    border-radius: 1px;
+}
+
+.pin-tip.is-visible {
+    opacity: 1;
+    translate: 0;
+}
+
 /* ---------- Panel toggle (desktop) ---------- */
 
 /* Open: the toggle sits inside the panel's own header, flat and chrome-less,
@@ -1229,10 +1344,12 @@ body.is-sidebar-collapsed .panel-toggle:hover {
         left var(--dur-state) var(--ease-out),
         width var(--dur-state) var(--ease-out),
         height var(--dur-state) var(--ease-out),
+        border-radius var(--dur-state) var(--ease-out),
         background-color var(--dur) var(--ease-out),
         border-color var(--dur) var(--ease-out),
         box-shadow var(--dur) var(--ease-out),
-        transform var(--dur) var(--ease-out);
+        transform var(--dur) var(--ease-out),
+        scale var(--dur-state) var(--ease-spring);
 }
 
 /* Open state has no chrome — it belongs to the panel header — so its hover
@@ -1251,10 +1368,11 @@ body.is-sidebar-collapsed .panel-toggle:hover {
 body.is-sidebar-collapsed .panel-toggle {
     top: var(--panel-top);
     left: var(--panel-left);
-    width: 42px;
-    height: 42px;
+    width: var(--ctl-chip);
+    height: var(--ctl-chip);
     border-color: var(--ctl-border);
-    border-radius: 10px;
+    /* Same round as the layer chip in the opposite corner. */
+    border-radius: 50%;
     background: var(--ctl-surface);
     box-shadow: var(--ctl-shadow);
 }
@@ -1265,6 +1383,9 @@ body.is-sidebar-collapsed .panel-toggle {
    parent's coordinate space, unrotated by the 45deg in `transform`. */
 .panel-toggle__chevron {
     display: block;
+    /* Above the ripple layer, which is absolutely positioned. */
+    position: relative;
+    z-index: 1;
     width: 8px;
     height: 8px;
     margin: 0 auto;
@@ -1360,6 +1481,47 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 #popup-content {
     max-width: none;
     margin: 0;
+}
+
+/* qgis2web scrolls this at 70vh. Force a visible (thin) bar on WebKit —
+   macOS overlay scrollbars vanish at rest, which is how the card's last row
+   came to look cut in half. Only the WebKit pseudo-elements: setting the
+   standard scrollbar-width alongside makes Chrome ignore these. */
+#popup-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+#popup-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#popup-content::-webkit-scrollbar-thumb {
+    background: var(--hairline-strong);
+    border-radius: 3px;
+}
+
+#popup-content::-webkit-scrollbar-thumb:hover {
+    background: var(--muted-2);
+}
+
+/* "More below" fade, stuck to the foot of whichever element scrolls
+   (custom.js appends it inside the scroller). Zero net height — the margin
+   pulls it back over the content — so the card's measured height is unchanged. */
+.popup-scroll-fade {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    display: block;
+    height: 44px;
+    margin-top: -44px;
+    background: linear-gradient(to top, var(--surface) 25%, rgba(255, 255, 255, 0));
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--dur) var(--ease-out);
+}
+
+.ol-popup.is-scrollable:not(.is-scroll-end) .popup-scroll-fade {
+    opacity: 1;
 }
 
 .feature-popup {
@@ -1755,6 +1917,68 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     box-shadow: 0 1px 2px rgba(20, 38, 53, 0.1);
 }
 
+/* ---------- Legend ---------- */
+
+/* Metadata tier, like the scale strip: flat, no lift, small type. Centred in
+   the free band along the foot of the map: `left` is the panel's outer edge,
+   `right` is the width of the scale/attribution block (custom.js measures it
+   into --map-meta-inset, since the attribution text is whatever the tile
+   source says), and the auto margins split what is left. When the panel
+   collapses both bounds open to the map edges and it re-centres on the map,
+   on the same clock as the panel. */
+.map-legend {
+    position: fixed;
+    left: calc(var(--panel-left) + var(--panel-width));
+    right: var(--map-meta-inset, 200px);
+    bottom: 16px;
+    z-index: 21;
+    display: flex;
+    justify-content: center;
+    /* The band is only a ruler; the map underneath stays draggable. */
+    pointer-events: none;
+    transition: left var(--dur-state) var(--ease-out),
+        right var(--dur-state) var(--ease-out);
+}
+
+.map-legend[hidden] {
+    display: none;
+}
+
+body.is-sidebar-collapsed .map-legend {
+    left: 0;
+    right: 0;
+}
+
+/* The pill sizes to its entries and wraps inside the band when it must. */
+.map-legend__pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    max-width: 100%;
+    padding: 6px 12px 6px 10px;
+    background: var(--ctl-surface);
+    border: 1px solid var(--ctl-border);
+    border-radius: 999px;
+    box-shadow: 0 1px 2px rgba(20, 38, 53, 0.1);
+    font: 500 11.5px/1 var(--font-ui);
+    color: var(--ink);
+    pointer-events: auto;
+}
+
+.map-legend__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.map-legend__swatch {
+    display: block;
+    flex: none;
+}
+
 .ol-zoom {
     position: static;
     margin: 0;
@@ -1764,20 +1988,24 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     overflow: visible;
     background: var(--ctl-surface);
     border: 1px solid var(--ctl-border);
-    border-radius: var(--radius-sm);
+    /* A vertical pill: two chip-sized rounds fused into one rail, so it reads
+       as the same family as the circular layer chip beside it. */
+    border-radius: 999px;
     box-shadow: var(--ctl-shadow);
+    /* The press dip scales toward the pointer side, not the map. */
+    transform-origin: center;
 }
 
 .ol-zoom button {
     display: block;
     position: relative;
-    width: 40px;
-    height: 36px;
+    width: var(--ctl-chip);
+    height: var(--ctl-chip);
     background: none;
     border: none;
     border-radius: 0;
     color: var(--ink);
-    font-size: 18px;
+    font-size: 19px;
     font-weight: 500;
     line-height: 1;
     cursor: pointer;
@@ -1785,24 +2013,27 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
         color var(--dur) var(--ease-out);
 }
 
-/* Inner radius = outer radius minus the 1px border. */
+/* Each half takes the pill's rounding on its outer end only; the ripple clip
+   layer inherits this so the wave is cut to the same silhouette. */
 .ol-zoom .ol-zoom-in {
-    border-radius: 9px 9px 0 0;
+    border-radius: 999px 999px 0 0;
 }
 
 .ol-zoom .ol-zoom-out {
-    border-radius: 0 0 9px 9px;
+    border-radius: 0 0 999px 999px;
 }
 
 /* Inset hairline rather than a full-bleed border, so the divider stops short
    of the rounded edge instead of running into it. ::before because ::after
-   is spoken for by the tooltip. */
+   is spoken for by the tooltip. Sits above the ripple layer so a wave on one
+   half does not paint over the seam. */
 .ol-zoom .ol-zoom-out::before {
     content: "";
     position: absolute;
+    z-index: 1;
     top: 0;
-    left: 8px;
-    right: 8px;
+    left: 12px;
+    right: 12px;
     height: 1px;
     background: var(--divider);
     transition: background-color var(--dur) var(--ease-out);
@@ -1814,16 +2045,22 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     color: var(--blue);
 }
 
+/* Lighter than the old tint on purpose: the ripple now carries the press
+   colour, and stacking a gray fill under it read as two different events. */
 .ol-zoom button:active {
-    background: var(--hairline);
+    background: #eef5fb;
     color: var(--blue-deep);
     transition-duration: var(--dur-press);
 }
 
 /* custom.js wraps the vendor's bare +/- text nodes so the glyph can be
-   transformed without scaling the button box with it. */
+   transformed without scaling the button box with it. Stacked above the
+   ripple layer, which is absolutely positioned and would otherwise paint
+   over a static sibling. */
 .ctl-glyph {
     display: block;
+    position: relative;
+    z-index: 1;
     scale: 1;
     transition: scale var(--dur) var(--ease-spring);
 }
@@ -1946,7 +2183,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     width: var(--ctl-chip);
     height: var(--ctl-chip);
     border: 1px solid var(--ctl-border);
-    border-radius: var(--radius-sm);
+    border-radius: 50%;
     /* The icon used to be a background-image data URI, so the only hover it
        could ever have was swapping to a second copy in another colour. It is
        inline SVG now (custom.js) so the plates can actually move. */
@@ -1972,11 +2209,19 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     justify-content: center;
     width: var(--ctl-chip);
     height: var(--ctl-chip);
+    /* Same silhouette as the button so the ripple clip (a child, inheriting
+       this radius) matches the chip edge exactly. */
+    border-radius: 50%;
     pointer-events: none;
+    /* Mirrors the button's press/spring so both sink and rebound as one. */
+    scale: 1;
+    transition: scale var(--dur-state) var(--ease-spring);
 }
 
 .ctl-layers {
     display: block;
+    position: relative;
+    z-index: 1;
     fill: none;
     stroke: var(--ink);
     stroke-width: 1.9;
@@ -2032,9 +2277,32 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     position: static;
     right: auto;
     margin: 0;
-    background-color: var(--ctl-surface-hover);
+    /* qgis2web.css re-squares the chip here (border-radius: 5px). Same
+       selector, later sheet — restate the circle so open and closed match. */
+    border-radius: 50%;
+    /* Open = inverted. A white chip with a blue ring only said "hovered";
+       a solid fill is unambiguous about which control owns the panel below. */
+    background-color: var(--blue);
     background-image: none;
-    border-color: var(--ctl-border-hover);
+    border-color: var(--blue);
+    box-shadow: 0 1px 2px rgba(0, 69, 143, 0.25),
+        0 6px 16px rgba(0, 114, 188, 0.32);
+}
+
+.layer-switcher.shown.layer-switcher-activation-mode-click > button:hover {
+    background-color: var(--blue-deep);
+    border-color: var(--blue-deep);
+}
+
+/* White strokes on the blue fill. Outranks both the hover and shown stroke
+   rules above by carrying the shown class plus the button. */
+.layer-switcher.shown.layer-switcher-activation-mode-click > button ~ .ctl-layers-slot .ctl-layers {
+    stroke: #fff;
+}
+
+/* A blue wave on a blue chip is invisible; the open state ripples white. */
+.layer-switcher.shown > .ctl-layers-slot .ctl-ripple__wave {
+    background: rgba(255, 255, 255, 0.4);
 }
 
 .layer-switcher .panel {
@@ -2401,9 +2669,28 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
     body.is-popup-open .layer-switcher,
     body.is-popup-open .ol-scale-line,
     body.is-popup-open .bottom-attribution,
+    body.is-popup-open .map-legend,
     body.is-panel-open .ol-zoom,
-    body.is-panel-open .ol-scale-line {
+    body.is-panel-open .ol-scale-line,
+    body.is-panel-open .map-legend {
         display: none;
+    }
+
+    /* The band above the sheet already holds the scale strip and the zoom
+       rail; a third object there was a pile. The legend moves to its own row
+       under the masthead, centred between the screen edges, and wraps onto a
+       second line on narrow phones rather than running under the layer chip. */
+    .map-legend {
+        top: calc(12px + 48px + 10px);
+        bottom: auto;
+        left: 12px;
+        right: 12px;
+    }
+
+    .map-legend__pill {
+        gap: 4px 10px;
+        padding: 5px 10px 5px 8px;
+        font-size: 11px;
     }
 
     /* The cluster spans the full width above the sheet: metadata left, zoom
@@ -2424,11 +2711,6 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 
     .ol-zoom {
         order: 2;
-    }
-
-    .ol-zoom button {
-        width: 44px;
-        height: 42px;
     }
 }
 
