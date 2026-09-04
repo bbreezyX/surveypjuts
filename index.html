@@ -91,13 +91,30 @@
       </header>
 
       <aside id="sidebar" aria-label="Daftar titik PUTS">
+        <!-- The visible text is the button's name: custom.js swaps it with the
+             sheet state, so screen readers hear the same instruction the
+             sighted reader sees. -->
         <button
           id="sheet-handle"
           type="button"
           aria-controls="sidebar"
           aria-expanded="false"
-          aria-label="Buka atau tutup daftar titik"
-        ></button>
+        >
+          <span class="sheet-handle__grab" aria-hidden="true"></span>
+          <span class="sheet-handle__hint">
+            <svg
+              class="sheet-handle__chevron"
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="m6 15 6-6 6 6" />
+            </svg>
+            <span class="sheet-handle__text">Ketuk atau geser ke atas untuk lihat daftar</span>
+          </span>
+        </button>
         <button id="sidebar-close" type="button" aria-label="Tutup panel data">
           &times;
         </button>

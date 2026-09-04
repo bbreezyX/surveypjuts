@@ -590,7 +590,97 @@
     var handle = document.getElementById("sheet-handle");
     if (handle) {
       handle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      var hintText = handle.querySelector(".sheet-handle__text");
+      if (hintText) {
+        hintText.textContent = isOpen
+          ? SHEET_HINT_CLOSE
+          : SHEET_HINT_OPEN;
+      }
     }
+    if (isOpen) {
+      // The reader has found the sheet; the nudges have done their job.
+      stopSheetHints();
+    }
+  }
+
+  // Handle label, by state. Leads with "ketuk" because a tap is what an older
+  // reader tries first, and it works; the gesture follows as the alternative.
+  var SHEET_HINT_OPEN = "Ketuk atau geser ke atas untuk lihat daftar";
+  var SHEET_HINT_CLOSE = "Ketuk atau geser ke bawah untuk lihat peta";
+
+  var SHEET_NUDGE_KEY = "puts.sheetNudges";
+  var SHEET_NUDGE_VISITS = 3;
+  var sheetHintTimer = null;
+
+  function readNudgeCount() {
+    try {
+      return parseInt(window.localStorage.getItem(SHEET_NUDGE_KEY), 10) || 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function bumpNudgeCount() {
+    try {
+      window.localStorage.setItem(SHEET_NUDGE_KEY, String(readNudgeCount() + 1));
+    } catch (e) {
+      // Private mode / storage disabled: the nudge simply plays every visit.
+    }
+  }
+
+  function stopSheetHints() {
+    document.body.classList.remove("is-sheet-hinting", "is-sheet-nudging");
+    if (sheetHintTimer) {
+      clearTimeout(sheetHintTimer);
+      sheetHintTimer = null;
+    }
+  }
+
+  // Two cues for readers who do not know a bottom sheet can be pulled up:
+  // the chevron on the handle bobs until the sheet is first touched (or 12s),
+  // and on the first few visits the whole sheet lifts once and settles —
+  // the gesture, demonstrated. Reduced-motion readers get the words only.
+  function startSheetHints() {
+    if (!isMobileViewport()) {
+      return;
+    }
+    var reduce =
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      return;
+    }
+    if (document.body.classList.contains("is-panel-open")) {
+      return;
+    }
+    document.body.classList.add("is-sheet-hinting");
+    sheetHintTimer = setTimeout(function () {
+      document.body.classList.remove("is-sheet-hinting");
+    }, 12000);
+
+    if (readNudgeCount() >= SHEET_NUDGE_VISITS) {
+      return;
+    }
+    var sheet = document.getElementById("sidebar");
+    if (!sheet) {
+      return;
+    }
+    var onEnd = function (event) {
+      if (event.target !== sheet) {
+        return;
+      }
+      sheet.removeEventListener("animationend", onEnd);
+      document.body.classList.remove("is-sheet-nudging");
+    };
+    sheet.addEventListener("animationend", onEnd);
+    // Belt and braces: if the class outlived the keyframes (a popup opening
+    // mid-lift suppresses the animation and its end event), a later popup
+    // close would replay the lift. 1.6s keyframes; clear at 2s regardless.
+    setTimeout(function () {
+      document.body.classList.remove("is-sheet-nudging");
+    }, 2000);
+    bumpNudgeCount();
+    document.body.classList.add("is-sheet-nudging");
   }
 
   function configurePopupOverlayForViewport() {
@@ -3049,6 +3139,9 @@
         if (!event.isPrimary) {
           return;
         }
+        // A finger on the handle ends the demonstration at once: the nudge
+        // keyframes would otherwise outrank the drag's inline transform.
+        stopSheetHints();
         var travel = sheetTravel();
         var wasOpen = document.body.classList.contains("is-panel-open");
         drag = {
@@ -3210,6 +3303,22 @@
     // missing. Refit to the points with the panel reserved. Instant: the data
     // has only just arrived, there is no "before" worth animating from.
     fitToVisible({ maxZoom: 15, duration: 0 });
+
+    // The sheet's "pull me up" demonstration waits for a drawn map, so the
+    // lift reads as part of the page settling rather than a glitch mid-load.
+    // The timer is the fallback for a slow tile server.
+    var hintsStarted = false;
+    function kickSheetHints() {
+      if (hintsStarted) {
+        return;
+      }
+      hintsStarted = true;
+      startSheetHints();
+    }
+    window.map.once("rendercomplete", function () {
+      setTimeout(kickSheetHints, 600);
+    });
+    setTimeout(kickSheetHints, 3000);
     }
 
     // Data titik dimuat async dari data/points.geojson — jalankan init
