@@ -2277,6 +2277,9 @@ body.is-sidebar-collapsed .map-legend {
     position: static;
     right: auto;
     margin: 0;
+    /* A flex item now; when the control hits its max-height the panel is
+       what scrolls, the chip never squashes. */
+    flex: 0 0 auto;
     /* qgis2web.css re-squares the chip here (border-radius: 5px). Same
        selector, later sheet — restate the circle so open and closed match. */
     border-radius: 50%;
@@ -2448,23 +2451,65 @@ body.is-sidebar-collapsed .map-legend {
         padding: 11px 16px 11px 13px;
     }
 
+    /* The masthead has the header line to itself (the layer chip lives at
+       the foot on phones), so it becomes a centred card, and the legend row
+       centres under it: one axis for both, instead of a bar that stopped
+       short of the right edge to leave room for a button. */
     .masthead {
         top: 12px;
         left: 12px;
-        right: 68px;
+        right: 12px;
+        width: max-content;
+        max-width: calc(100% - 24px);
+        margin: 0 auto;
         min-height: 48px;
         padding: 6px 14px 6px 10px;
         gap: 10px;
     }
 
-    /* Layer chip rides the masthead line: same top, same margin, same height */
+    /* Layer chip joins the control stack at the foot: directly above the
+       zoom rail, same right margin, within thumb reach. Its panel unfolds
+       upward from the chip (column-reverse), stopping short of the header
+       row; taller lists scroll inside the panel. */
     .layer-switcher,
     .layer-switcher:hover,
     .layer-switcher.shown,
     .layer-switcher.shown.ol-control,
     .layer-switcher.shown.ol-control:hover {
-        top: 12px;
+        top: auto;
         right: 12px;
+        /* sheet peek + band gap + zoom rail (two chips + its border) + gap.
+           !important only to outrank qgis2web.css's `bottom: unset!important`. */
+        bottom: calc(var(--sheet-peek) + 16px + var(--ctl-chip) * 2 + 2px + 12px) !important;
+        /* Everything above the chip except the masthead row (12 + 48 + 12). */
+        max-height: calc(
+            100dvh - (var(--sheet-peek) + 16px + var(--ctl-chip) * 2 + 2px + 12px) - 72px
+        );
+    }
+
+    .layer-switcher.shown {
+        flex-direction: column-reverse;
+    }
+
+    /* The open panel carries every layer's own symbol, so the legend says
+       nothing extra while it is up; yielding its row lets the panel show the
+       full list on a 780px-tall phone without scrolling. */
+    body:has(.layer-switcher.shown) .map-legend {
+        display: none;
+    }
+
+    /* The icon overlay pins to the chip, which column-reverse moves to the
+       foot of the control. */
+    .layer-switcher.shown .ctl-layers-slot {
+        top: auto;
+        bottom: 0;
+    }
+
+    .layer-switcher .panel {
+        margin: 0 0 8px !important;
+        padding: 10px 14px 8px;
+        min-height: 0;
+        max-height: none;
     }
 
 
@@ -2671,15 +2716,16 @@ body.is-sidebar-collapsed .map-legend {
     body.is-popup-open .bottom-attribution,
     body.is-popup-open .map-legend,
     body.is-panel-open .ol-zoom,
+    body.is-panel-open .layer-switcher,
     body.is-panel-open .ol-scale-line,
     body.is-panel-open .map-legend {
         display: none;
     }
 
     /* The band above the sheet already holds the scale strip and the zoom
-       rail; a third object there was a pile. The legend moves to its own row
-       under the masthead, centred between the screen edges, and wraps onto a
-       second line on narrow phones rather than running under the layer chip. */
+       rail and the layer chip. The legend takes its own row under the
+       centred masthead, on the same axis, and wraps onto a second line on
+       narrow phones. */
     .map-legend {
         top: calc(12px + 48px + 10px);
         bottom: auto;
