@@ -237,10 +237,16 @@
   };
 
   // One short line on the card, above the address: what the installer does
-  // with this pin. No reasons, no history -- the crew needs the instruction.
+  // with this pin. When the geojson carries a "Catatan" for the row, that text
+  // wins: it names the specific reason (which other point shares the stamp,
+  // why the survey recorded it that way) followed by what to do about it.
+  // Otherwise the generic instruction below stands in.
   function statusNote(item) {
+    if (item.catatan && (item.belum || item.duplikat)) {
+      return item.catatan;
+    }
     if (item.belum) {
-      return item.catatan || "Pin perkiraan. Lokasi pasti ditentukan di lapangan bersama RT.";
+      return "Pin perkiraan. Lokasi pasti ditentukan di lapangan bersama RT.";
     }
     if (item.duplikat) {
       var n = item.sharedCoordinateCount || 1;
