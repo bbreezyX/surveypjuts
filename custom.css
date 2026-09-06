@@ -162,7 +162,7 @@ body {
 }
 
 .masthead-lambang {
-    width: 30px;
+    width: 34px;
     height: auto;
     display: block;
 }
@@ -215,7 +215,7 @@ body {
 }
 
 .panel-brand__lambang {
-    width: 32px;
+    width: 36px;
     height: auto;
     display: block;
 }
@@ -2753,7 +2753,7 @@ body.is-sidebar-collapsed .map-legend {
 
 
     .masthead-lambang {
-        width: 26px;
+        width: 30px;
     }
 
     .masthead-kicker {
