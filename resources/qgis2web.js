@@ -541,7 +541,28 @@ document.getElementsByClassName('search-layer-input-search')[0].placeholder = 'S
 
 //scalebar
 
-map.addControl(new ol.control.ScaleLine({}));
+map.addControl(new ol.control.ScaleLine({
+  // Keep the ruler as wide as its metadata card. Recompute its distance
+  // instead of stretching the stock ruler while retaining its old label.
+  render: function (event) {
+    var frame = event.frameState;
+    if (!frame) return;
+    var ruler = this.element.querySelector('.ol-scale-line-inner');
+    this.element.style.display = '';
+    var width = ruler.getBoundingClientRect().width;
+    if (!width) return;
+    var view = frame.viewState;
+    var metres = ol.proj.getPointResolution(
+      view.projection, view.resolution, view.center, 'm'
+    ) * width;
+    if (!isFinite(metres) || metres <= 0) return;
+    var distance = metres >= 1000 ? metres / 1000 : metres;
+    var label = '\u2248 ' + distance.toLocaleString('id-ID', {
+      maximumSignificantDigits: 3
+    }) + (metres >= 1000 ? ' km' : ' m');
+    if (ruler.textContent !== label) ruler.textContent = label;
+  }
+}));
 
 //layerswitcher
 

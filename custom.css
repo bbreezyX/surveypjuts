@@ -2413,6 +2413,9 @@ body.is-sidebar-collapsed .map-legend {
 }
 
 .ol-scale-line-inner {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
     background: none;
     border: 1px solid var(--ink-soft);
     border-top: none;
@@ -2435,8 +2438,9 @@ body.is-sidebar-collapsed .map-legend {
 }
 
 .bottom-attribution ul {
+    flex-direction: column;
     margin: 0;
-    padding: 2px 4px;
+    padding: 2px 0;
     font-size: 12px;
     color: var(--muted);
     text-shadow: none;
@@ -2444,11 +2448,21 @@ body.is-sidebar-collapsed .map-legend {
 }
 
 .bottom-attribution li {
-    display: inline;
+    display: block;
 }
 
 .bottom-attribution li + li {
-    margin-left: 6px;
+    margin-top: 1px;
+}
+
+.layer-switcher .layer-count {
+    color: var(--muted);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.layer-switcher input:not(:checked) + label .layer-count {
+    display: none;
 }
 
 .bottom-attribution button {

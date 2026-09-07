@@ -975,6 +975,10 @@
         meta.appendChild(info);
       }
       shell.appendChild(meta);
+      if (scale) {
+        // Refresh the distance when attribution or font sizing changes the card.
+        new ResizeObserver(function () { map.render(); }).observe(scale);
+      }
     }
 
     if (zoom) {
@@ -1454,6 +1458,14 @@
     var cadanganItems = mappedItems.filter(function (item) {
       return item.cadangan;
     });
+    var cadanganLayerTitle = cadanganLayer && cadanganLayer.get("title");
+    function updateCadanganCount() {
+      if (!cadanganLayer) return;
+      cadanganLayer.set("title", cadanganLayerTitle +
+        ' <span class="layer-count">' + cadanganItems.length + ' titik</span>');
+      if (window.layerSwitcher) window.layerSwitcher.renderPanel();
+    }
+    updateCadanganCount();
 
     var featureLookup = new Map();
     mappedItems.forEach(function (item) {
@@ -1944,6 +1956,7 @@
         cadanganItems = mappedItems.filter(function (row) {
           return row.cadangan;
         });
+        updateCadanganCount();
         groupedItems = buildGroupedItems(groupMode);
       }
 
