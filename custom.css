@@ -3243,21 +3243,18 @@ body.is-sidebar-collapsed .map-legend {
         display: inline;
     }
 
-    /* The cluster spans the full width above the sheet: metadata left, zoom
-       rail right. `order` rather than row-reverse so that when the rail hides
-       (panel open) the metadata block stays put instead of sliding right. */
+    /* Keep only the zoom rail above the sheet on mobile. */
     .map-meta {
         left: 12px;
         right: 12px;
         bottom: calc(var(--sheet-peek) + 16px);
         flex-direction: row;
         align-items: flex-end;
-        justify-content: space-between;
+        justify-content: flex-end;
     }
 
     .map-meta__info {
-        position: relative;
-        order: 1;
+        display: none;
     }
 
     .layer-switcher > .layer-switcher__watermark {
