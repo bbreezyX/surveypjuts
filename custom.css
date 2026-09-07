@@ -2447,6 +2447,10 @@ body.is-sidebar-collapsed .map-legend {
     display: inline;
 }
 
+.bottom-attribution li + li {
+    margin-left: 6px;
+}
+
 .bottom-attribution button {
     display: none;
 }

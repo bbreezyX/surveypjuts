@@ -1,0 +1,35 @@
+{
+  "publisher": "Badan Informasi Geospasial",
+  "service": "https://geoservices.big.go.id/rbi/rest/services/BATASWILAYAH/BATAS_KABKOTA_AR/MapServer",
+  "service_description": "Geodatabase data batas wilayah administrasi nasional edisi Juni 2026",
+  "edition": "2026-06",
+  "downloaded_on": "2026-09-07",
+  "query": {
+    "where": "KDPPUM = '15'",
+    "outSR": 4326,
+    "returnZ": false
+  },
+  "raw_sha256": "088b8796bdeecdc9f3f84671e05726b18650ba293e866897e03c8b3dae01c87c",
+  "feature_count": 11,
+  "crs": "EPSG:4326",
+  "processing": {
+    "metric_crs": "EPSG:32748",
+    "coverage_simplify_tolerance_m": 2,
+    "coordinate_grid_degrees": 1e-06,
+    "shapely_version": "2.1.2"
+  },
+  "feature_metadata": {
+    "15.01": "TASWIL5000020221227KABKOTA",
+    "15.02": "TASWIL5000020221227KABKOTA",
+    "15.03": "TASWIL5000020221227KABKOTA",
+    "15.04": "TASWIL5000020221227KABKOTA",
+    "15.05": "TASWIL5000020221227KABKOTA",
+    "15.06": "TASWIL5000020260612KABKOTA",
+    "15.07": "TASWIL5000020260612KABKOTA",
+    "15.08": "TASWIL5000020221227KABKOTA",
+    "15.09": "TASWIL5000020230907KABKOTA",
+    "15.71": "TASWIL5000020221227KABKOTA",
+    "15.72": "TASWIL5000020221227KABKOTA"
+  },
+  "note": "Service edition is not the revision date of every individual boundary."
+}

@@ -12,29 +12,32 @@ var wms_layers = [];
                 maxZoom: 21
             })
         });
-var format_BatasKabupaten2011_1 = new ol.format.GeoJSON();
-var features_BatasKabupaten2011_1 = format_BatasKabupaten2011_1.readFeatures(json_BatasKabupaten2011_1, 
+// BIG national administrative boundaries, service edition June 2026.
+// Snapshot/provenance: data/boundaries-source.json and docs/boundary-data.md.
+var batasBigAttribution = 'Batas &copy; <a href="https://geoservices.big.go.id/rbi/rest/services/BATASWILAYAH/BATAS_KABKOTA_AR/MapServer" target="_blank" rel="noopener">BIG</a> &middot; Juni 2026';
+var format_BatasKabupaten_1 = new ol.format.GeoJSON();
+var features_BatasKabupaten_1 = format_BatasKabupaten_1.readFeatures(json_BatasKabupaten_1,
             {dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'});
-var jsonSource_BatasKabupaten2011_1 = new ol.source.Vector({
-    attributions: [],
+var jsonSource_BatasKabupaten_1 = new ol.source.Vector({
+    attributions: [batasBigAttribution],
 });
-jsonSource_BatasKabupaten2011_1.addFeatures(features_BatasKabupaten2011_1);
-var lyr_BatasKabupaten2011_1 = new ol.layer.Vector({
+jsonSource_BatasKabupaten_1.addFeatures(features_BatasKabupaten_1);
+var lyr_BatasKabupaten_1 = new ol.layer.Vector({
                 declutter: false,
-                source:jsonSource_BatasKabupaten2011_1,
-                style: style_BatasKabupaten2011_1,
+                source:jsonSource_BatasKabupaten_1,
+                style: style_BatasKabupaten_1,
                 popuplayertitle: 'Batas Kabupaten/Kota',
                 interactive: false,
                 title: 'Batas Kabupaten/Kota'
             });
 // The dissolved province polygon is fetched by URL instead of being inlined as
-// a <script>: 124KB that would otherwise sit on the critical path ahead of the
+// a <script> so it does not sit on the critical path ahead of the
 // map. It is shared by two layers below — Area Cakupan (the dashed outline,
 // hidden by default) and Fokus Provinsi (the mask, on by default). The mask
 // renders from first paint, so the fetch does start at load, but off the
 // critical path: the map is already interactive when the scrim fades in.
 var jsonSource_Dissolved_2 = new ol.source.Vector({
-    attributions: [],
+    attributions: [batasBigAttribution],
     // No ?v= token on data files: Caddy already serves /data/* as
     // "no-cache, must-revalidate", so a token buys nothing — and it would break
     // the <link rel=preload> in index.html, because bump-version.sh rewrites
@@ -122,20 +125,20 @@ var group_RAW = new ol.layer.Group({
                                 fold: 'open',
                                 title: 'Data Lapangan'});
 
-lyr_GoogleSatellite_0.setVisible(true);lyr_FokusProvinsi_7.setVisible(true);lyr_BatasKabupaten2011_1.setVisible(true);lyr_Dissolved_2.setVisible(false);lyr_260331_4.setVisible(true);lyr_Cadangan_5.setVisible(false);lyr_BelumDitetapkan_6.setVisible(true);
+lyr_GoogleSatellite_0.setVisible(true);lyr_FokusProvinsi_7.setVisible(true);lyr_BatasKabupaten_1.setVisible(true);lyr_Dissolved_2.setVisible(false);lyr_260331_4.setVisible(true);lyr_Cadangan_5.setVisible(false);lyr_BelumDitetapkan_6.setVisible(true);
 // "Ruas Jalan" is intentionally not loaded; it duplicated the kabupaten
-// boundary, which is drawn (outline + label) by lyr_BatasKabupaten2011_1.
+// boundary, which is drawn (outline + label) by lyr_BatasKabupaten_1.
 // Area Cakupan (Dissolved) and the Fokus Provinsi mask both sit below the
 // boundary so neither fill ever hides the line.
-var layersList = [lyr_GoogleSatellite_0,lyr_FokusProvinsi_7,lyr_Dissolved_2,lyr_BatasKabupaten2011_1,group_RAW];
-lyr_BatasKabupaten2011_1.set('fieldAliases', {'FIRST_NEG_': 'FIRST_NEG_', 'FIRST_PRO_': 'FIRST_PRO_', 'KABUPATEN_': 'KABUPATEN_', 'SHAPE_LENG': 'SHAPE_LENG', 'SHAPE_AREA': 'SHAPE_AREA', 'AREA': 'AREA', 'PERIMETER': 'PERIMETER', 'ACRES': 'ACRES', 'HECTARES': 'HECTARES', });
-lyr_Dissolved_2.set('fieldAliases', {'FIRST_NEG_': 'FIRST_NEG_', 'FIRST_PRO_': 'FIRST_PRO_', 'KABUPATEN_': 'KABUPATEN_', 'SHAPE_LENG': 'SHAPE_LENG', 'SHAPE_AREA': 'SHAPE_AREA', 'AREA': 'AREA', 'PERIMETER': 'PERIMETER', 'ACRES': 'ACRES', 'HECTARES': 'HECTARES', });
+var layersList = [lyr_GoogleSatellite_0,lyr_FokusProvinsi_7,lyr_Dissolved_2,lyr_BatasKabupaten_1,group_RAW];
+lyr_BatasKabupaten_1.set('fieldAliases', {'KABUPATEN_': 'Kabupaten/Kota', 'KDPKAB': 'Kode Wilayah', 'WADMPR': 'Provinsi', 'METADATA': 'Metadata BIG'});
+lyr_Dissolved_2.set('fieldAliases', {'WADMPR': 'Provinsi'});
 lyr_260331_4.set('fieldAliases', {'fid': 'ID', 'Nomor': 'Nomor Titik', 'Nama Anggota': 'Petugas Survey', 'Alamat': 'Alamat', 'Longitude': 'Longitude', 'Latitude': 'Latitude', 'Tanggal Dokumentasi': 'Tanggal Dokumentasi', 'Keterangan': 'Keterangan', 'layer': 'Layer', 'Foto Survey Awal': 'Foto Lokasi', 'Toleransi': 'Toleransi', });
-lyr_BatasKabupaten2011_1.set('fieldImages', {'FIRST_NEG_': '', 'FIRST_PRO_': '', 'KABUPATEN_': '', 'SHAPE_LENG': '', 'SHAPE_AREA': '', 'AREA': '', 'PERIMETER': '', 'ACRES': '', 'HECTARES': '', });
-lyr_Dissolved_2.set('fieldImages', {'FIRST_NEG_': '', 'FIRST_PRO_': '', 'KABUPATEN_': '', 'SHAPE_LENG': '', 'SHAPE_AREA': '', 'AREA': '', 'PERIMETER': '', 'ACRES': '', 'HECTARES': '', });
+lyr_BatasKabupaten_1.set('fieldImages', {'KABUPATEN_': 'TextEdit', 'KDPKAB': 'TextEdit', 'WADMPR': 'TextEdit', 'METADATA': 'TextEdit'});
+lyr_Dissolved_2.set('fieldImages', {'WADMPR': 'TextEdit'});
 lyr_260331_4.set('fieldImages', {'fid': 'TextEdit', 'Nomor': 'TextEdit', 'Nama Anggota': 'TextEdit', 'Alamat': 'TextEdit', 'Longitude': 'TextEdit', 'Latitude': 'TextEdit', 'Tanggal Dokumentasi': 'TextEdit', 'Keterangan': 'TextEdit', 'layer': 'TextEdit', 'Foto Survey Awal': 'ExternalResource', 'Toleransi': '', });
-lyr_BatasKabupaten2011_1.set('fieldLabels', {'FIRST_NEG_': 'no label', 'FIRST_PRO_': 'no label', 'KABUPATEN_': 'header label - always visible', 'SHAPE_LENG': 'no label', 'SHAPE_AREA': 'no label', 'AREA': 'no label', 'PERIMETER': 'no label', 'ACRES': 'no label', 'HECTARES': 'no label', });
-lyr_Dissolved_2.set('fieldLabels', {'FIRST_NEG_': 'no label', 'FIRST_PRO_': 'no label', 'KABUPATEN_': 'no label', 'SHAPE_LENG': 'no label', 'SHAPE_AREA': 'no label', 'AREA': 'no label', 'PERIMETER': 'no label', 'ACRES': 'no label', 'HECTARES': 'no label', });
+lyr_BatasKabupaten_1.set('fieldLabels', {'KABUPATEN_': 'header label - always visible', 'KDPKAB': 'no label', 'WADMPR': 'no label', 'METADATA': 'no label'});
+lyr_Dissolved_2.set('fieldLabels', {'WADMPR': 'no label'});
 lyr_260331_4.set('fieldLabels', {'fid': 'hidden field', 'Nomor': 'inline label - always visible', 'Nama Anggota': 'inline label - visible with data', 'Alamat': 'inline label - visible with data', 'Longitude': 'hidden field', 'Latitude': 'hidden field', 'Tanggal Dokumentasi': 'inline label - visible with data', 'Keterangan': 'inline label - visible with data', 'layer': 'hidden field', 'Foto Survey Awal': 'inline label - visible with data', 'Toleransi': 'hidden field', });
 // Same attributes, same field metadata: qgis2web's popup helpers read these
 // off whichever layer the feature was hit on.

@@ -1309,8 +1309,8 @@
     // Resolve each point's kabupaten/kota by which boundary polygon contains it
     // (authoritative — avoids the messy Nomor prefix). Falls back to the Nomor
     // prefix, then "Lainnya".
-    var kabupatenPolygons = window.lyr_BatasKabupaten2011_1
-      ? window.lyr_BatasKabupaten2011_1.getSource().getFeatures()
+    var kabupatenPolygons = window.lyr_BatasKabupaten_1
+      ? window.lyr_BatasKabupaten_1.getSource().getFeatures()
       : [];
 
     function resolveKabupaten(feature) {

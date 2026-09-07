@@ -8,7 +8,7 @@
     # crawlers take /favicon.ico, iOS takes /apple-touch-icon.png — so the
     # unversioned URL is the one many clients use. That rules out immutable;
     # a week is the compromise.
-    header /favicon.svg Cache-Control "public, max-age=604800"
+    header /favicon.png Cache-Control "public, max-age=604800"
     header /favicon.ico Cache-Control "public, max-age=604800"
     header /apple-touch-icon.png Cache-Control "public, max-age=604800"
     header /manifest.json Cache-Control "public, max-age=86400"

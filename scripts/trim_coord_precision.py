@@ -2,9 +2,9 @@
 """Round geometry coordinates to 6 decimal places (~11 cm).
 
 QGIS exports coordinates with ~15 decimal places, which is sub-micrometre
-precision for data whose real accuracy is metres. Those digits are pure payload:
-trimming them cut layers/BatasKabupaten2011_1.js from 222 KB to 97 KB gzipped
-with a maximum geometric deviation of 0.0 m.
+precision for data whose real accuracy is metres. The BIG boundary snapshot is
+already generated at six decimal places by import_big_boundaries.py; prefer
+that importer when updating the official boundary data.
 
 Only geometry is touched. Feature properties are left alone — the popup prints
 its "Koordinat" row from the Longitude/Latitude properties, not the geometry.
@@ -28,7 +28,7 @@ PRECISION = 6
 # decimals, so trimming saved 0 KB while nudging 8 of the 471 surveyed points by
 # up to 5 cm. No gain, so leave the survey coordinates alone.
 TARGETS = [
-    ("layers/BatasKabupaten2011_1.js", "var json_BatasKabupaten2011_1 = "),
+    ("layers/BatasKabupaten_1.js", "var json_BatasKabupaten_1 = "),
     ("data/dissolved.geojson", ""),
 ]
 

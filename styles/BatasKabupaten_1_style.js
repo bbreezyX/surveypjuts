@@ -86,7 +86,7 @@ function kabLabelTextStyle(text, alpha) {
     return kabLabelTextStyleCache[key];
 }
 
-var style_BatasKabupaten2011_1 = function(feature, resolution){
+var style_BatasKabupaten_1 = function(feature, resolution){
     var styles = [kabBoundaryStyle];
     var alpha = kabLabelAlpha(resolution);
     var raw = feature.get("KABUPATEN_");
