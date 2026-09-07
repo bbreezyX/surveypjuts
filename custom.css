@@ -2236,8 +2236,7 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 /* Scale + attribution are metadata, not controls. They deliberately carry
    less chrome than the zoom rail — flatter, more transparent, no lift — so
    the corner has a hierarchy instead of three equally-loud boxes. */
-.layer-switcher > .layer-switcher__watermark,
-.map-meta__info > .layer-switcher__watermark {
+.layer-switcher > .layer-switcher__watermark {
     position: absolute;
     top: -72px;
     right: calc((var(--ctl-chip) - 64px) / 2);
@@ -2984,7 +2983,7 @@ body.is-sidebar-collapsed .map-legend {
         visibility: hidden;
     }
 
-    /* A short action label, grabber and directional chevron make the sheet
+    /* A short action label and directional chevron make the sheet
        discoverable without requiring familiarity with swipe gestures. */
     #sheet-handle {
         display: flex;
@@ -3003,15 +3002,6 @@ body.is-sidebar-collapsed .map-legend {
         touch-action: none;
         user-select: none;
         -webkit-tap-highlight-color: transparent;
-    }
-
-    .sheet-handle__grab {
-        display: block;
-        width: 48px;
-        height: 6px;
-        border-radius: 3px;
-        /* Was #aebdc9 (2.1:1): visible to a young eye, gone to an old one. */
-        background: #8fa3b3;
     }
 
     /* The chip carries the button look the strip itself cannot: tinted
@@ -3035,6 +3025,19 @@ body.is-sidebar-collapsed .map-legend {
 
     #sheet-handle:active .sheet-handle__hint {
         background: #dcecfb;
+    }
+
+    /* A short, gentle wiggle followed by a long rest keeps the action
+       discoverable without moving the sheet or its touch target. */
+    body:not(.is-panel-open):not(.is-popup-open) #sheet-handle:not(:active) .sheet-handle__hint {
+        animation: sheet-hint-wiggle 4.8s ease-in-out infinite;
+        animation-delay: 1.6s;
+    }
+
+    @keyframes sheet-hint-wiggle {
+        0%, 16%, 100% { transform: translateX(0) rotate(0); }
+        3%, 9% { transform: translateX(-2px) rotate(-0.7deg); }
+        6%, 12% { transform: translateX(2px) rotate(0.7deg); }
     }
 
     .sheet-handle__text {
@@ -3257,8 +3260,8 @@ body.is-sidebar-collapsed .map-legend {
         order: 1;
     }
 
-    .map-meta__info > .layer-switcher__watermark {
-        right: calc((100% - 64px) / 2);
+    .layer-switcher > .layer-switcher__watermark {
+        display: none;
     }
 
     .ol-zoom {
@@ -3282,10 +3285,6 @@ body.is-sidebar-collapsed .map-legend {
         flex-direction: row;
         justify-content: center;
         padding: 6px 12px;
-    }
-
-    .sheet-handle__grab {
-        display: none;
     }
 
     .sidebar-header .search-field {
