@@ -1009,6 +1009,19 @@
     }
 
     if (switcher) {
+      var watermark = document.createElement("img");
+      watermark.className = "layer-switcher__watermark";
+      watermark.src = "./assets/logo-esdm.png";
+      watermark.alt = "Logo ESDM";
+      watermark.draggable = false;
+      switcher.appendChild(watermark);
+      var mobileControls = window.matchMedia("(max-width: 959px)");
+      function positionWatermark() {
+        var target = mobileControls.matches && info ? info : switcher;
+        target.appendChild(watermark);
+      }
+      mobileControls.addEventListener("change", positionWatermark);
+      positionWatermark();
       var switcherButton = switcher.querySelector(":scope > button");
       if (switcherButton) {
         switcherButton.setAttribute("data-tooltip", "Layer peta");
