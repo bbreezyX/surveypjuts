@@ -805,6 +805,101 @@ body.is-sidebar-collapsed #sidebar {
     margin: 5px 0 0;
 }
 
+/* ---------- Status filter chips ----------
+   Under the group name on screen 2: one toggle per status the group has, so
+   the reader jumps straight to the pins that still need a decision instead
+   of scrolling a 50-row list for a dashed tag. Same disc as the group rows
+   and the legend; the active chip fills with the status colour. */
+.status-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 4px 0 0;
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--hairline-strong);
+    border-radius: 999px;
+    background: var(--surface);
+    font: 600 11px/1.4 var(--font-ui);
+    font-variant-numeric: tabular-nums;
+    color: var(--muted-2);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.status-chip:hover {
+    border-color: var(--blue);
+    color: var(--blue-deep);
+}
+
+.status-chip:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--blue);
+}
+
+.status-chip .group-row__dot {
+    margin-right: 6px;
+}
+
+.status-chip__count {
+    margin-right: 0.35em;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.status-chip--belum .group-row__dot {
+    background: var(--surface);
+    border: 1.5px dashed #6b7a8c;
+}
+
+.status-chip--duplikat .group-row__dot {
+    background: var(--orange-tint);
+    border: 1.5px solid var(--orange);
+}
+
+.status-chip.is-active {
+    border-color: var(--blue-deep);
+    background: var(--blue-deep);
+    color: #ffffff;
+}
+
+.status-chip.is-active .status-chip__count {
+    color: #ffffff;
+}
+
+.status-chip--belum.is-active {
+    border-color: #4d5d70;
+    background: #4d5d70;
+}
+
+.status-chip--duplikat.is-active {
+    border-color: var(--orange-deep);
+    background: var(--orange-deep);
+}
+
+.status-chip.is-active .group-row__dot {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+/* On screen 1 the status counts are shortcuts into the filtered group. */
+.group-row__flag[data-filter] {
+    cursor: pointer;
+    border-radius: 999px;
+    text-decoration: underline transparent;
+    text-underline-offset: 2px;
+    transition: text-decoration-color 0.15s ease;
+}
+
+.group-row:hover .group-row__flag[data-filter] {
+    text-decoration-color: currentColor;
+}
+
 /* ---------- Kabupaten chip ----------
    The kabupaten is the one fact the desa/kecamatan text cannot carry, so it
    gets a shape of its own: a small tinted capsule with small caps, the same
@@ -1054,6 +1149,13 @@ body.is-sidebar-collapsed #sidebar {
     border-color: #6b7a8c;
     background: #f4f6f8;
     color: var(--muted);
+}
+
+/* Cadangan capsule: solid grey edge, no tint — a label, not a warning. */
+.item-flag--cadangan {
+    border: 1px solid #c5cdd6;
+    background: var(--surface);
+    color: var(--muted-2);
 }
 
 /* The sequence number is the row's identity: a fixed column so the digits

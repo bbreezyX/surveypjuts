@@ -1654,7 +1654,16 @@
         return;
       }
       var text;
-      if (activeGroup) {
+      if (activeGroup && statusFilter) {
+        var group = findGroup(activeGroup);
+        var label = STATUS_LABEL[statusFilter].count;
+        var flagged = group ? countGroupFlag(group, statusFilter) : matchCount;
+        text = hasQuery
+          ? formatCount(matchCount) + " dari " + formatCount(flagged) + " " +
+            label
+          : formatCount(matchCount) + " " + label + " dari " +
+            formatCount(group ? group.items.length : 0) + " titik";
+      } else if (activeGroup) {
         text = hasQuery
           ? formatCount(matchCount) + " dari " + formatCount(activeGroupSize()) +
             " titik · peta difilter ke grup ini"
@@ -1719,6 +1728,41 @@
     var activeGroup = null;
     var visibleIds = new Set(mappedItems.map(function (item) { return item.id; }));
     var restoreFocusGroup = null;
+    // Screen 2 only: "duplikat" | "belum" | "cadangan" narrows the group to
+    // the rows carrying that flag, so the two pins that still need a field
+    // check do not have to be hunted for across fifty rows. Cleared on every
+    // screen change; search narrows further inside it.
+    var statusFilter = null;
+
+    // Only the statuses that still need a decision get a chip. Cadangan rows
+    // are marked in place (hatch + capsule) rather than filtered for.
+    var STATUS_FILTERS = ["belum", "duplikat"];
+
+    function itemMatchesFilter(item) {
+      return !statusFilter || Boolean(item[statusFilter]);
+    }
+
+    function findGroup(name) {
+      for (var i = 0; i < groupedItems.length; i++) {
+        if (groupedItems[i].name === name) {
+          return groupedItems[i];
+        }
+      }
+      return null;
+    }
+
+    // Counts SK units only, like the pengusul row on screen 1: a cadangan row
+    // that carries the flag still shows under the filter (hatched), but it
+    // is not a titik and the numbers must agree with the summary line.
+    function countGroupFlag(group, flag) {
+      var n = 0;
+      group.items.forEach(function (item) {
+        if (item[flag]) {
+          n += 1;
+        }
+      });
+      return n;
+    }
 
     function updateHighlight(itemId) {
       var previous = listContainer.querySelector(".item.is-active");
@@ -2222,20 +2266,23 @@
 
     // Screen 2. Only the active group contributes rows.
     function renderItemScreen(fragment, normalizedQuery, coordQuery) {
-      var group = null;
-      for (var i = 0; i < groupedItems.length; i++) {
-        if (groupedItems[i].name === activeGroup) {
-          group = groupedItems[i];
-          break;
-        }
-      }
+      var group = findGroup(activeGroup);
       if (!group) {
         activeGroup = null;
+        statusFilter = null;
         return renderGroupScreen(fragment, normalizedQuery, coordQuery);
       }
 
+      // The local editor can clear the last flag of the kind being filtered;
+      // an empty filter would then hide the whole group behind a chip that no
+      // longer exists.
+      if (statusFilter && !countGroupFlag(group, statusFilter)) {
+        statusFilter = null;
+      }
+
       var matchedItems = allGroupItems(group).filter(function (item) {
-        return itemMatchesQuery(item, normalizedQuery, coordQuery);
+        return itemMatchesFilter(item) &&
+          itemMatchesQuery(item, normalizedQuery, coordQuery);
       });
 
       matchedItems.forEach(function (item) {
@@ -2262,7 +2309,7 @@
       if (!matchedItems.length) {
         fragment.appendChild(buildEmptyState(Boolean(normalizedQuery)));
       }
-      var skCount = 0;
+        var skCount = 0;
       matchedItems.forEach(function (item) {
         if (!item.cadangan) {
           skCount += 1;
@@ -2455,8 +2502,22 @@
       row.appendChild(count);
       row.appendChild(chevron);
 
-      row.addEventListener("click", function () {
-        setActiveGroup(group.name);
+      // A status count is a shortcut: it opens the group narrowed to those
+      // rows. Spans inside a button cannot be buttons themselves, so the row
+      // reads which part was hit; keyboard users reach the same filter from
+      // the chips on screen 2.
+      flags.forEach(function (flag) {
+        var kind = flag.classList.contains("group-row__flag--belum")
+          ? "belum"
+          : "duplikat";
+        flag.dataset.filter = kind;
+        flag.title = "Tampilkan hanya " + STATUS_LABEL[kind].count;
+      });
+      row.addEventListener("click", function (event) {
+        var hit = event.target.closest ? event.target.closest(".group-row__flag") : null;
+        setActiveGroup(group.name, {
+          filter: hit && row.contains(hit) ? hit.dataset.filter : null
+        });
       });
 
       return row;
@@ -2524,9 +2585,16 @@
       // coordinate ("K a…"); on their own line the title and the location
       // line read exactly as they do on an unflagged row.
       var status = null;
-      if (item.duplikat || item.belum) {
+      if (item.duplikat || item.belum || item.cadangan) {
         status = document.createElement("span");
         status.className = "item-status";
+      }
+      if (item.cadangan) {
+        var cadanganFlag = document.createElement("span");
+        cadanganFlag.className = "item-flag item-flag--cadangan";
+        cadanganFlag.textContent = STATUS_LABEL.cadangan.tag;
+        cadanganFlag.title = "Di luar jatah; dipasang hanya jika ada titik lain yang batal";
+        status.appendChild(cadanganFlag);
       }
       if (item.duplikat) {
         var flag = document.createElement("span");
@@ -2614,17 +2682,12 @@
       wrap.appendChild(back);
       wrap.appendChild(title);
 
+      var group = findGroup(activeGroup);
+
       // Where this pengusul's points sit. The title alone answers "who";
       // this line answers "where", which is the question the list of desa
       // names underneath cannot settle by itself.
       if (groupMode !== "kabupaten") {
-        var group = null;
-        for (var i = 0; i < groupedItems.length; i++) {
-          if (groupedItems[i].name === activeGroup) {
-            group = groupedItems[i];
-            break;
-          }
-        }
         if (group) {
           var meta = document.createElement("p");
           meta.className = "panel-context__meta";
@@ -2637,7 +2700,100 @@
         }
       }
 
+      if (group) {
+        var filters = buildStatusFilters(group);
+        if (filters) {
+          wrap.appendChild(filters);
+        }
+      }
+
       header.insertBefore(wrap, header.firstChild);
+    }
+
+    // One chip per status the group actually has, plus "Semua" to get back.
+    // A clean group shows no row at all: there is nothing to jump to.
+    function buildStatusFilters(group) {
+      var counts = {};
+      var any = false;
+      STATUS_FILTERS.forEach(function (flag) {
+        counts[flag] = countGroupFlag(group, flag);
+        if (counts[flag]) {
+          any = true;
+        }
+      });
+      if (!any) {
+        return null;
+      }
+
+      var row = document.createElement("div");
+      row.className = "status-filters";
+      row.setAttribute("role", "group");
+      row.setAttribute("aria-label", "Saring menurut status");
+
+      row.appendChild(
+        buildStatusChip(null, "Semua", group.items.length, !statusFilter)
+      );
+      STATUS_FILTERS.forEach(function (flag) {
+        if (!counts[flag]) {
+          return;
+        }
+        row.appendChild(
+          buildStatusChip(
+            flag,
+            STATUS_LABEL[flag].count,
+            counts[flag],
+            statusFilter === flag
+          )
+        );
+      });
+      return row;
+    }
+
+    function buildStatusChip(flag, label, count, isActive) {
+      var chip = document.createElement("button");
+      var num = document.createElement("span");
+      chip.type = "button";
+      chip.className = "status-chip" + (flag ? " status-chip--" + flag : "");
+      chip.classList.toggle("is-active", isActive);
+      chip.setAttribute("aria-pressed", isActive ? "true" : "false");
+      if (flag) {
+        var dot = document.createElement("span");
+        dot.className = "group-row__dot";
+        dot.setAttribute("aria-hidden", "true");
+        chip.appendChild(dot);
+      }
+      num.className = "status-chip__count";
+      num.textContent = formatCount(count);
+      chip.appendChild(num);
+      chip.appendChild(document.createTextNode(" " + label));
+      chip.addEventListener("click", function () {
+        setStatusFilter(flag);
+      });
+      return chip;
+    }
+
+    // Flip the screen 2 filter. The chip that is already on turns back off
+    // (same as "Semua"); the list scrolls to its top because the survivors
+    // may all have sat below the fold.
+    function setStatusFilter(flag) {
+      var next = flag && flag !== statusFilter ? flag : null;
+      if (next === statusFilter) {
+        return;
+      }
+      statusFilter = next;
+      clearSelection();
+      renderList(searchInput.value);
+      var scroller = document.querySelector(".sidebar-scroll");
+      if (scroller) {
+        scroller.scrollTop = 0;
+      }
+      var chip = document.querySelector(
+        statusFilter
+          ? ".status-chip--" + statusFilter
+          : ".status-chip:not([class*=' status-chip--'])"
+      );
+      focusWithoutScroll(chip);
+      fitToVisible({ maxZoom: 16, duration: 500 });
     }
 
     function buildEmptyState(hasQuery) {
@@ -2660,6 +2816,7 @@
           // search, not to start over.
           var carried = searchInput.value;
           activeGroup = null;
+          statusFilter = null;
           restoreFocusGroup = null;
           clearSelection();
           searchInput.value = carried;
@@ -3213,6 +3370,8 @@
       // to it — innerHTML wiping destroys the node the user just activated.
       restoreFocusGroup = name ? null : activeGroup;
       activeGroup = name || null;
+      // Screen 1's status counts open the group already narrowed to them.
+      statusFilter = activeGroup && config.filter ? config.filter : null;
       // A query typed on one screen must not leak onto the other.
       searchInput.value = "";
       clearSelection();
@@ -3372,6 +3531,7 @@
       groupMode = mode;
       groupedItems = buildGroupedItems(groupMode);
       activeGroup = null;
+      statusFilter = null;
       groupModeButtons.forEach(function (btn) {
         var on = btn.getAttribute("data-mode") === mode;
         btn.classList.toggle("is-active", on);
