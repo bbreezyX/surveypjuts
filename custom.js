@@ -411,6 +411,7 @@
   function buildPopupHtml(item) {
     var rows = [];
     var photoPath = item.photo ? sanitizeMediaPath(item.photo) : "";
+    var photoUrl = photoPath ? escapeHtml("images/" + encodeURI(photoPath)) : "";
 
     var fieldIcons = {
       nama: '<i class="fas fa-user-check"></i>',
@@ -510,10 +511,10 @@
       // does the useful work instead — source photos run to 1600x1200 and the
       // slot is 312px wide, so a synchronous decode would stall the frame.
       (photoPath
-        ? '<div class="feature-popup__media">' +
-          '<img src="images/' + encodeURI(photoPath) + '" alt="Foto lokasi ' + escapeHtml(item.nomor) + '" decoding="async" />' +
-          '<span class="feature-popup__media-badge">Foto survey awal</span>' +
-          "</div>"
+        ? '<a class="feature-popup__media" href="' + photoUrl + '" target="_blank" rel="noopener" aria-label="Buka foto lokasi ' + escapeHtml(item.nomor) + ' di tab baru">' +
+          '<img src="' + photoUrl + '" alt="Foto lokasi ' + escapeHtml(item.nomor) + '" decoding="async" />' +
+          '<span class="feature-popup__media-badge">Buka foto ↗</span>' +
+          "</a>"
         : "") +
       note +
       '<div class="feature-popup__body">' +

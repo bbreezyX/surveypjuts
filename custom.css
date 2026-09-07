@@ -1801,9 +1801,16 @@ body.is-sidebar-collapsed .panel-toggle:hover .panel-toggle__chevron {
 }
 
 .feature-popup__media {
+    display: block;
     position: relative;
     height: 152px;
     background: var(--hairline-strong);
+    cursor: zoom-in;
+}
+
+.feature-popup__media:focus-visible {
+    outline: 3px solid var(--blue);
+    outline-offset: -3px;
 }
 
 .feature-popup__media img {
