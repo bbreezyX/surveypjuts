@@ -60,8 +60,8 @@
     />
     <link rel="stylesheet" href="./resources/ol-layerswitcher.css?v=202609041121" />
     <link rel="stylesheet" href="./resources/qgis2web.css?v=202609041121" />
-    <link rel="preload" href="./custom.css?v=20260907mobile-clean" as="style" />
-    <link rel="stylesheet" href="./custom.css?v=20260907mobile-clean" />
+    <link rel="preload" href="./custom.css?v=20260908kab-only" as="style" />
+    <link rel="stylesheet" href="./custom.css?v=20260908kab-only" />
     <title>Peta Sebaran PUTS 2026 · Penerangan Umum Tenaga Surya Provinsi Jambi</title>
   </head>
   <body>
@@ -148,8 +148,8 @@
             <input
               id="list-search"
               type="search"
-              placeholder="Cari lokasi atau pengusul…"
-              title="Cari titik, lokasi, pengusul, atau koordinat"
+              placeholder="Cari lokasi atau kabupaten…"
+              title="Cari titik, lokasi, kabupaten, atau koordinat"
               autocomplete="off"
             />
             <button
@@ -160,27 +160,9 @@
             ></button>
           </label>
 
-          <div class="group-mode-field">
-            <span class="group-mode-label" id="group-mode-label">Lihat per</span>
-            <div class="group-mode" role="group" aria-labelledby="group-mode-label">
-              <button
-                type="button"
-                class="group-mode__btn is-active"
-                data-mode="nama"
-                aria-pressed="true"
-              >
-                Pengusul
-              </button>
-              <button
-                type="button"
-                class="group-mode__btn"
-                data-mode="kabupaten"
-                aria-pressed="false"
-              >
-                Kabupaten
-              </button>
-            </div>
-          </div>
+          <!-- Pengusul grouping removed: the list is per kabupaten only. The
+               version that still offered the Pengusul tab lives on the
+               backup/tampil-pengusul branch (tag backup-tampil-pengusul). -->
         </div>
 
         <div class="sidebar-scroll">
@@ -233,6 +215,6 @@
     <script src="./layers/layers.js?v=20260907compact3" type="text/javascript"></script>
     <script src="./resources/Autolinker.min.js?v=202609041121"></script>
     <script src="./resources/qgis2web.js?v=20260907scale"></script>
-    <script src="./custom.js?v=20260907logo-desktop"></script>
+    <script src="./custom.js?v=20260908kab-only2"></script>
   </body>
 </html>

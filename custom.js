@@ -431,12 +431,12 @@
       );
     }
 
-    if (item.nama) {
-      rows.push(metaRow(fieldIcons.nama, "Pengusul", item.nama));
-    }
-    if (item.jalur) {
-      rows.push(metaRow(fieldIcons.jalur, "Jalur", item.jalur));
-    }
+    // The pengusul row is intentionally omitted: this build hides who
+    // proposed each point (see branch backup/tampil-pengusul for the
+    // version that showed it).
+    // The jalur row is omitted for the same reason as pengusul: the section
+    // of the sheet (Ketua DPRD / Komisi III / Gubernur) hints at who
+    // proposed the point.
     if (item.alamat) {
       rows.push(metaRow(fieldIcons.alamat, "Alamat", item.alamat));
     }
@@ -1425,8 +1425,6 @@
           searchText: getNormalizedText(
             [
               nomor,
-              nama,
-              jalur,
               alamat,
               keterangan,
               tanggal,
@@ -1522,7 +1520,9 @@
         });
     }
 
-    var groupMode = "nama";
+    // Kabupaten only: the Pengusul grouping was removed from this build so
+    // no screen names who proposed a point.
+    var groupMode = "kabupaten";
     var groupedItems = buildGroupedItems(groupMode);
 
     function groupNoun() {
@@ -1923,7 +1923,6 @@
       return getNormalizedText(
         [
           item.nomor,
-          item.nama,
           item.alamat,
           item.keterangan,
           item.tanggal,
@@ -2229,7 +2228,7 @@
       renderPanelNav();
       searchInput.placeholder = activeGroup
         ? "Cari dalam kelompok"
-        : "Cari lokasi atau pengusul…";
+        : "Cari lokasi atau kabupaten…";
 
       listContainer.appendChild(fragment);
       renderSummary(visibleCount, Boolean(normalizedQuery));
@@ -2391,12 +2390,18 @@
       var parts = [];
 
       if (groupMode === "kabupaten") {
-        var pengusul = {};
+        // Was "N pengusul"; this build hides proposers, so the row counts
+        // the kecamatan the kabupaten's points spread over instead.
+        var kecamatan = {};
         group.items.forEach(function (item) {
-          pengusul[item.nama] = true;
+          if (item.display.kecamatan) {
+            kecamatan[item.display.kecamatan] = true;
+          }
         });
-        var n = Object.keys(pengusul).length;
-        parts.push({ text: formatCount(n) + " pengusul" });
+        var n = Object.keys(kecamatan).length;
+        if (n) {
+          parts.push({ text: formatCount(n) + " kecamatan" });
+        }
       } else {
         var counts = {};
         group.items.forEach(function (item) {
@@ -2576,8 +2581,7 @@
           item.belum ? STATUS_LABEL.belum.tag : "",
           item.display.primary,
           item.display.secondary,
-          item.kabupaten,
-          item.nama
+          item.kabupaten
         ]
           .filter(Boolean)
           .join(". ")
@@ -2846,7 +2850,7 @@
         wrap.appendChild(widen);
       } else if (hasQuery) {
         copy.textContent =
-          "Tidak ada titik yang cocok dengan pencarian. Coba nomor titik, nama pengusul, patokan lokasi, nama desa, atau koordinat.";
+          "Tidak ada titik yang cocok dengan pencarian. Coba nomor titik, nama kabupaten, patokan lokasi, nama desa, atau koordinat.";
       } else {
         copy.textContent = "Belum ada titik untuk ditampilkan.";
       }
