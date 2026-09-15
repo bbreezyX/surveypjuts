@@ -2465,7 +2465,14 @@ body.is-sidebar-collapsed .map-legend {
     font-size: 12px;
     color: var(--muted);
     text-shadow: none;
-    white-space: nowrap;
+    /* Google's credit is three words; Esri's is a full sentence naming four
+       parties (layers/layers.js). Cap the width and let the long one wrap:
+       custom.js measures this block into --map-meta-inset, which is the right
+       edge of the legend band, so an unwrapped Esri line would shove the
+       legend halfway across the map the moment someone switches basemap.
+       Everything shorter than the cap still sits on one line. */
+    max-width: 240px;
+    white-space: normal;
 }
 
 .bottom-attribution li {

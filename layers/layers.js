@@ -1,8 +1,17 @@
 var wms_layers = [];
 
 
+// Two basemaps, radio-switched ('type': 'base'). Google stays the default and
+// Esri is the fallback, not the other way round, for one measured reason: over
+// Jambi, Google carries imagery to z21 while Esri's World Imagery stops at z18.
+// Probed 2026-09-15 at Jambi city, Kerinci and open country between them —
+// every z19 tile came back as the same 2521-byte "Map data not yet available"
+// placeholder (md5 f27d9de7f80c13501f470595e327aa6d). Two extra zoom levels
+// decide whether an installer can see the pole itself or only the block it
+// stands on, so the sharper source leads. See docs/basemaps.md.
         var lyr_GoogleSatellite_0 = new ol.layer.Tile({
-            'title': 'Citra Satelit',
+            'title': 'Google Satelit',
+            'type': 'base',
             'opacity': 1.000000,
             
             
@@ -12,6 +21,31 @@ var wms_layers = [];
                 maxZoom: 21
             })
         });
+// Esri World Imagery: the licensed way to get essentially the same commercial
+// imagery. mt1.google.com is an internal Google endpoint — no key, no SLA, no
+// licence — so the day it starts refusing us, this keeps the page showing a
+// map instead of a grey void. Attribution text is the service's own
+// copyrightText verbatim (Vantor is Maxar Intelligence, renamed October 2025).
+var lyr_EsriWorldImagery_8 = new ol.layer.Tile({
+            'title': 'Esri Satelit',
+            'type': 'base',
+            'opacity': 1.000000,
+            source: new ol.source.XYZ({
+                attributions: 'Citra &copy; <a href="https://www.arcgis.com/home/item.html?id=10df2279f9684e4a9f6a7f08febac2a9" target="_blank" rel="noopener">Esri</a>, Vantor, Earthstar Geographics, and the GIS User Community',
+                url: 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                // Capped at the last level that actually has pixels here.
+                // OpenLayers then stretches z18 for z19+ — a soft image beats
+                // the tiled "not yet available" placeholder, which reads as a
+                // broken map rather than as the edge of the data.
+                maxZoom: 18
+            })
+        });
+// The switcher lists a group top-down in reverse array order, so Google goes
+// last to sit first in the panel, matching which one is on at load.
+var group_Basemap = new ol.layer.Group({
+                                layers: [lyr_EsriWorldImagery_8, lyr_GoogleSatellite_0],
+                                fold: 'open',
+                                title: 'Peta Dasar'});
 // BIG national administrative boundaries, service edition June 2026.
 // Snapshot/provenance: data/boundaries-source.json and docs/boundary-data.md.
 var batasBigAttribution = 'Batas &copy; <a href="https://geoservices.big.go.id/rbi/rest/services/BATASWILAYAH/BATAS_KABKOTA_AR/MapServer" target="_blank" rel="noopener">BIG</a> &middot; Juni 2026';
@@ -125,12 +159,12 @@ var group_RAW = new ol.layer.Group({
                                 fold: 'open',
                                 title: 'Data Lapangan'});
 
-lyr_GoogleSatellite_0.setVisible(true);lyr_FokusProvinsi_7.setVisible(true);lyr_BatasKabupaten_1.setVisible(true);lyr_Dissolved_2.setVisible(false);lyr_260331_4.setVisible(true);lyr_Cadangan_5.setVisible(false);lyr_BelumDitetapkan_6.setVisible(true);
+lyr_GoogleSatellite_0.setVisible(true);lyr_EsriWorldImagery_8.setVisible(false);lyr_FokusProvinsi_7.setVisible(true);lyr_BatasKabupaten_1.setVisible(true);lyr_Dissolved_2.setVisible(false);lyr_260331_4.setVisible(true);lyr_Cadangan_5.setVisible(false);lyr_BelumDitetapkan_6.setVisible(true);
 // "Ruas Jalan" is intentionally not loaded; it duplicated the kabupaten
 // boundary, which is drawn (outline + label) by lyr_BatasKabupaten_1.
 // Area Cakupan (Dissolved) and the Fokus Provinsi mask both sit below the
 // boundary so neither fill ever hides the line.
-var layersList = [lyr_GoogleSatellite_0,lyr_FokusProvinsi_7,lyr_Dissolved_2,lyr_BatasKabupaten_1,group_RAW];
+var layersList = [group_Basemap,lyr_FokusProvinsi_7,lyr_Dissolved_2,lyr_BatasKabupaten_1,group_RAW];
 lyr_BatasKabupaten_1.set('fieldAliases', {'KABUPATEN_': 'Kabupaten/Kota', 'KDPKAB': 'Kode Wilayah', 'WADMPR': 'Provinsi', 'METADATA': 'Metadata BIG'});
 lyr_Dissolved_2.set('fieldAliases', {'WADMPR': 'Provinsi'});
 lyr_260331_4.set('fieldAliases', {'fid': 'ID', 'Nomor': 'Nomor Titik', 'Nama Anggota': 'Petugas Survey', 'Alamat': 'Alamat', 'Longitude': 'Longitude', 'Latitude': 'Latitude', 'Tanggal Dokumentasi': 'Tanggal Dokumentasi', 'Keterangan': 'Keterangan', 'layer': 'Layer', 'Foto Survey Awal': 'Foto Lokasi', 'Toleransi': 'Toleransi', });
